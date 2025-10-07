@@ -81,7 +81,6 @@
     footer{margin-top:34px; text-align:center; color:var(--muted); font-size:.9rem}
     a{color:var(--link); text-decoration:none} a:hover{text-decoration:underline}
 
-    /* 小さめ画面で少し高く */
     @media (max-width:640px){ .chart-box img{min-height:260px; object-fit:cover} }
   </style>
 </head>
@@ -91,13 +90,11 @@
     <h1>🌸桜Index - 公式サイト</h1>
     <div class="sub">AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</div>
 
-    <!-- 公式リンク -->
     <div class="socials">
       <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener">🐦 公式X（Twitter）</a>
       <a href="https://note.com/sakura_index" target="_blank" rel="noopener">📝 公式note</a>
     </div>
 
-    <!-- 自動更新時刻（バッジ表示） -->
     <div class="update-badges">
       <span class="badge">📅 Astra4：毎日 <strong>15:35</strong></span>
       <span class="badge">📅 S-COIN+：毎日 <strong>15:35</strong></span>
@@ -106,9 +103,7 @@
     </div>
   </header>
 
-  <main class="wrap" id="app">
-    <!-- カードはJSで描画 -->
-  </main>
+  <main class="wrap" id="app"></main>
 
   <footer>
     <div class="note">※ 本サイトの情報は投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
@@ -116,21 +111,14 @@
   </footer>
 
   <script>
-    /**
-     * ▼ 画像パスの考え方
-     *   各リポジトリの GitHub Pages 直下にある /docs/outputs/*.png を参照します。
-     *   期間ごとの候補ファイルを上から順に試し、最初にロード成功したものを採用します。
-     *   例）1年 => ['*_1y.png','*_chart.png'] など
-     */
-
     const INDEXES = [
       {
         key: 'astra4',
         title: '📈 Astra4',
-        base: 'https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/',
+        base: 'docs/charts/',
         files: {
           '1d':  ['astra4_intraday.png'],
-          '1w':  ['astra4_7d.png', 'astra4_chart.png'],      // 候補 → なければ長期チャートにフォールバック
+          '1w':  ['astra4_7d.png', 'astra4_chart.png'],
           '1m':  ['astra4_1m.png', 'astra4_chart.png'],
           '1y':  ['astra4_1y.png', 'astra4_chart.png']
         }
@@ -138,7 +126,7 @@
       {
         key: 'scoin',
         title: '💰 S-COIN+',
-        base: 'https://sakuraindex.github.io/S-COIN-/docs/outputs/',
+        base: 'docs/charts/',
         files: {
           '1d':  ['scoin_plus_intraday.png'],
           '1w':  ['scoin_plus_7d.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
@@ -149,7 +137,7 @@
       {
         key: 'rbank9',
         title: '🏦 R-BANK9',
-        base: 'https://sakuraindex.github.io/R-BANK9/docs/outputs/',
+        base: 'docs/charts/',
         files: {
           '1d':  ['rbank9_intraday.png'],
           '1w':  ['rbank9_7d.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
@@ -160,7 +148,7 @@
       {
         key: 'ain10',
         title: '🤖 AIN-10',
-        base: 'https://sakuraindex.github.io/AIN-10/docs/outputs/',
+        base: 'docs/charts/',
         files: {
           '1d':  ['ain10_intraday.png'],
           '1w':  ['ain10_7d.png', 'ain10_chart.png', 'ain10_intraday.png'],
@@ -177,13 +165,12 @@
       { id:'1y', label:'1年' },
     ];
 
-    // 画像の存在チェック（成功したURLを返す／なければnull）
     function tryLoad(url){
       return new Promise(resolve=>{
         const img = new Image();
         img.onload = ()=> resolve(url);
         img.onerror = ()=> resolve(null);
-        img.src = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now(); // キャッシュ回避
+        img.src = url + '?v=' + Date.now();
       });
     }
 
@@ -204,13 +191,11 @@
         <div class="chart-box"><img id="img-${idx.key}" alt="${idx.title} Chart" /></div>
         <div class="note" id="note-${idx.key}"></div>`;
 
-      // 各期間の実在URLを解決
       const resolved = {};
       for(const {id} of LABELS){
         resolved[id] = await pickFirstExisting(idx.base, idx.files[id] || []);
       }
 
-      // タブ生成（存在しない期間はdisabled）
       const tabs = container.querySelector('#tabs-' + idx.key);
       LABELS.forEach(({id,label})=>{
         const btn = document.createElement('button');
@@ -219,20 +204,16 @@
         if(!resolved[id]) btn.disabled = true;
         btn.addEventListener('click', ()=>{
           if(btn.disabled) return;
-          // active 切替
           tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
           btn.classList.add('active');
-          // 画像切替
           const img = container.querySelector('#img-' + idx.key);
           img.src = resolved[id];
-          // 注釈
           const note = container.querySelector('#note-' + idx.key);
           note.textContent = (id==='1d') ? '※ 前日終値比の推移（1日）' : '※ 期間集計チャート';
         });
         tabs.appendChild(btn);
       });
 
-      // 初期表示（1日→次点の順で）
       const firstId = ['1d','1w','1m','1y'].find(k => resolved[k]);
       const firstBtn = Array.from(tabs.children).find(b => b.textContent.includes(
         LABELS.find(l=>l.id===firstId).label
