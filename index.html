@@ -8,7 +8,7 @@
   <meta name="google-site-verification" content="2FKHkWYeq6YP6ADLtXi7dntcwF4upeFTiCUHcQDA0Wg" />
 
   <title>🌸桜Index - 公式サイト｜Astra4 / S-COIN+ / R-BANK9 / AIN-10</title>
-  <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートを掲載。">
+  <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートをリアルタイムで掲載。">
 
   <!-- 🌸 OGP Meta -->
   <meta property="og:title" content="桜Index - 公式サイト">
@@ -23,7 +23,6 @@
   <meta name="twitter:title" content="桜Index - 公式サイト">
   <meta name="twitter:description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。">
   <meta name="twitter:image" content="https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png">
-  <meta name="twitter:creator" content="@sakuraindex">
 
   <!-- 🌐 Favicon -->
   <link rel="icon" href="https://sakuraindex.github.io/Sakura-Index-Site/assets/favicon.png" type="image/png" />
@@ -40,26 +39,34 @@
     }
     h1 { color: #ff99cc; font-size: 2rem; margin-bottom: 0.3em; }
     h2 { color: #ffd6e7; font-size: 1rem; font-weight: 400; margin-top: 0; }
+
     .index-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
-      box-shadow: 0 0 10px rgba(255,192,203,0.1);
+      box-shadow: 0 0 15px rgba(255, 182, 193, 0.15);
       padding: 20px;
-      margin: 25px auto;
-      max-width: 650px;
-      transition: all .3s ease;
+      margin: 40px auto;
+      max-width: 900px;
+      transition: all 0.3s ease;
     }
     .index-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 0 25px rgba(255,182,193,0.4);
+      transform: translateY(-5px);
+      box-shadow: 0 0 30px rgba(255, 182, 193, 0.4);
     }
-    .index-card img {
-      max-width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(255,255,255,0.2);
+    iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+      border-radius: 12px;
+      background: #111;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
     }
-    footer { margin-top: 50px; font-size: .9rem; opacity: .8; }
+    footer {
+      margin-top: 60px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
     a { color: #80d0ff; text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
@@ -69,36 +76,28 @@
   <h1>🌸桜Index - 公式サイト</h1>
   <h2>AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</h2>
 
-  <!-- 🔹 ASTRA4 -->
+  <!-- 🔹 Astra4 -->
   <div class="index-card">
     <h3>📈 Astra4</h3>
-    <img src="https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/astra4_intraday.png"
-         alt="Astra4 Intraday Chart" loading="lazy">
-    <p><a href="https://sakuraindex.github.io/3_Sakura_Space/" target="_blank">🔗 Astra4 詳細ページ</a></p>
+    <iframe src="https://sakuraindex.github.io/3_Sakura_Space/"></iframe>
   </div>
 
   <!-- 🔹 S-COIN+ -->
   <div class="index-card">
     <h3>💰 S-COIN+</h3>
-    <img src="https://sakuraindex.github.io/S-COIN-/docs/outputs/scoin_plus_intraday.png"
-         alt="S-COIN+ Intraday Chart" loading="lazy">
-    <p><a href="https://sakuraindex.github.io/S-COIN-/" target="_blank">🔗 S-COIN+ 詳細ページ</a></p>
+    <iframe src="https://sakuraindex.github.io/S-COIN-/"></iframe>
   </div>
 
   <!-- 🔹 R-BANK9 -->
   <div class="index-card">
     <h3>🏦 R-BANK9</h3>
-    <img src="https://sakuraindex.github.io/R-BANK9/docs/outputs/rbank9_intraday.png"
-         alt="R-BANK9 Intraday Chart" loading="lazy">
-    <p><a href="https://sakuraindex.github.io/R-BANK9/" target="_blank">🔗 R-BANK9 詳細ページ</a></p>
+    <iframe src="https://sakuraindex.github.io/R-BANK9/"></iframe>
   </div>
 
   <!-- 🔹 AIN-10 -->
   <div class="index-card">
     <h3>🤖 AIN-10</h3>
-    <img src="https://sakuraindex.github.io/AIN-10/docs/outputs/ain10_intraday.png"
-         alt="AIN-10 Intraday Chart" loading="lazy">
-    <p><a href="https://sakuraindex.github.io/AIN-10/" target="_blank">🔗 AIN-10 詳細ページ</a></p>
+    <iframe src="https://sakuraindex.github.io/AIN-10/"></iframe>
   </div>
 
   <footer>
