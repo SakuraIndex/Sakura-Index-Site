@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>桜Index 公式ダッシュボード</title>
+  <meta name="description" content="桜Index公式。ASTRA-4 / S-COIN+ / R-BANK9 / AIN-10 の日中スナップショットと履歴。">
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif; background:#0b0b0e; color:#eaeaf0; }
+    header { padding:24px 16px; border-bottom:1px solid #1f222a; position:sticky; top:0; background:#0b0b0e; z-index:10; }
+    .wrap { max-width:1200px; margin:0 auto; padding: 24px 16px 64px; }
+    .grid { display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); }
+    .card { grid-column: span 12; background:#12141a; border:1px solid #1f222a; border-radius:16px; overflow:hidden; }
+    @media (min-width:900px){ .card { grid-column: span 6; } }
+    .card header { display:flex; justify-content:space-between; align-items:center; padding:16px 16px; background:#11131a; border-bottom:1px solid #1f222a; position:static; }
+    .title { font-weight:700; letter-spacing:.3px; }
+    .meta { opacity:.7; font-size:12px; }
+    .body { padding: 0; }
+    .imgbox { background:#0b0b0e; display:flex; align-items:center; justify-content:center; min-height:260px; }
+    .imgbox img { width:100%; height:auto; display:block; }
+    .links { display:flex; gap:12px; padding:12px 16px 16px; flex-wrap:wrap; }
+    .btn { padding:8px 12px; border-radius:10px; border:1px solid #2a2f3b; background:#161922; color:#eaeaf0; text-decoration:none; font-size:13px; }
+    footer { opacity:.7; font-size:12px; text-align:center; padding:24px; border-top:1px solid #1f222a; }
+    .badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid #2a2f3b; background:#0f1220; }
+  </style>
+  <script>
+    // ====== ここを書き換え：あなたのGitHubユーザー名と各リポ名 ======
+    const GH_USER = "YOUR_GH_USER";
+    const REPOS = {
+      astra4:  { repo: "Astra-4",      png: "astra4_intraday.png", csv: "astra4_history.csv",   txt: "astra4_post_intraday.txt" },
+      scoin:   { repo: "S-COIN-plus",  png: "scoin_plus_intraday.png", csv: "scoin_plus_intraday.csv", txt: "scoin_plus_post.txt" },
+      rbank9:  { repo: "R-BANK9",      png: "rbank9_intraday.png", csv: "rbank9_intraday.csv", txt: "rbank9_post_intraday.txt" },
+      ain10:   { repo: "AIN-10",       png: "ain10_intraday.png", csv: "ain10_intraday.csv",   txt: "ain10_intraday_post.txt" }
+    };
+    // GitHub Pages を設定していない場合は raw.githubusercontent.com を使う
+    // Pages を有効化しているなら、以下の RAW_BASE を PAGES_BASE に差し替えてOK
+    const RAW_BASE = (repo) => `https://raw.githubusercontent.com/${GH_USER}/${repo}/main/docs/outputs`;
+    const CARDS = [
+      { key:"astra4",  name:"ASTRA-4（宇宙ベンチャー）",      tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"scoin",   name:"S-COIN+（仮想通貨株）",          tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"rbank9",  name:"R-BANK9（地方銀行株）",           tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"ain10",   name:"AIN-10（AI米国株）",             tags:["JST 06:35 自動更新","等ウェイト"] },
+    ];
+    function cardHTML(k, spec){
+      const base = RAW_BASE(spec.repo);
+      const img = `${base}/${spec.png}`;
+      const csv = `${base}/${spec.csv}`;
+      const txt = `${base}/${spec.txt}`;
+      const meta = new Date().toLocaleString('ja-JP', { timeZone:'Asia/Tokyo' });
+      const tags = CARDS.find(c=>c.key===k)?.tags || [];
+      const badges = tags.map(t=>`<span class="badge">🕒 ${t}</span>`).join(' ');
+      return `
+      <section class="card">
+        <header>
+          <div>
+            <div class="title">${CARDS.find(c=>c.key===k)?.name || k}</div>
+            <div class="meta">最終更新（表示時刻）：${meta}</div>
+          </div>
+          <div>${badges}</div>
+        </header>
+        <div class="body">
+          <div class="imgbox"><img loading="eager" decoding="async" src="${img}?t=${Date.now()}" alt="${k} chart" onerror="this.replaceWith(document.createTextNode('画像が未生成です（初回実行待ち）'))"/></div>
+          <div class="links">
+            <a class="btn" href="${csv}" target="_blank">📄 CSV（履歴）</a>
+            <a class="btn" href="${txt}" target="_blank">📝 投稿テキスト</a>
+            <a class="btn" href="https://github.com/${GH_USER}/${spec.repo}" target="_blank">🧩 リポジトリ</a>
+          </div>
+        </div>
+      </section>`;
+    }
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const grid = document.getElementById('grid');
+      grid.innerHTML = Object.entries(REPOS).map(([k,v])=>cardHTML(k,v)).join('');
+      // 5分ごとに自動リロード（最新画像へキャッシュバスター付き）
+      setInterval(()=>location.reload(), 5*60*1000);
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1 style="margin:0; font-size:20px;">🌸 桜Index 公式ダッシュボード</h1>
+      <div style="opacity:.75; margin-top:6px; font-size:13px;">ASTRA-4 / S-COIN+ / R-BANK9 / AIN-10 — 自動更新の1日チャートと履歴</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer>
+    © Sakura Index — Educational purpose only. 投資判断はご自身の責任でお願いします。
+  </footer>
+</body>
+</html>
