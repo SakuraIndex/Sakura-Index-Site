@@ -1,121 +1,163 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>桜Index 公式ダッシュボード</title>
-  <meta name="description" content="桜Index公式。ASTRA-4 / S-COIN+ / R-BANK9 / AIN-10 の日中スナップショットと履歴。">
-  <style>
-    :root { color-scheme: dark; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif; background:#0b0b0e; color:#eaeaf0; }
-    header { padding:24px 16px; border-bottom:1px solid #1f222a; position:sticky; top:0; background:#0b0b0e; z-index:10; }
-    .wrap { max-width:1200px; margin:0 auto; padding: 24px 16px 64px; }
-    .grid { display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); }
-    .card { grid-column: span 12; background:#12141a; border:1px solid #1f222a; border-radius:16px; overflow:hidden; }
-    @media (min-width:900px){ .card { grid-column: span 6; } }
-    .card header { display:flex; justify-content:space-between; align-items:center; padding:16px 16px; background:#11131a; border-bottom:1px solid #1f222a; position:static; }
-    .title { font-weight:700; letter-spacing:.3px; }
-    .meta { opacity:.7; font-size:12px; }
-    .body { padding: 0; }
-    .imgbox { background:#0b0b0e; display:flex; align-items:center; justify-content:center; min-height:260px; }
-    .imgbox img { width:100%; height:auto; display:block; }
-    .links { display:flex; gap:12px; padding:12px 16px 16px; flex-wrap:wrap; }
-    .btn { padding:8px 12px; border-radius:10px; border:1px solid #2a2f3b; background:#161922; color:#eaeaf0; text-decoration:none; font-size:13px; }
-    footer { opacity:.7; font-size:12px; text-align:center; padding:24px; border-top:1px solid #1f222a; }
-    .badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid #2a2f3b; background:#0f1220; }
-  </style>
-  <script>
-    // あなたのGitHubユーザー名
-    const GH_USER = "SakuraIndex";
+  <!-- ======================= -->
+  <!-- 🌸 桜Index SEO & OGP設定 -->
+  <!-- ======================= -->
 
-    // 各指数のリポ名と出力ファイル
-    const REPOS = {
-      // ASTRA-4（宇宙） => リポ名: 3_Sakura_Space
-      astra4: { repo: "3_Sakura_Space",
-        png: "astra4_intraday.png",
-        csv: "astra4_intraday.csv",
-        txt: "astra4_post_intraday.txt"
-      },
-      // S-COIN+（仮想通貨株） => リポ名: S-COIN-
-      scoin: { repo: "S-COIN-",
-        png: "scoin_plus_intraday.png",
-        csv: "scoin_plus_intraday.csv",
-        txt: "scoin_plus_post.txt"
-      },
-      // R-BANK9（地銀） => リポ名: R-BANK9
-      rbank9: { repo: "R-BANK9",
-        png: "rbank9_intraday.png",
-        csv: "rbank9_intraday.csv",
-        txt: "rbank9_post_intraday.txt"
-      },
-      // AIN-10（AI米国株） => リポ名: AIN-10
-      ain10: { repo: "AIN-10",
-        png: "ain10_intraday.png",
-        csv: "ain10_intraday.csv",
-        txt: "ain10_intraday_post.txt"
-      }
-    };
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>桜Index 公式サイト｜Astra4・S-COIN+・R-BANK9・AIN-10 を自動算出</title>
+  <meta name="description" content="桜Index 公式サイト。Astra4・S-COIN+・R-BANK9・AIN-10 などのテーマ指数をGitHub Actionsで毎日自動算出し、PNG/CSV/TXTを配信します。">
+  <meta name="keywords" content="桜Index, 株価指数, AI, フィンテック, 仮想通貨, 日本株, 米国株, テーマ指数, 自動更新">
 
-    // raw.githubusercontent.com から直接参照
-    const RAW_BASE = (repo) => `https://raw.githubusercontent.com/${GH_USER}/${repo}/main/docs/outputs`;
+  <!-- Canonical -->
+  <link rel="canonical" href="https://sakuraindex.github.io/Sakura-Index-Site/">
 
-    const CARDS = [
-      { key:"astra4", name:"ASTRA-4（宇宙ベンチャー）", tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"scoin",  name:"S-COIN+（仮想通貨株）",     tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"rbank9", name:"R-BANK9（地方銀行株）",      tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"ain10",  name:"AIN-10（AI米国株）",        tags:["JST 06:35 自動更新","等ウェイト"] },
-    ];
+  <!-- OGP -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="桜Index">
+  <meta property="og:title" content="桜Index 公式サイト｜Astra4・S-COIN+・R-BANK9・AIN-10 を自動算出">
+  <meta property="og:description" content="Astra4・S-COIN+・R-BANK9・AIN-10 を自動算出し、チャートとCSV/TXTを配信。">
+  <meta property="og:url" content="https://sakuraindex.github.io/Sakura-Index-Site/">
+  <meta property="og:image" content="https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png">
 
-    function cardHTML(k, spec){
-      const base = RAW_BASE(spec.repo);
-      const img = `${base}/${spec.png}`;
-      const csv = `${base}/${spec.csv}`;
-      const txt = `${base}/${spec.txt}`;
-      const meta = new Date().toLocaleString('ja-JP', { timeZone:'Asia/Tokyo' });
-      const tags = CARDS.find(c=>c.key===k)?.tags || [];
-      const badges = tags.map(t=>`<span class="badge">🕒 ${t}</span>`).join(' ');
-      return `
-      <section class="card">
-        <header>
-          <div>
-            <div class="title">${CARDS.find(c=>c.key===k)?.name || k}</div>
-            <div class="meta">最終更新（表示時刻）：${meta}</div>
-          </div>
-          <div>${badges}</div>
-        </header>
-        <div class="body">
-          <div class="imgbox"><img loading="eager" decoding="async" src="${img}?t=${Date.now()}" alt="${k} chart" onerror="this.replaceWith(document.createTextNode('画像が未生成です（初回実行待ち）'))"/></div>
-          <div class="links">
-            <a class="btn" href="${csv}" target="_blank">📄 CSV（履歴）</a>
-            <a class="btn" href="${txt}" target="_blank">📝 投稿テキスト</a>
-            <a class="btn" href="https://github.com/${GH_USER}/${spec.repo}" target="_blank">🧩 リポジトリ</a>
-          </div>
-        </div>
-      </section>`;
-    }
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="桜Index 公式サイト">
+  <meta name="twitter:description" content="Astra4・S-COIN+・R-BANK9・AIN-10 を自動算出し、チャートとCSV/TXTを配信。">
+  <meta name="twitter:image" content="https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png">
 
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const grid = document.getElementById('grid');
-      grid.innerHTML = Object.entries(REPOS).map(([k,v])=>cardHTML(k,v)).join('');
-      // 5分ごとに自動リロード
-      setInterval(()=>location.reload(), 5*60*1000);
-    });
+  <!-- Favicon / Theme -->
+  <meta name="theme-color" content="#0d0f14">
+  <link rel="icon" href="https://sakuraindex.github.io/Sakura-Index-Site/assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="https://sakuraindex.github.io/Sakura-Index-Site/assets/favicon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="https://sakuraindex.github.io/Sakura-Index-Site/assets/apple-touch-icon.png" sizes="180x180">
+
+  <!-- 構造化データ：Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "桜Index",
+    "url": "https://sakuraindex.github.io/Sakura-Index-Site/",
+    "logo": "https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png",
+    "sameAs": [
+      "https://github.com/SakuraIndex"
+      /* 他SNSを追加する場合：
+      ,"https://x.com/your_X_account"
+      ,"https://note.com/your_note_account"
+      */
+    ]
+  }
   </script>
+
+  <!-- 構造化データ：WebSite -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://sakuraindex.github.io/Sakura-Index-Site/",
+    "name": "桜Index",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://sakuraindex.github.io/Sakura-Index-Site/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- ======================= -->
+  <!-- 🌸 スタイル（シンプル黒基調） -->
+  <!-- ======================= -->
+  <style>
+    body {
+      margin: 0;
+      background-color: #0d0f14;
+      color: #e8e8e8;
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      text-align: center;
+    }
+    header {
+      padding: 2rem 1rem;
+      background: linear-gradient(135deg, #1b1e27, #14161d);
+      border-bottom: 1px solid #2c2f36;
+    }
+    header h1 {
+      font-size: 2rem;
+      color: #ffb7dc;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      font-size: 1rem;
+      color: #ccc;
+    }
+    main {
+      padding: 2rem 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    section {
+      margin-bottom: 2.5rem;
+    }
+    img.chart {
+      width: 100%;
+      max-width: 800px;
+      border-radius: 12px;
+      border: 1px solid #444;
+      box-shadow: 0 0 10px rgba(255,183,220,0.2);
+    }
+    footer {
+      font-size: 0.9rem;
+      color: #777;
+      padding: 2rem 0;
+      border-top: 1px solid #2a2a2a;
+    }
+    a {
+      color: #8fd3f4;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
+
 <body>
   <header>
-    <div class="wrap">
-      <h1 style="margin:0; font-size:20px;">🌸 桜Index 公式ダッシュボード</h1>
-      <div style="opacity:.75; margin-top:6px; font-size:13px;">ASTRA-4 / S-COIN+ / R-BANK9 / AIN-10 — 自動更新の1日チャートと履歴</div>
-    </div>
+    <h1>🌸 桜Index - 公式サイト</h1>
+    <p>AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</p>
   </header>
 
-  <main class="wrap">
-    <div id="grid" class="grid"></div>
+  <main>
+    <section>
+      <h2>📈 Astra4</h2>
+      <img class="chart" src="https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/astra4_intraday.png" alt="Astra4 Intraday Chart">
+    </section>
+
+    <section>
+      <h2>💰 S-COIN+</h2>
+      <img class="chart" src="https://sakuraindex.github.io/S-COIN-/docs/outputs/scoin_plus_intraday.png" alt="S-COIN+ Intraday Chart">
+    </section>
+
+    <section>
+      <h2>🏦 R-BANK9</h2>
+      <img class="chart" src="https://sakuraindex.github.io/R-BANK9/docs/outputs/rbank9_intraday.png" alt="R-BANK9 Intraday Chart">
+    </section>
+
+    <section>
+      <h2>🤖 AIN-10</h2>
+      <img class="chart" src="https://sakuraindex.github.io/AIN-10/docs/outputs/ain10_snapshot.png" alt="AIN-10 Chart">
+    </section>
+
+    <p>
+      🔁 自動更新時刻：<br>
+      Astra4・S-COIN+・R-BANK9 → 毎日15:35 / AIN-10 → 毎日6:35
+    </p>
   </main>
 
   <footer>
-    © Sakura Index — Educational purpose only. 投資判断はご自身の責任でお願いします。
+    <p>© 2025 桜Index | <a href="https://github.com/SakuraIndex">GitHub</a></p>
   </footer>
 </body>
 </html>
