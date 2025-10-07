@@ -8,9 +8,9 @@
   <meta name="google-site-verification" content="2FKHkWYeq6YP6ADLtXi7dntcwF4upeFTiCUHcQDA0Wg" />
 
   <title>🌸桜Index - 公式サイト｜Astra4 / S-COIN+ / R-BANK9 / AIN-10</title>
-  <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートをリアルタイムで掲載。">
+  <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートを掲載。">
 
-  <!-- 🌸 OGP Meta -->
+  <!-- 🌸 OGP -->
   <meta property="og:title" content="桜Index - 公式サイト">
   <meta property="og:description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。ASTRA4・R-BANK9・S-COIN+・AIN-10を毎日更新。">
   <meta property="og:url" content="https://sakuraindex.github.io/Sakura-Index-Site/">
@@ -29,81 +29,226 @@
 
   <!-- 💅 Style -->
   <style>
-    body {
-      margin: 0;
-      background: radial-gradient(circle at top, #111827, #000);
-      color: #f0f0f0;
-      font-family: "Noto Sans JP", sans-serif;
-      text-align: center;
-      padding: 40px 10px;
+    :root{
+      --bg:#000; --bg2:#111827; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.11);
+      --text:#f0f0f0; --muted:#a8b3cf; --link:#80d0ff; --accent:#ff99cc; --glow:rgba(255,182,193,.35);
+      --pill:#141b2d; --pillLine:#27314a;
     }
-    h1 { color: #ff99cc; font-size: 2rem; margin-bottom: 0.3em; }
-    h2 { color: #ffd6e7; font-size: 1rem; font-weight: 400; margin-top: 0; }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:radial-gradient(circle at top,var(--bg2),var(--bg)); color:var(--text);
+      font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    header{padding:28px 14px 10px; text-align:center}
+    h1{margin:.2rem 0; font-size:2rem; color:var(--accent)}
+    .sub{color:#ffd6e7; opacity:.9}
 
-    .index-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      box-shadow: 0 0 15px rgba(255, 182, 193, 0.15);
-      padding: 20px;
-      margin: 40px auto;
-      max-width: 900px;
-      transition: all 0.3s ease;
+    .socials{margin:14px 0 6px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
+    .socials a{
+      display:inline-flex; align-items:center; gap:.5em;
+      padding:8px 14px; border-radius:999px; text-decoration:none;
+      color:#cfe8ff; background:var(--pill); border:1px solid var(--pillLine);
     }
-    .index-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 0 30px rgba(255, 182, 193, 0.4);
+    .socials a:hover{outline:2px solid #3b82f6}
+
+    .update-badges{margin:10px 0 24px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
+    .badge{
+      font-size:.92rem; padding:6px 10px; border-radius:999px; background:var(--pill); border:1px solid var(--pillLine); color:#cfe8ff;
     }
-    iframe {
-      width: 100%;
-      height: 500px;
-      border: none;
-      border-radius: 12px;
-      background: #111;
-      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+
+    .wrap{max-width:1100px; margin:0 auto; padding:0 14px 60px}
+
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:20px;
+      box-shadow:0 0 18px var(--glow); padding:18px; margin:26px 0;
+      transition:transform .2s ease, box-shadow .2s ease;
     }
-    footer {
-      margin-top: 60px;
-      font-size: 0.9rem;
-      opacity: 0.8;
+    .card:hover{transform:translateY(-3px); box-shadow:0 0 30px rgba(255,182,193,.5)}
+    .card h3{margin:0 0 10px; font-size:1.15rem}
+
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px}
+    .tab{
+      padding:6px 12px; border-radius:999px; border:1px solid var(--pillLine);
+      background:var(--pill); color:#cfe8ff; cursor:pointer; font-size:.92rem;
     }
-    a { color: #80d0ff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    .tab.active{background:#1e293b; border-color:#3b82f6; color:#e9f2ff}
+    .tab[disabled]{opacity:.45; cursor:not-allowed}
+
+    .chart-box{position:relative; border-radius:12px; overflow:hidden; background:#0b0f1a; border:1px solid var(--pillLine)}
+    .chart-box img{display:block; width:100%; height:auto}
+    .note{font-size:.88rem; color:var(--muted); margin-top:8px}
+
+    footer{margin-top:34px; text-align:center; color:var(--muted); font-size:.9rem}
+    a{color:var(--link); text-decoration:none} a:hover{text-decoration:underline}
+
+    /* 小さめ画面で少し高く */
+    @media (max-width:640px){ .chart-box img{min-height:260px; object-fit:cover} }
   </style>
 </head>
 
 <body>
-  <h1>🌸桜Index - 公式サイト</h1>
-  <h2>AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</h2>
+  <header>
+    <h1>🌸桜Index - 公式サイト</h1>
+    <div class="sub">AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</div>
 
-  <!-- 🔹 Astra4 -->
-  <div class="index-card">
-    <h3>📈 Astra4</h3>
-    <iframe src="https://sakuraindex.github.io/3_Sakura_Space/"></iframe>
-  </div>
+    <!-- 公式リンク -->
+    <div class="socials">
+      <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener">🐦 公式X（Twitter）</a>
+      <a href="https://note.com/sakura_index" target="_blank" rel="noopener">📝 公式note</a>
+    </div>
 
-  <!-- 🔹 S-COIN+ -->
-  <div class="index-card">
-    <h3>💰 S-COIN+</h3>
-    <iframe src="https://sakuraindex.github.io/S-COIN-/"></iframe>
-  </div>
+    <!-- 自動更新時刻（バッジ表示） -->
+    <div class="update-badges">
+      <span class="badge">📅 Astra4：毎日 <strong>15:35</strong></span>
+      <span class="badge">📅 S-COIN+：毎日 <strong>15:35</strong></span>
+      <span class="badge">📅 R-BANK9：毎日 <strong>15:35</strong></span>
+      <span class="badge">📅 AIN-10：毎日 <strong>06:35</strong></span>
+    </div>
+  </header>
 
-  <!-- 🔹 R-BANK9 -->
-  <div class="index-card">
-    <h3>🏦 R-BANK9</h3>
-    <iframe src="https://sakuraindex.github.io/R-BANK9/"></iframe>
-  </div>
-
-  <!-- 🔹 AIN-10 -->
-  <div class="index-card">
-    <h3>🤖 AIN-10</h3>
-    <iframe src="https://sakuraindex.github.io/AIN-10/"></iframe>
-  </div>
+  <main class="wrap" id="app">
+    <!-- カードはJSで描画 -->
+  </main>
 
   <footer>
-    📅 自動更新時刻：<br>
-    Astra4・S-COIN+・R-BANK9 → 毎日15:35 ／ AIN-10 → 毎日6:35<br><br>
-    © 2025 桜Index | <a href="https://github.com/SakuraIndex" target="_blank">GitHub</a>
+    <div class="note">※ 本サイトの情報は投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
+    <div style="margin-top:12px">© 2025 桜Index ・ <a href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a></div>
   </footer>
+
+  <script>
+    /**
+     * ▼ 画像パスの考え方
+     *   各リポジトリの GitHub Pages 直下にある /docs/outputs/*.png を参照します。
+     *   期間ごとの候補ファイルを上から順に試し、最初にロード成功したものを採用します。
+     *   例）1年 => ['*_1y.png','*_chart.png'] など
+     */
+
+    const INDEXES = [
+      {
+        key: 'astra4',
+        title: '📈 Astra4',
+        base: 'https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/',
+        files: {
+          '1d':  ['astra4_intraday.png'],
+          '1w':  ['astra4_7d.png', 'astra4_chart.png'],      // 候補 → なければ長期チャートにフォールバック
+          '1m':  ['astra4_1m.png', 'astra4_chart.png'],
+          '1y':  ['astra4_1y.png', 'astra4_chart.png']
+        }
+      },
+      {
+        key: 'scoin',
+        title: '💰 S-COIN+',
+        base: 'https://sakuraindex.github.io/S-COIN-/docs/outputs/',
+        files: {
+          '1d':  ['scoin_plus_intraday.png'],
+          '1w':  ['scoin_plus_7d.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
+          '1m':  ['scoin_plus_1m.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
+          '1y':  ['scoin_plus_1y.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png']
+        }
+      },
+      {
+        key: 'rbank9',
+        title: '🏦 R-BANK9',
+        base: 'https://sakuraindex.github.io/R-BANK9/docs/outputs/',
+        files: {
+          '1d':  ['rbank9_intraday.png'],
+          '1w':  ['rbank9_7d.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
+          '1m':  ['rbank9_1m.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
+          '1y':  ['rbank9_1y.png', 'rbank9_chart.png', 'rbank9_intraday.png']
+        }
+      },
+      {
+        key: 'ain10',
+        title: '🤖 AIN-10',
+        base: 'https://sakuraindex.github.io/AIN-10/docs/outputs/',
+        files: {
+          '1d':  ['ain10_intraday.png'],
+          '1w':  ['ain10_7d.png', 'ain10_chart.png', 'ain10_intraday.png'],
+          '1m':  ['ain10_1m.png', 'ain10_chart.png', 'ain10_intraday.png'],
+          '1y':  ['ain10_1y.png', 'ain10_chart.png', 'ain10_intraday.png']
+        }
+      }
+    ];
+
+    const LABELS = [
+      { id:'1d', label:'1日' },
+      { id:'1w', label:'1週間' },
+      { id:'1m', label:'1ヶ月' },
+      { id:'1y', label:'1年' },
+    ];
+
+    // 画像の存在チェック（成功したURLを返す／なければnull）
+    function tryLoad(url){
+      return new Promise(resolve=>{
+        const img = new Image();
+        img.onload = ()=> resolve(url);
+        img.onerror = ()=> resolve(null);
+        img.src = url + (url.includes('?') ? '&' : '?') + 'v=' + Date.now(); // キャッシュ回避
+      });
+    }
+
+    async function pickFirstExisting(base, candidates){
+      for(const name of candidates){
+        const url = base + name;
+        const ok = await tryLoad(url);
+        if(ok) return ok;
+      }
+      return null;
+    }
+
+    async function buildCard(idx){
+      const container = document.createElement('section');
+      container.className = 'card';
+      container.innerHTML = `<h3>${idx.title}</h3>
+        <div class="tabs" id="tabs-${idx.key}"></div>
+        <div class="chart-box"><img id="img-${idx.key}" alt="${idx.title} Chart" /></div>
+        <div class="note" id="note-${idx.key}"></div>`;
+
+      // 各期間の実在URLを解決
+      const resolved = {};
+      for(const {id} of LABELS){
+        resolved[id] = await pickFirstExisting(idx.base, idx.files[id] || []);
+      }
+
+      // タブ生成（存在しない期間はdisabled）
+      const tabs = container.querySelector('#tabs-' + idx.key);
+      LABELS.forEach(({id,label})=>{
+        const btn = document.createElement('button');
+        btn.className = 'tab';
+        btn.textContent = label;
+        if(!resolved[id]) btn.disabled = true;
+        btn.addEventListener('click', ()=>{
+          if(btn.disabled) return;
+          // active 切替
+          tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+          btn.classList.add('active');
+          // 画像切替
+          const img = container.querySelector('#img-' + idx.key);
+          img.src = resolved[id];
+          // 注釈
+          const note = container.querySelector('#note-' + idx.key);
+          note.textContent = (id==='1d') ? '※ 前日終値比の推移（1日）' : '※ 期間集計チャート';
+        });
+        tabs.appendChild(btn);
+      });
+
+      // 初期表示（1日→次点の順で）
+      const firstId = ['1d','1w','1m','1y'].find(k => resolved[k]);
+      const firstBtn = Array.from(tabs.children).find(b => b.textContent.includes(
+        LABELS.find(l=>l.id===firstId).label
+      ));
+      if(firstBtn){ firstBtn.click(); }
+
+      return container;
+    }
+
+    (async function init(){
+      const app = document.getElementById('app');
+      for(const idx of INDEXES){
+        const card = await buildCard(idx);
+        app.appendChild(card);
+      }
+    })();
+  </script>
 </body>
 </html>
