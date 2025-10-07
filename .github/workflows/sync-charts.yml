@@ -1,0 +1,87 @@
+name: Sync charts to site
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 1日4回（UTC）。JSTだと09:45 / 15:45 / 18:45 / 00:45 目安
+    - cron: '45 0,6,9,15 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site repo
+        uses: actions/checkout@v4
+
+      - name: Prepare folders
+        run: |
+          mkdir -p docs/charts
+
+      - name: Download latest charts (PNG/CSV/TXT)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # 取得元（GitHub Pages 直URL）— ブランチ名を意識せず最新を拾えるので安定
+          BASES=(
+            "https://sakuraindex.github.io/3_Sakura_Space/docs/outputs"
+            "https://sakuraindex.github.io/S-COIN-/docs/outputs"
+            "https://sakuraindex.github.io/R-BANK9/docs/outputs"
+            "https://sakuraindex.github.io/AIN-10/docs/outputs"
+          )
+
+          # 取得する想定ファイル（存在しないものはスキップOK）
+          FILES=(
+            # —— Astra4
+            "astra4_intraday.png" "astra4_7d.png" "astra4_1m.png" "astra4_1y.png" "astra4_chart.png"
+            "astra4_intraday.csv" "astra4_intraday.txt"
+            # —— S-COIN+
+            "scoin_plus_intraday.png" "scoin_plus_7d.png" "scoin_plus_1m.png" "scoin_plus_1y.png" "scoin_plus_chart.png"
+            "scoin_plus_intraday.csv" "scoin_plus_intraday.txt"
+            # —— R-BANK9
+            "rbank9_intraday.png" "rbank9_7d.png" "rbank9_1m.png" "rbank9_1y.png" "rbank9_chart.png"
+            "rbank9_intraday.csv" "rbank9_intraday.txt"
+            # —— AIN-10
+            "ain10_intraday.png" "ain10_7d.png" "ain10_1m.png" "ain10_1y.png" "ain10_chart.png"
+            "ain10_intraday.csv" "ain10_intraday.txt"
+          )
+
+          # まず既存を一旦退避（差分検知用）
+          mkdir -p .cache_old && rsync -a docs/charts/ .cache_old/ || true
+
+          # ダウンロード（存在しないファイルはスキップ）
+          for base in "${BASES[@]}"; do
+            for f in "${FILES[@]}"; do
+              url="${base}/${f}"
+              out="docs/charts/${f}"
+              # -f:fail -s:silent -S:show-error -L:follow-redirect -o:output
+              if curl -fsSL "$url" -o "$out"; then
+                echo "Fetched: $url -> $out"
+              else
+                echo "Skip (not found): $url"
+                # 取得失敗時は既存ファイルを残したいので何もしない
+                # 必要なら: rm -f "$out"
+              fi
+            done
+          done
+
+          # 直リンクでキャッシュを避けたい場合のクエリ付与はフロント側で行う想定
+
+          # 変更があるかチェック
+          if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
+            echo "No changes in charts."
+            echo "no_changes=true" >> $GITHUB_ENV
+          else
+            echo "Charts updated."
+            echo "no_changes=false" >> $GITHUB_ENV
+          fi
+
+      - name: Commit & Push if changed
+        if: env.no_changes == 'false'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(charts): sync latest PNG/CSV/TXT from index repos"
+          file_pattern: docs/charts/**
