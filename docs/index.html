@@ -25,23 +25,47 @@
     .badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid #2a2f3b; background:#0f1220; }
   </style>
   <script>
-    // ====== ここを書き換え：あなたのGitHubユーザー名と各リポ名 ======
-    const GH_USER = "YOUR_GH_USER";
+    // あなたのGitHubユーザー名
+    const GH_USER = "SakuraIndex";
+
+    // 各指数のリポ名と出力ファイル
     const REPOS = {
-      astra4:  { repo: "Astra-4",      png: "astra4_intraday.png", csv: "astra4_history.csv",   txt: "astra4_post_intraday.txt" },
-      scoin:   { repo: "S-COIN-plus",  png: "scoin_plus_intraday.png", csv: "scoin_plus_intraday.csv", txt: "scoin_plus_post.txt" },
-      rbank9:  { repo: "R-BANK9",      png: "rbank9_intraday.png", csv: "rbank9_intraday.csv", txt: "rbank9_post_intraday.txt" },
-      ain10:   { repo: "AIN-10",       png: "ain10_intraday.png", csv: "ain10_intraday.csv",   txt: "ain10_intraday_post.txt" }
+      // ASTRA-4（宇宙） => リポ名: 3_Sakura_Space
+      astra4: { repo: "3_Sakura_Space",
+        png: "astra4_intraday.png",
+        csv: "astra4_intraday.csv",
+        txt: "astra4_post_intraday.txt"
+      },
+      // S-COIN+（仮想通貨株） => リポ名: S-COIN-
+      scoin: { repo: "S-COIN-",
+        png: "scoin_plus_intraday.png",
+        csv: "scoin_plus_intraday.csv",
+        txt: "scoin_plus_post.txt"
+      },
+      // R-BANK9（地銀） => リポ名: R-BANK9
+      rbank9: { repo: "R-BANK9",
+        png: "rbank9_intraday.png",
+        csv: "rbank9_intraday.csv",
+        txt: "rbank9_post_intraday.txt"
+      },
+      // AIN-10（AI米国株） => リポ名: AIN-10
+      ain10: { repo: "AIN-10",
+        png: "ain10_intraday.png",
+        csv: "ain10_intraday.csv",
+        txt: "ain10_intraday_post.txt"
+      }
     };
-    // GitHub Pages を設定していない場合は raw.githubusercontent.com を使う
-    // Pages を有効化しているなら、以下の RAW_BASE を PAGES_BASE に差し替えてOK
+
+    // raw.githubusercontent.com から直接参照
     const RAW_BASE = (repo) => `https://raw.githubusercontent.com/${GH_USER}/${repo}/main/docs/outputs`;
+
     const CARDS = [
-      { key:"astra4",  name:"ASTRA-4（宇宙ベンチャー）",      tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"scoin",   name:"S-COIN+（仮想通貨株）",          tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"rbank9",  name:"R-BANK9（地方銀行株）",           tags:["JST 15:35 自動更新","等ウェイト"] },
-      { key:"ain10",   name:"AIN-10（AI米国株）",             tags:["JST 06:35 自動更新","等ウェイト"] },
+      { key:"astra4", name:"ASTRA-4（宇宙ベンチャー）", tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"scoin",  name:"S-COIN+（仮想通貨株）",     tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"rbank9", name:"R-BANK9（地方銀行株）",      tags:["JST 15:35 自動更新","等ウェイト"] },
+      { key:"ain10",  name:"AIN-10（AI米国株）",        tags:["JST 06:35 自動更新","等ウェイト"] },
     ];
+
     function cardHTML(k, spec){
       const base = RAW_BASE(spec.repo);
       const img = `${base}/${spec.png}`;
@@ -69,10 +93,11 @@
         </div>
       </section>`;
     }
+
     document.addEventListener('DOMContentLoaded', ()=>{
       const grid = document.getElementById('grid');
       grid.innerHTML = Object.entries(REPOS).map(([k,v])=>cardHTML(k,v)).join('');
-      // 5分ごとに自動リロード（最新画像へキャッシュバスター付き）
+      // 5分ごとに自動リロード
       setInterval(()=>location.reload(), 5*60*1000);
     });
   </script>
