@@ -68,132 +68,49 @@
     <div style="margin-top:12px">© 2025 桜Index ・ <a href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a></div>
   </footer>
 
-  <script>
-    // ▼ 公式サイト内に同期された charts を参照（中央集約）
-    const SITE_BASE = 'docs/charts/';
+<script>
+  const SITE_BASE = 'docs/charts/';
 
-    // それぞれの指数で、存在チェックの順序（強い順）
-    const INDEXES = [
-      {
-        key:'astra4', title:'📈 Astra4',
-        files:{
-          '1d':['astra4_1d.png','astra4_intraday.png','astra4_chart.png'],
-          '1w':['astra4_7d.png','astra4_chart.png','astra4_intraday.png'],
-          '1m':['astra4_1m.png','astra4_chart.png','astra4_intraday.png'],
-          '1y':['astra4_1y.png','astra4_chart.png','astra4_intraday.png'],
-        }
-      },
-      {
-        key:'scoin_plus', title:'💰 S-COIN+',
-        files:{
-          '1d':['scoin_plus_1d.png','scoin_plus_intraday.png','scoin_plus_chart.png'],
-          '1w':['scoin_plus_7d.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
-          '1m':['scoin_plus_1m.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
-          '1y':['scoin_plus_1y.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
-        }
-      },
-      {
-        key:'rbank9', title:'🏦 R-BANK9',
-        files:{
-          '1d':['rbank9_1d.png','rbank9_intraday.png','rbank9_chart.png'],
-          '1w':['rbank9_7d.png','rbank9_chart.png','rbank9_intraday.png'],
-          '1m':['rbank9_1m.png','rbank9_chart.png','rbank9_intraday.png'],
-          '1y':['rbank9_1y.png','rbank9_chart.png','rbank9_intraday.png'],
-        }
-      },
-      {
-        key:'ain10', title:'🤖 AIN-10',
-        files:{
-          '1d':['ain10_1d.png','ain10_intraday.png','ain10_chart.png'],
-          '1w':['ain10_7d.png','ain10_chart.png','ain10_intraday.png'],
-          '1m':['ain10_1m.png','ain10_chart.png','ain10_intraday.png'],
-          '1y':['ain10_1y.png','ain10_chart.png','ain10_intraday.png'],
-        }
-      },
-    ];
-
-    const LABELS = [
-      { id:'1d', label:'1日' },
-      { id:'1w', label:'1週間' },
-      { id:'1m', label:'1ヶ月' },
-      { id:'1y', label:'1年' },
-    ];
-
-    // キャッシュ回避付の存在チェック
-    function tryLoad(url){
-      return new Promise(resolve=>{
-        const img = new Image();
-        img.onload = ()=> resolve(url);
-        img.onerror = ()=> resolve(null);
-        img.src = url + (url.includes('?')?'&':'?') + 'v=' + Date.now();
-      });
-    }
-    async function pickFirstExisting(candidates){
-      for(const name of candidates){
-        const url = SITE_BASE + name;
-        const ok = await tryLoad(url);
-        if(ok) return ok;
+  // ▼ここだけ差し替え：各タブのフォールバックを「同一期間のみ」に厳格化
+  const INDEXES = [
+    {
+      key:'astra4', title:'📈 Astra4',
+      files:{
+        '1d':['astra4_1d.png','astra4_intraday.png'], // ← chart.pngを外す
+        '1w':['astra4_7d.png'],                        // ← 7dのみ
+        '1m':['astra4_1m.png'],                        // ← 1mのみ
+        '1y':['astra4_1y.png'],                        // ← 1yのみ
       }
-      return null;
-    }
-
-    async function buildCard(idx, showDebug=false){
-      const section = document.createElement('section');
-      section.className = 'card';
-      section.innerHTML = `
-        <h3>${idx.title}</h3>
-        <div class="tabs" id="tabs-${idx.key}"></div>
-        <div class="chart-box"><img id="img-${idx.key}" alt="${idx.title} Chart" /></div>
-        <div class="note" id="note-${idx.key}"></div>
-        <div class="debug" id="debug-${idx.key}" style="display:${showDebug?'block':'none'}"></div>
-      `;
-
-      // 利用可能なファイル解決
-      const resolved = {};
-      const pickedName = {};
-      for(const {id} of LABELS){
-        const names = idx.files[id] || [];
-        resolved[id] = await pickFirstExisting(names);
-        pickedName[id] = resolved[id] ? resolved[id].replace(SITE_BASE,'') : null;
+    },
+    {
+      key:'scoin_plus', title:'💰 S-COIN+',
+      files:{
+        '1d':['scoin_plus_1d.png','scoin_plus_intraday.png'],
+        '1w':['scoin_plus_7d.png'],
+        '1m':['scoin_plus_1m.png'],
+        '1y':['scoin_plus_1y.png'],
       }
-
-      // タブ生成
-      const tabs = section.querySelector('#tabs-' + idx.key);
-      LABELS.forEach(({id,label})=>{
-        const btn = document.createElement('button');
-        btn.className = 'tab';
-        btn.textContent = label;
-        if(!resolved[id]) btn.disabled = true;
-        btn.addEventListener('click', ()=>{
-          if(btn.disabled) return;
-          tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-          btn.classList.add('active');
-          const img = section.querySelector('#img-' + idx.key);
-          img.src = resolved[id];
-          const note = section.querySelector('#note-' + idx.key);
-          note.textContent = (id==='1d') ? '※ 1日チャート（出来高・移動平均に対応）' : '※ 期間集計チャート（出来高・移動平均に対応）';
-          const dbg = section.querySelector('#debug-' + idx.key);
-          dbg.textContent = 'using: ' + pickedName[id];
-        });
-        tabs.appendChild(btn);
-      });
-
-      // 初期表示（1d → 1w → 1m → 1y）
-      const first = ['1d','1w','1m','1y'].find(k=>resolved[k]);
-      const firstBtn = Array.from(tabs.children).find(b=>b.textContent===LABELS.find(l=>l.id===first)?.label);
-      if(firstBtn) firstBtn.click();
-
-      return section;
-    }
-
-    (async function init(){
-      const app = document.getElementById('app');
-      for(const idx of INDEXES){
-        const card = await buildCard(idx, /*showDebug=*/false);
-        app.appendChild(card);
+    },
+    {
+      key:'rbank9', title:'🏦 R-BANK9',
+      files:{
+        '1d':['rbank9_1d.png','rbank9_intraday.png'],
+        '1w':['rbank9_7d.png'],
+        '1m':['rbank9_1m.png'],
+        '1y':['rbank9_1y.png'],
       }
-      console.log('[sakura] charts loaded from', SITE_BASE);
-    })();
-  </script>
+    },
+    {
+      key:'ain10', title:'🤖 AIN-10',
+      files:{
+        '1d':['ain10_1d.png','ain10_intraday.png'],
+        '1w':['ain10_7d.png'],
+        '1m':['ain10_1m.png'],
+        '1y':['ain10_1y.png'],
+      }
+    },
+  ];
+</script>
+
 </body>
 </html>
