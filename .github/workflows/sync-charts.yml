@@ -3,8 +3,8 @@ name: Sync charts to site
 on:
   workflow_dispatch:
   schedule:
-    # 1日4回（UTC）。JSTだと09:45 / 15:45 / 18:45 / 00:45 目安
-    - cron: '45 0,6,9,15 * * *'
+    # 例：JST 06:50 / 15:50 / 18:50 / 00:50 ごろに同期（UTC基準）
+    - cron: '50 21,6,9,15 * * *'
 
 permissions:
   contents: write
@@ -19,13 +19,15 @@ jobs:
       - name: Prepare folders
         run: |
           mkdir -p docs/charts
+          mkdir -p .cache_old
+          rsync -a docs/charts/ .cache_old/ || true
 
       - name: Download latest charts (PNG/CSV/TXT)
         shell: bash
         run: |
           set -euo pipefail
 
-          # 取得元（GitHub Pages 直URL）— ブランチ名を意識せず最新を拾えるので安定
+          # 取得元（GitHub Pages 直URL）
           BASES=(
             "https://sakuraindex.github.io/3_Sakura_Space/docs/outputs"
             "https://sakuraindex.github.io/S-COIN-/docs/outputs"
@@ -33,55 +35,68 @@ jobs:
             "https://sakuraindex.github.io/AIN-10/docs/outputs"
           )
 
-          # 取得する想定ファイル（存在しないものはスキップOK）
+          # 取得対象（1d/7d/1m/1y + 互換ファイル）
           FILES=(
-            # —— Astra4
-            "astra4_intraday.png" "astra4_7d.png" "astra4_1m.png" "astra4_1y.png" "astra4_chart.png"
+            # --- Astra4 ---
+            "astra4_1d.png" "astra4_1d.csv"
+            "astra4_7d.png" "astra4_7d.csv"
+            "astra4_1m.png" "astra4_1m.csv"
+            "astra4_1y.png" "astra4_1y.csv"
+            "astra4_intraday.png"  # 互換（1dのコピー想定）
             "astra4_intraday.csv" "astra4_intraday.txt"
-            # —— S-COIN+
-            "scoin_plus_intraday.png" "scoin_plus_7d.png" "scoin_plus_1m.png" "scoin_plus_1y.png" "scoin_plus_chart.png"
+            "astra4_chart.png" "astra4_history.csv"
+
+            # --- S-COIN+ ---
+            "scoin_plus_1d.png" "scoin_plus_1d.csv"
+            "scoin_plus_7d.png" "scoin_plus_7d.csv"
+            "scoin_plus_1m.png" "scoin_plus_1m.csv"
+            "scoin_plus_1y.png" "scoin_plus_1y.csv"
+            "scoin_plus_intraday.png"
             "scoin_plus_intraday.csv" "scoin_plus_intraday.txt"
-            # —— R-BANK9
-            "rbank9_intraday.png" "rbank9_7d.png" "rbank9_1m.png" "rbank9_1y.png" "rbank9_chart.png"
+            "scoin_plus_chart.png" "scoin_plus_history.csv"
+
+            # --- R-BANK9 ---
+            "rbank9_1d.png" "rbank9_1d.csv"
+            "rbank9_7d.png" "rbank9_7d.csv"
+            "rbank9_1m.png" "rbank9_1m.csv"
+            "rbank9_1y.png" "rbank9_1y.csv"
+            "rbank9_intraday.png"
             "rbank9_intraday.csv" "rbank9_intraday.txt"
-            # —— AIN-10
-            "ain10_intraday.png" "ain10_7d.png" "ain10_1m.png" "ain10_1y.png" "ain10_chart.png"
+            "rbank9_chart.png" "rbank9_history.csv"
+
+            # --- AIN-10 ---
+            "ain10_1d.png" "ain10_1d.csv"
+            "ain10_7d.png" "ain10_7d.csv"
+            "ain10_1m.png" "ain10_1m.csv"
+            "ain10_1y.png" "ain10_1y.csv"
+            "ain10_intraday.png"
             "ain10_intraday.csv" "ain10_intraday.txt"
+            "ain10_chart.png" "ain10_history.csv"
           )
 
-          # まず既存を一旦退避（差分検知用）
-          mkdir -p .cache_old && rsync -a docs/charts/ .cache_old/ || true
-
-          # ダウンロード（存在しないファイルはスキップ）
+          # ダウンロード（存在しないものはスキップ）
           for base in "${BASES[@]}"; do
             for f in "${FILES[@]}"; do
               url="${base}/${f}"
               out="docs/charts/${f}"
-              # -f:fail -s:silent -S:show-error -L:follow-redirect -o:output
               if curl -fsSL "$url" -o "$out"; then
                 echo "Fetched: $url -> $out"
               else
                 echo "Skip (not found): $url"
-                # 取得失敗時は既存ファイルを残したいので何もしない
-                # 必要なら: rm -f "$out"
               fi
             done
           done
 
-          # 直リンクでキャッシュを避けたい場合のクエリ付与はフロント側で行う想定
-
-          # 変更があるかチェック
+      - name: Commit & Push if changed
+        run: |
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
             echo "No changes in charts."
-            echo "no_changes=true" >> $GITHUB_ENV
+            exit 0
           else
-            echo "Charts updated."
-            echo "no_changes=false" >> $GITHUB_ENV
+            echo "Charts updated. Commit..."
           fi
-
-      - name: Commit & Push if changed
-        if: env.no_changes == 'false'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(charts): sync latest PNG/CSV/TXT from index repos"
-          file_pattern: docs/charts/**
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/charts
+          git commit -m "chore(charts): sync latest 1d/7d/1m/1y charts"
+          git push
