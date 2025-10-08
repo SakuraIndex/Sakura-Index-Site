@@ -3,8 +3,8 @@ name: Sync charts to site
 on:
   workflow_dispatch:
   schedule:
-    # 例：JST 06:50 / 15:50 / 18:50 / 00:50 ごろに同期（UTC基準）
-    - cron: '50 21,6,9,15 * * *'
+    # 例：JST 06:50 / 12:50 / 15:50 / 21:50 に同期（UTC基準）
+    - cron: '50 21,3,6,12 * * *'
 
 permissions:
   contents: write
@@ -22,17 +22,17 @@ jobs:
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest charts (PNG/CSV/TXT)
+      - name: Download latest charts from RAW (no Pages delay)
         shell: bash
         run: |
           set -euo pipefail
 
-          # 取得元（GitHub Pages 直URL）
-          BASES=(
-            "https://sakuraindex.github.io/3_Sakura_Space/docs/outputs"
-            "https://sakuraindex.github.io/S-COIN-/docs/outputs"
-            "https://sakuraindex.github.io/R-BANK9/docs/outputs"
-            "https://sakuraindex.github.io/AIN-10/docs/outputs"
+          # 取得元（owner/repo名）
+          declare -A REPOS=(
+            ["3_Sakura_Space"]="SakuraIndex/3_Sakura_Space"
+            ["S-COIN-"]="SakuraIndex/S-COIN-"
+            ["R-BANK9"]="SakuraIndex/R-BANK9"
+            ["AIN-10"]="SakuraIndex/AIN-10"
           )
 
           # 取得対象（1d/7d/1m/1y + 互換ファイル）
@@ -42,7 +42,7 @@ jobs:
             "astra4_7d.png" "astra4_7d.csv"
             "astra4_1m.png" "astra4_1m.csv"
             "astra4_1y.png" "astra4_1y.csv"
-            "astra4_intraday.png"  # 互換（1dのコピー想定）
+            "astra4_intraday.png"
             "astra4_intraday.csv" "astra4_intraday.txt"
             "astra4_chart.png" "astra4_history.csv"
 
@@ -74,18 +74,25 @@ jobs:
             "ain10_chart.png" "ain10_history.csv"
           )
 
-          # ダウンロード（存在しないものはスキップ）
-          for base in "${BASES[@]}"; do
+          # ダウンロード（RAW: https://raw.githubusercontent.com/<org>/<repo>/main/docs/outputs/<file>）
+          for repo_key in "${!REPOS[@]}"; do
+            repo="${REPOS[$repo_key]}"
             for f in "${FILES[@]}"; do
-              url="${base}/${f}"
+              url="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${f}"
               out="docs/charts/${f}"
-              if curl -fsSL "$url" -o "$out"; then
+              if curl -fSL --retry 3 --retry-delay 2 "$url" -o "$out"; then
                 echo "Fetched: $url -> $out"
               else
+                rm -f "$out" || true
                 echo "Skip (not found): $url"
               fi
             done
           done
+
+      - name: List after
+        run: |
+          echo "----- docs/charts -----"
+          ls -al docs/charts || true
 
       - name: Commit & Push if changed
         run: |
