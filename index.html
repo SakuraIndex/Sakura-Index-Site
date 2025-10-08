@@ -69,48 +69,54 @@
   </footer>
 
 <script>
-  const SITE_BASE = 'docs/charts/';
-
-  // ▼ここだけ差し替え：各タブのフォールバックを「同一期間のみ」に厳格化
   const INDEXES = [
     {
-      key:'astra4', title:'📈 Astra4',
-      files:{
-        '1d':['astra4_1d.png','astra4_intraday.png'], // ← chart.pngを外す
-        '1w':['astra4_7d.png'],                        // ← 7dのみ
-        '1m':['astra4_1m.png'],                        // ← 1mのみ
-        '1y':['astra4_1y.png'],                        // ← 1yのみ
+      key: 'astra4',
+      title: '📈 Astra4',
+      base: 'https://sakuraindex.github.io/3_Sakura_Space/outputs/',
+      files: {
+        '1d': ['astra4_intraday.png'],
+        '1w': ['astra4_7d.png', 'astra4_chart.png'],
+        '1m': ['astra4_1m.png', 'astra4_chart.png'],
+        '1y': ['astra4_1y.png', 'astra4_chart.png']
       }
     },
     {
-      key:'scoin_plus', title:'💰 S-COIN+',
-      files:{
-        '1d':['scoin_plus_1d.png','scoin_plus_intraday.png'],
-        '1w':['scoin_plus_7d.png'],
-        '1m':['scoin_plus_1m.png'],
-        '1y':['scoin_plus_1y.png'],
+      key: 'scoin',
+      title: '💰 S-COIN+',
+      base: 'https://sakuraindex.github.io/S-COIN-/outputs/',
+      files: {
+        '1d': ['scoin_plus_intraday.png'],
+        '1w': ['scoin_plus_7d.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
+        '1m': ['scoin_plus_1m.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
+        '1y': ['scoin_plus_1y.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png']
       }
     },
     {
-      key:'rbank9', title:'🏦 R-BANK9',
-      files:{
-        '1d':['rbank9_1d.png','rbank9_intraday.png'],
-        '1w':['rbank9_7d.png'],
-        '1m':['rbank9_1m.png'],
-        '1y':['rbank9_1y.png'],
+      key: 'rbank9',
+      title: '🏦 R-BANK9',
+      base: 'https://sakuraindex.github.io/R-BANK9/outputs/',
+      files: {
+        '1d': ['rbank9_intraday.png'],
+        '1w': ['rbank9_7d.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
+        '1m': ['rbank9_1m.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
+        '1y': ['rbank9_1y.png', 'rbank9_chart.png', 'rbank9_intraday.png']
       }
     },
     {
-      key:'ain10', title:'🤖 AIN-10',
-      files:{
-        '1d':['ain10_1d.png','ain10_intraday.png'],
-        '1w':['ain10_7d.png'],
-        '1m':['ain10_1m.png'],
-        '1y':['ain10_1y.png'],
+      key: 'ain10',
+      title: '🤖 AIN-10',
+      base: 'https://sakuraindex.github.io/AIN-10/outputs/',
+      files: {
+        '1d': ['ain10_intraday.png'],
+        '1w': ['ain10_7d.png', 'ain10_chart.png', 'ain10_intraday.png'],
+        '1m': ['ain10_1m.png', 'ain10_chart.png', 'ain10_intraday.png'],
+        '1y': ['ain10_1y.png', 'ain10_chart.png', 'ain10_intraday.png']
       }
-    },
+    }
   ];
 </script>
+
 
 </body>
 </html>
