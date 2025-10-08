@@ -110,126 +110,54 @@
     <div style="margin-top:12px">© 2025 桜Index ・ <a href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a></div>
   </footer>
 
-  <script>
-    const INDEXES = [
-      {
-        key: 'astra4',
-        title: '📈 Astra4',
-        base: 'docs/charts/',
-        files: {
-          '1d':  ['astra4_intraday.png'],
-          '1w':  ['astra4_7d.png', 'astra4_chart.png'],
-          '1m':  ['astra4_1m.png', 'astra4_chart.png'],
-          '1y':  ['astra4_1y.png', 'astra4_chart.png']
-        }
-      },
-      {
-        key: 'scoin',
-        title: '💰 S-COIN+',
-        base: 'docs/charts/',
-        files: {
-          '1d':  ['scoin_plus_intraday.png'],
-          '1w':  ['scoin_plus_7d.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
-          '1m':  ['scoin_plus_1m.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
-          '1y':  ['scoin_plus_1y.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png']
-        }
-      },
-      {
-        key: 'rbank9',
-        title: '🏦 R-BANK9',
-        base: 'docs/charts/',
-        files: {
-          '1d':  ['rbank9_intraday.png'],
-          '1w':  ['rbank9_7d.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
-          '1m':  ['rbank9_1m.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
-          '1y':  ['rbank9_1y.png', 'rbank9_chart.png', 'rbank9_intraday.png']
-        }
-      },
-      {
-        key: 'ain10',
-        title: '🤖 AIN-10',
-        base: 'docs/charts/',
-        files: {
-          '1d':  ['ain10_intraday.png'],
-          '1w':  ['ain10_7d.png', 'ain10_chart.png', 'ain10_intraday.png'],
-          '1m':  ['ain10_1m.png', 'ain10_chart.png', 'ain10_intraday.png'],
-          '1y':  ['ain10_1y.png', 'ain10_chart.png', 'ain10_intraday.png']
-        }
+ <script>
+  const INDEXES = [
+    {
+      key: 'astra4',
+      title: '📈 Astra4',
+      base: 'https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/',
+      files: {
+        '1d': ['astra4_1d.png', 'astra4_intraday.png', 'astra4_chart.png'],
+        '1w': ['astra4_7d.png', 'astra4_chart.png'],
+        '1m': ['astra4_1m.png', 'astra4_chart.png'],
+        '1y': ['astra4_1y.png', 'astra4_chart.png']
       }
-    ];
-
-    const LABELS = [
-      { id:'1d', label:'1日' },
-      { id:'1w', label:'1週間' },
-      { id:'1m', label:'1ヶ月' },
-      { id:'1y', label:'1年' },
-    ];
-
-    function tryLoad(url){
-      return new Promise(resolve=>{
-        const img = new Image();
-        img.onload = ()=> resolve(url);
-        img.onerror = ()=> resolve(null);
-        img.src = url + '?v=' + Date.now();
-      });
+    },
+    {
+      key: 'scoin',
+      title: '💰 S-COIN+',
+      base: 'https://sakuraindex.github.io/S-COIN-/docs/outputs/',
+      files: {
+        '1d': ['scoin_plus_1d.png', 'scoin_plus_intraday.png', 'scoin_plus_chart.png'],
+        '1w': ['scoin_plus_7d.png', 'scoin_plus_chart.png'],
+        '1m': ['scoin_plus_1m.png', 'scoin_plus_chart.png'],
+        '1y': ['scoin_plus_1y.png', 'scoin_plus_chart.png']
+      }
+    },
+    {
+      key: 'rbank9',
+      title: '🏦 R-BANK9',
+      base: 'https://sakuraindex.github.io/R-BANK9/docs/outputs/',
+      files: {
+        '1d': ['rbank9_1d.png', 'rbank9_intraday.png', 'rbank9_chart.png'],
+        '1w': ['rbank9_7d.png', 'rbank9_chart.png'],
+        '1m': ['rbank9_1m.png', 'rbank9_chart.png'],
+        '1y': ['rbank9_1y.png', 'rbank9_chart.png']
+      }
+    },
+    {
+      key: 'ain10',
+      title: '🤖 AIN-10',
+      base: 'https://sakuraindex.github.io/AIN-10/docs/outputs/',
+      files: {
+        '1d': ['ain10_1d.png', 'ain10_intraday.png', 'ain10_chart.png'],
+        '1w': ['ain10_7d.png', 'ain10_chart.png'],
+        '1m': ['ain10_1m.png', 'ain10_chart.png'],
+        '1y': ['ain10_1y.png', 'ain10_chart.png']
+      }
     }
+  ];
+</script>
 
-    async function pickFirstExisting(base, candidates){
-      for(const name of candidates){
-        const url = base + name;
-        const ok = await tryLoad(url);
-        if(ok) return ok;
-      }
-      return null;
-    }
-
-    async function buildCard(idx){
-      const container = document.createElement('section');
-      container.className = 'card';
-      container.innerHTML = `<h3>${idx.title}</h3>
-        <div class="tabs" id="tabs-${idx.key}"></div>
-        <div class="chart-box"><img id="img-${idx.key}" alt="${idx.title} Chart" /></div>
-        <div class="note" id="note-${idx.key}"></div>`;
-
-      const resolved = {};
-      for(const {id} of LABELS){
-        resolved[id] = await pickFirstExisting(idx.base, idx.files[id] || []);
-      }
-
-      const tabs = container.querySelector('#tabs-' + idx.key);
-      LABELS.forEach(({id,label})=>{
-        const btn = document.createElement('button');
-        btn.className = 'tab';
-        btn.textContent = label;
-        if(!resolved[id]) btn.disabled = true;
-        btn.addEventListener('click', ()=>{
-          if(btn.disabled) return;
-          tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-          btn.classList.add('active');
-          const img = container.querySelector('#img-' + idx.key);
-          img.src = resolved[id];
-          const note = container.querySelector('#note-' + idx.key);
-          note.textContent = (id==='1d') ? '※ 前日終値比の推移（1日）' : '※ 期間集計チャート';
-        });
-        tabs.appendChild(btn);
-      });
-
-      const firstId = ['1d','1w','1m','1y'].find(k => resolved[k]);
-      const firstBtn = Array.from(tabs.children).find(b => b.textContent.includes(
-        LABELS.find(l=>l.id===firstId).label
-      ));
-      if(firstBtn){ firstBtn.click(); }
-
-      return container;
-    }
-
-    (async function init(){
-      const app = document.getElementById('app');
-      for(const idx of INDEXES){
-        const card = await buildCard(idx);
-        app.appendChild(card);
-      }
-    })();
-  </script>
 </body>
 </html>
