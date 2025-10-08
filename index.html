@@ -3,31 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- ✅ Google Search Console -->
-  <meta name="google-site-verification" content="2FKHkWYeq6YP6ADLtXi7dntcwF4upeFTiCUHcQDA0Wg" />
-
   <title>🌸桜Index - 公式サイト｜Astra4 / S-COIN+ / R-BANK9 / AIN-10</title>
   <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートを掲載。">
 
-  <!-- 🌸 OGP -->
-  <meta property="og:title" content="桜Index - 公式サイト">
-  <meta property="og:description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。ASTRA4・R-BANK9・S-COIN+・AIN-10を毎日更新。">
-  <meta property="og:url" content="https://sakuraindex.github.io/Sakura-Index-Site/">
-  <meta property="og:image" content="https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="桜Index">
+  <!-- OGP/Twitter などは省略（既存のままでOK） -->
 
-  <!-- 💬 Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="桜Index - 公式サイト">
-  <meta name="twitter:description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。">
-  <meta name="twitter:image" content="https://sakuraindex.github.io/Sakura-Index-Site/assets/ogp.png">
-
-  <!-- 🌐 Favicon -->
-  <link rel="icon" href="https://sakuraindex.github.io/Sakura-Index-Site/assets/favicon.png" type="image/png" />
-
-  <!-- 💅 Style -->
   <style>
     :root{
       --bg:#000; --bg2:#111827; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.11);
@@ -35,53 +15,33 @@
       --pill:#141b2d; --pillLine:#27314a;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0; background:radial-gradient(circle at top,var(--bg2),var(--bg)); color:var(--text);
-      font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    }
+    body{ margin:0; background:radial-gradient(circle at top,var(--bg2),var(--bg)); color:var(--text);
+      font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
     header{padding:28px 14px 10px; text-align:center}
     h1{margin:.2rem 0; font-size:2rem; color:var(--accent)}
     .sub{color:#ffd6e7; opacity:.9}
-
     .socials{margin:14px 0 6px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
-    .socials a{
-      display:inline-flex; align-items:center; gap:.5em;
-      padding:8px 14px; border-radius:999px; text-decoration:none;
-      color:#cfe8ff; background:var(--pill); border:1px solid var(--pillLine);
-    }
+    .socials a{display:inline-flex; align-items:center; gap:.5em; padding:8px 14px; border-radius:999px;
+      text-decoration:none; color:#cfe8ff; background:var(--pill); border:1px solid var(--pillLine);}
     .socials a:hover{outline:2px solid #3b82f6}
-
     .update-badges{margin:10px 0 24px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
-    .badge{
-      font-size:.92rem; padding:6px 10px; border-radius:999px; background:var(--pill); border:1px solid var(--pillLine); color:#cfe8ff;
-    }
-
+    .badge{font-size:.92rem; padding:6px 10px; border-radius:999px; background:var(--pill); border:1px solid var(--pillLine); color:#cfe8ff;}
     .wrap{max-width:1100px; margin:0 auto; padding:0 14px 60px}
-
-    .card{
-      background:var(--card); border:1px solid var(--line); border-radius:20px;
-      box-shadow:0 0 18px var(--glow); padding:18px; margin:26px 0;
-      transition:transform .2s ease, box-shadow .2s ease;
-    }
+    .card{background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:0 0 18px var(--glow);
+      padding:18px; margin:26px 0; transition:transform .2s ease, box-shadow .2s ease;}
     .card:hover{transform:translateY(-3px); box-shadow:0 0 30px rgba(255,182,193,.5)}
     .card h3{margin:0 0 10px; font-size:1.15rem}
-
     .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px}
-    .tab{
-      padding:6px 12px; border-radius:999px; border:1px solid var(--pillLine);
-      background:var(--pill); color:#cfe8ff; cursor:pointer; font-size:.92rem;
-    }
+    .tab{padding:6px 12px; border-radius:999px; border:1px solid var(--pillLine); background:var(--pill); color:#cfe8ff; cursor:pointer; font-size:.92rem;}
     .tab.active{background:#1e293b; border-color:#3b82f6; color:#e9f2ff}
     .tab[disabled]{opacity:.45; cursor:not-allowed}
-
     .chart-box{position:relative; border-radius:12px; overflow:hidden; background:#0b0f1a; border:1px solid var(--pillLine)}
     .chart-box img{display:block; width:100%; height:auto}
     .note{font-size:.88rem; color:var(--muted); margin-top:8px}
-
     footer{margin-top:34px; text-align:center; color:var(--muted); font-size:.9rem}
     a{color:var(--link); text-decoration:none} a:hover{text-decoration:underline}
-
     @media (max-width:640px){ .chart-box img{min-height:260px; object-fit:cover} }
+    .debug{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.8rem; color:#9ecbff; margin-top:6px; opacity:.9; white-space:pre-wrap}
   </style>
 </head>
 
@@ -89,12 +49,10 @@
   <header>
     <h1>🌸桜Index - 公式サイト</h1>
     <div class="sub">AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</div>
-
     <div class="socials">
       <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener">🐦 公式X（Twitter）</a>
       <a href="https://note.com/sakura_index" target="_blank" rel="noopener">📝 公式note</a>
     </div>
-
     <div class="update-badges">
       <span class="badge">📅 Astra4：毎日 <strong>15:35</strong></span>
       <span class="badge">📅 S-COIN+：毎日 <strong>15:35</strong></span>
@@ -110,54 +68,132 @@
     <div style="margin-top:12px">© 2025 桜Index ・ <a href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a></div>
   </footer>
 
- <script>
-  const INDEXES = [
-    {
-      key: 'astra4',
-      title: '📈 Astra4',
-      base: 'https://sakuraindex.github.io/3_Sakura_Space/docs/outputs/',
-      files: {
-        '1d': ['astra4_1d.png', 'astra4_intraday.png', 'astra4_chart.png'],
-        '1w': ['astra4_7d.png', 'astra4_chart.png'],
-        '1m': ['astra4_1m.png', 'astra4_chart.png'],
-        '1y': ['astra4_1y.png', 'astra4_chart.png']
-      }
-    },
-    {
-      key: 'scoin',
-      title: '💰 S-COIN+',
-      base: 'https://sakuraindex.github.io/S-COIN-/docs/outputs/',
-      files: {
-        '1d': ['scoin_plus_1d.png', 'scoin_plus_intraday.png', 'scoin_plus_chart.png'],
-        '1w': ['scoin_plus_7d.png', 'scoin_plus_chart.png'],
-        '1m': ['scoin_plus_1m.png', 'scoin_plus_chart.png'],
-        '1y': ['scoin_plus_1y.png', 'scoin_plus_chart.png']
-      }
-    },
-    {
-      key: 'rbank9',
-      title: '🏦 R-BANK9',
-      base: 'https://sakuraindex.github.io/R-BANK9/docs/outputs/',
-      files: {
-        '1d': ['rbank9_1d.png', 'rbank9_intraday.png', 'rbank9_chart.png'],
-        '1w': ['rbank9_7d.png', 'rbank9_chart.png'],
-        '1m': ['rbank9_1m.png', 'rbank9_chart.png'],
-        '1y': ['rbank9_1y.png', 'rbank9_chart.png']
-      }
-    },
-    {
-      key: 'ain10',
-      title: '🤖 AIN-10',
-      base: 'https://sakuraindex.github.io/AIN-10/docs/outputs/',
-      files: {
-        '1d': ['ain10_1d.png', 'ain10_intraday.png', 'ain10_chart.png'],
-        '1w': ['ain10_7d.png', 'ain10_chart.png'],
-        '1m': ['ain10_1m.png', 'ain10_chart.png'],
-        '1y': ['ain10_1y.png', 'ain10_chart.png']
-      }
-    }
-  ];
-</script>
+  <script>
+    // ▼ 公式サイト内に同期された charts を参照（中央集約）
+    const SITE_BASE = 'docs/charts/';
 
+    // それぞれの指数で、存在チェックの順序（強い順）
+    const INDEXES = [
+      {
+        key:'astra4', title:'📈 Astra4',
+        files:{
+          '1d':['astra4_1d.png','astra4_intraday.png','astra4_chart.png'],
+          '1w':['astra4_7d.png','astra4_chart.png','astra4_intraday.png'],
+          '1m':['astra4_1m.png','astra4_chart.png','astra4_intraday.png'],
+          '1y':['astra4_1y.png','astra4_chart.png','astra4_intraday.png'],
+        }
+      },
+      {
+        key:'scoin_plus', title:'💰 S-COIN+',
+        files:{
+          '1d':['scoin_plus_1d.png','scoin_plus_intraday.png','scoin_plus_chart.png'],
+          '1w':['scoin_plus_7d.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
+          '1m':['scoin_plus_1m.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
+          '1y':['scoin_plus_1y.png','scoin_plus_chart.png','scoin_plus_intraday.png'],
+        }
+      },
+      {
+        key:'rbank9', title:'🏦 R-BANK9',
+        files:{
+          '1d':['rbank9_1d.png','rbank9_intraday.png','rbank9_chart.png'],
+          '1w':['rbank9_7d.png','rbank9_chart.png','rbank9_intraday.png'],
+          '1m':['rbank9_1m.png','rbank9_chart.png','rbank9_intraday.png'],
+          '1y':['rbank9_1y.png','rbank9_chart.png','rbank9_intraday.png'],
+        }
+      },
+      {
+        key:'ain10', title:'🤖 AIN-10',
+        files:{
+          '1d':['ain10_1d.png','ain10_intraday.png','ain10_chart.png'],
+          '1w':['ain10_7d.png','ain10_chart.png','ain10_intraday.png'],
+          '1m':['ain10_1m.png','ain10_chart.png','ain10_intraday.png'],
+          '1y':['ain10_1y.png','ain10_chart.png','ain10_intraday.png'],
+        }
+      },
+    ];
+
+    const LABELS = [
+      { id:'1d', label:'1日' },
+      { id:'1w', label:'1週間' },
+      { id:'1m', label:'1ヶ月' },
+      { id:'1y', label:'1年' },
+    ];
+
+    // キャッシュ回避付の存在チェック
+    function tryLoad(url){
+      return new Promise(resolve=>{
+        const img = new Image();
+        img.onload = ()=> resolve(url);
+        img.onerror = ()=> resolve(null);
+        img.src = url + (url.includes('?')?'&':'?') + 'v=' + Date.now();
+      });
+    }
+    async function pickFirstExisting(candidates){
+      for(const name of candidates){
+        const url = SITE_BASE + name;
+        const ok = await tryLoad(url);
+        if(ok) return ok;
+      }
+      return null;
+    }
+
+    async function buildCard(idx, showDebug=false){
+      const section = document.createElement('section');
+      section.className = 'card';
+      section.innerHTML = `
+        <h3>${idx.title}</h3>
+        <div class="tabs" id="tabs-${idx.key}"></div>
+        <div class="chart-box"><img id="img-${idx.key}" alt="${idx.title} Chart" /></div>
+        <div class="note" id="note-${idx.key}"></div>
+        <div class="debug" id="debug-${idx.key}" style="display:${showDebug?'block':'none'}"></div>
+      `;
+
+      // 利用可能なファイル解決
+      const resolved = {};
+      const pickedName = {};
+      for(const {id} of LABELS){
+        const names = idx.files[id] || [];
+        resolved[id] = await pickFirstExisting(names);
+        pickedName[id] = resolved[id] ? resolved[id].replace(SITE_BASE,'') : null;
+      }
+
+      // タブ生成
+      const tabs = section.querySelector('#tabs-' + idx.key);
+      LABELS.forEach(({id,label})=>{
+        const btn = document.createElement('button');
+        btn.className = 'tab';
+        btn.textContent = label;
+        if(!resolved[id]) btn.disabled = true;
+        btn.addEventListener('click', ()=>{
+          if(btn.disabled) return;
+          tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+          btn.classList.add('active');
+          const img = section.querySelector('#img-' + idx.key);
+          img.src = resolved[id];
+          const note = section.querySelector('#note-' + idx.key);
+          note.textContent = (id==='1d') ? '※ 1日チャート（出来高・移動平均に対応）' : '※ 期間集計チャート（出来高・移動平均に対応）';
+          const dbg = section.querySelector('#debug-' + idx.key);
+          dbg.textContent = 'using: ' + pickedName[id];
+        });
+        tabs.appendChild(btn);
+      });
+
+      // 初期表示（1d → 1w → 1m → 1y）
+      const first = ['1d','1w','1m','1y'].find(k=>resolved[k]);
+      const firstBtn = Array.from(tabs.children).find(b=>b.textContent===LABELS.find(l=>l.id===first)?.label);
+      if(firstBtn) firstBtn.click();
+
+      return section;
+    }
+
+    (async function init(){
+      const app = document.getElementById('app');
+      for(const idx of INDEXES){
+        const card = await buildCard(idx, /*showDebug=*/false);
+        app.appendChild(card);
+      }
+      console.log('[sakura] charts loaded from', SITE_BASE);
+    })();
+  </script>
 </body>
 </html>
