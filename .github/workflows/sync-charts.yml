@@ -3,11 +3,16 @@ name: Sync charts to site
 on:
   workflow_dispatch:
   schedule:
-    # 例：JST 06:50 / 12:50 / 15:50 / 21:50 に同期（UTC基準）
-    - cron: '50 21,3,6,12 * * *'
+    # JST: 06:50 / 12:50 / 15:50 / 21:50（= UTC: 21:50 / 03:50 / 06:50 / 12:50）
+    - cron: "50 21,3,6,12 * * *"
 
 permissions:
   contents: write
+
+# 同時実行を避ける（手動実行とスケジュールが重なった時の競合防止）
+concurrency:
+  group: sync-charts
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -15,76 +20,56 @@ jobs:
     steps:
       - name: Checkout site repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Prepare folders
+      - name: Prepare folders (backup current)
         run: |
           mkdir -p docs/charts
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest charts from RAW (no Pages delay)
+      - name: Download charts from sub-repos (RAW)
         shell: bash
         run: |
           set -euo pipefail
 
-          # 取得元（owner/repo名）
-          declare -A REPOS=(
-            ["3_Sakura_Space"]="SakuraIndex/3_Sakura_Space"
-            ["S-COIN-"]="SakuraIndex/S-COIN-"
-            ["R-BANK9"]="SakuraIndex/R-BANK9"
-            ["AIN-10"]="SakuraIndex/AIN-10"
+          # -------- リポジトリ → プレフィックスの対応表 --------
+          #   <表示用キー> <owner/repo> <ファイル接頭辞>
+          MAP=(
+            "ASTRA4 SakuraIndex/3_Sakura_Space astra4"
+            "SCOIN  SakuraIndex/S-COIN-        scoin_plus"
+            "RBANK9 SakuraIndex/R-BANK9        rbank9"
+            "AIN10  SakuraIndex/AIN-10         ain10"
           )
 
-          # 取得対象（1d/7d/1m/1y + 互換ファイル）
-          FILES=(
-            # --- Astra4 ---
-            "astra4_1d.png" "astra4_1d.csv"
-            "astra4_7d.png" "astra4_7d.csv"
-            "astra4_1m.png" "astra4_1m.csv"
-            "astra4_1y.png" "astra4_1y.csv"
-            "astra4_intraday.png"
-            "astra4_intraday.csv" "astra4_intraday.txt"
-            "astra4_chart.png" "astra4_history.csv"
-
-            # --- S-COIN+ ---
-            "scoin_plus_1d.png" "scoin_plus_1d.csv"
-            "scoin_plus_7d.png" "scoin_plus_7d.csv"
-            "scoin_plus_1m.png" "scoin_plus_1m.csv"
-            "scoin_plus_1y.png" "scoin_plus_1y.csv"
-            "scoin_plus_intraday.png"
-            "scoin_plus_intraday.csv" "scoin_plus_intraday.txt"
-            "scoin_plus_chart.png" "scoin_plus_history.csv"
-
-            # --- R-BANK9 ---
-            "rbank9_1d.png" "rbank9_1d.csv"
-            "rbank9_7d.png" "rbank9_7d.csv"
-            "rbank9_1m.png" "rbank9_1m.csv"
-            "rbank9_1y.png" "rbank9_1y.csv"
-            "rbank9_intraday.png"
-            "rbank9_intraday.csv" "rbank9_intraday.txt"
-            "rbank9_chart.png" "rbank9_history.csv"
-
-            # --- AIN-10 ---
-            "ain10_1d.png" "ain10_1d.csv"
-            "ain10_7d.png" "ain10_7d.csv"
-            "ain10_1m.png" "ain10_1m.csv"
-            "ain10_1y.png" "ain10_1y.csv"
-            "ain10_intraday.png"
-            "ain10_intraday.csv" "ain10_intraday.txt"
-            "ain10_chart.png" "ain10_history.csv"
+          # -------- 必須のチャート/データの後ろ側（拡張子含む） --------
+          # 存在しないものは curl 失敗 → スキップ にする
+          SUFFIXES=(
+            "_1d.png" "_7d.png" "_1m.png" "_1y.png"     # 4つの時間軸PNG
+            "_intraday.png"                             # 当日1日PNG（あれば）
+            "_chart.png"                                # 旧/互換ファイル（あれば）
+            "_history.csv"                              # 履歴CSV（あれば）
+            "_intraday.csv"                             # 当日CSV（あれば）
+            "_post_intraday.txt"                        # 当日メモ（あれば）
+            "_latest.txt"                               # 最新値メモ（あれば）
           )
 
-          # ダウンロード（RAW: https://raw.githubusercontent.com/<org>/<repo>/main/docs/outputs/<file>）
-          for repo_key in "${!REPOS[@]}"; do
-            repo="${REPOS[$repo_key]}"
-            for f in "${FILES[@]}"; do
-              url="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${f}"
+          mkdir -p docs/charts
+
+          # -------- 取得実行 --------
+          for line in "${MAP[@]}"; do
+            read -r KEY REPO PREFIX <<<"$line"
+            echo "=== Fetch from $REPO (prefix=$PREFIX) ==="
+            for suf in "${SUFFIXES[@]}"; do
+              f="${PREFIX}${suf}"
+              url="https://raw.githubusercontent.com/${REPO}/main/docs/outputs/${f}"
               out="docs/charts/${f}"
-              if curl -fSL --retry 3 --retry-delay 2 "$url" -o "$out"; then
-                echo "Fetched: $url -> $out"
+              if curl -fsSL --retry 2 --retry-delay 1 "$url" -o "$out"; then
+                echo " OK  ${f}"
               else
                 rm -f "$out" || true
-                echo "Skip (not found): $url"
+                echo " --  skip ${f}"
               fi
             done
           done
@@ -99,11 +84,10 @@ jobs:
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
             echo "No changes in charts."
             exit 0
-          else
-            echo "Charts updated. Commit..."
           fi
-          git config user.name "github-actions[bot]"
+
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/charts
-          git commit -m "chore(charts): sync latest 1d/7d/1m/1y charts"
+          git commit -m "chore(site): sync latest charts (1d/7d/1m/1y + extras)"
           git push
