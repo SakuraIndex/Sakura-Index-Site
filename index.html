@@ -2,121 +2,167 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🌸桜Index - 公式サイト｜Astra4 / S-COIN+ / R-BANK9 / AIN-10</title>
-  <meta name="description" content="AI×金融×仮想通貨・地域銀行など、独自テーマ株指数を自動生成・配信。Astra4・S-COIN+・R-BANK9・AIN-10の最新チャートを掲載。">
-
-  <!-- OGP/Twitter などは省略（既存のままでOK） -->
-
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🌸 桜Index - 公式サイト</title>
+  <meta name="color-scheme" content="dark light" />
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{
-      --bg:#000; --bg2:#111827; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.11);
-      --text:#f0f0f0; --muted:#a8b3cf; --link:#80d0ff; --accent:#ff99cc; --glow:rgba(255,182,193,.35);
-      --pill:#141b2d; --pillLine:#27314a;
+      --bg:#0e1117; --card:#111827; --fg:#e6e6e6; --muted:#9aa4b2;
+      --accent:#3bd6c6; --title:#f2b6c6;
     }
-    *{box-sizing:border-box}
-    body{ margin:0; background:radial-gradient(circle at top,var(--bg2),var(--bg)); color:var(--text);
-      font-family:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
-    header{padding:28px 14px 10px; text-align:center}
-    h1{margin:.2rem 0; font-size:2rem; color:var(--accent)}
-    .sub{color:#ffd6e7; opacity:.9}
-    .socials{margin:14px 0 6px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
-    .socials a{display:inline-flex; align-items:center; gap:.5em; padding:8px 14px; border-radius:999px;
-      text-decoration:none; color:#cfe8ff; background:var(--pill); border:1px solid var(--pillLine);}
-    .socials a:hover{outline:2px solid #3b82f6}
-    .update-badges{margin:10px 0 24px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap}
-    .badge{font-size:.92rem; padding:6px 10px; border-radius:999px; background:var(--pill); border:1px solid var(--pillLine); color:#cfe8ff;}
-    .wrap{max-width:1100px; margin:0 auto; padding:0 14px 60px}
-    .card{background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:0 0 18px var(--glow);
-      padding:18px; margin:26px 0; transition:transform .2s ease, box-shadow .2s ease;}
-    .card:hover{transform:translateY(-3px); box-shadow:0 0 30px rgba(255,182,193,.5)}
-    .card h3{margin:0 0 10px; font-size:1.15rem}
-    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px}
-    .tab{padding:6px 12px; border-radius:999px; border:1px solid var(--pillLine); background:var(--pill); color:#cfe8ff; cursor:pointer; font-size:.92rem;}
-    .tab.active{background:#1e293b; border-color:#3b82f6; color:#e9f2ff}
-    .tab[disabled]{opacity:.45; cursor:not-allowed}
-    .chart-box{position:relative; border-radius:12px; overflow:hidden; background:#0b0f1a; border:1px solid var(--pillLine)}
-    .chart-box img{display:block; width:100%; height:auto}
-    .note{font-size:.88rem; color:var(--muted); margin-top:8px}
-    footer{margin-top:34px; text-align:center; color:var(--muted); font-size:.9rem}
-    a{color:var(--link); text-decoration:none} a:hover{text-decoration:underline}
-    @media (max-width:640px){ .chart-box img{min-height:260px; object-fit:cover} }
-    .debug{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.8rem; color:#9ecbff; margin-top:6px; opacity:.9; white-space:pre-wrap}
+    html,body{background:var(--bg); color:var(--fg);}
+    .chip{background:#1f2937; color:#cbd5e1; border:1px solid #374151;}
+    .chip.active{border-color:var(--accent); color:var(--accent);}
+    .btn{background:#1f2937; border:1px solid #374151;}
+    .btn:hover{border-color:var(--accent); color:var(--accent);}
+    .card{background:var(--card)}
+    img{image-rendering:-webkit-optimize-contrast; border-radius:16px;}
   </style>
 </head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="max-w-6xl mx-auto px-4 pt-10">
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-[var(--title)]">🌸桜Index - 公式サイト</h1>
+    <p class="mt-2 text-sm text-[var(--muted)]">
+      AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信
+    </p>
 
-<body>
-  <header>
-    <h1>🌸桜Index - 公式サイト</h1>
-    <div class="sub">AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信</div>
-    <div class="socials">
-      <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener">🐦 公式X（Twitter）</a>
-      <a href="https://note.com/sakura_index" target="_blank" rel="noopener">📝 公式note</a>
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <a class="btn px-4 py-2 rounded-2xl" href="https://x.com/Sakura_Index" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a class="btn px-4 py-2 rounded-2xl" href="https://note.com/sakura_index" target="_blank" rel="noopener">公式note</a>
+
+      <!-- 定期更新案内（静的表示） -->
+      <span class="chip px-3 py-1 rounded-2xl">Astra4：毎日 15:35</span>
+      <span class="chip px-3 py-1 rounded-2xl">S-COIN+：毎日 15:35</span>
+      <span class="chip px-3 py-1 rounded-2xl">R-BANK9：毎日 15:35</span>
+      <span class="chip px-3 py-1 rounded-2xl">AIN-10：毎日 06:35</span>
     </div>
-    <div class="update-badges">
-      <span class="badge">📅 Astra4：毎日 <strong>15:35</strong></span>
-      <span class="badge">📅 S-COIN+：毎日 <strong>15:35</strong></span>
-      <span class="badge">📅 R-BANK9：毎日 <strong>15:35</strong></span>
-      <span class="badge">📅 AIN-10：毎日 <strong>06:35</strong></span>
-    </div>
+
+    <!-- 自動最終同期 -->
+    <div id="last-sync" class="mt-2 text-xs text-[var(--muted)]"></div>
   </header>
 
-  <main class="wrap" id="app"></main>
+  <!-- Controls -->
+  <section class="max-w-6xl mx-auto px-4 mt-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="card rounded-2xl p-3">
+        <div class="text-xs text-[var(--muted)] mb-1">指数を選択</div>
+        <div id="index-tabs" class="flex flex-wrap gap-2">
+          <button data-index="astra4"  class="chip px-3 py-1 rounded-2xl active">Astra4</button>
+          <button data-index="scoin_plus" class="chip px-3 py-1 rounded-2xl">S-COIN+</button>
+          <button data-index="rbank9" class="chip px-3 py-1 rounded-2xl">R-BANK9</button>
+          <button data-index="ain10" class="chip px-3 py-1 rounded-2xl">AIN-10</button>
+        </div>
+      </div>
 
-  <footer>
-    <div class="note">※ 本サイトの情報は投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
-    <div style="margin-top:12px">© 2025 桜Index ・ <a href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a></div>
+      <div class="card rounded-2xl p-3">
+        <div class="text-xs text-[var(--muted)] mb-1">時間軸</div>
+        <div id="range-tabs" class="flex flex-wrap gap-2">
+          <button data-range="1d" class="chip px-3 py-1 rounded-2xl active">1日</button>
+          <button data-range="7d" class="chip px-3 py-1 rounded-2xl">1週間</button>
+          <button data-range="1m" class="chip px-3 py-1 rounded-2xl">1ヶ月</button>
+          <button data-range="1y" class="chip px-3 py-1 rounded-2xl">1年</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <main class="max-w-6xl mx-auto px-4 mt-6 pb-16">
+    <div class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 id="panel-title" class="text-xl font-semibold">Astra4（1日）</h2>
+        <div class="text-xs text-[var(--muted)]">PNGを静的表示（自動更新）</div>
+      </div>
+      <div class="w-full overflow-hidden">
+        <img id="chart-img" src="docs/charts/astra4_1d.png" alt="chart" class="w-full block" />
+      </div>
+      <div class="mt-3 text-xs text-[var(--muted)]">
+        データ：等加重指数（詳細は各リポジトリ参照）／ 画像は自動生成された最新スナップショットです。
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-6xl mx-auto px-4 pb-12">
+    <p class="text-xs text-center text-[var(--muted)]">
+      ※ 本サイトの情報は投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。
+    </p>
+    <p class="text-xs text-center mt-2 text-[var(--muted)]">
+      © 2025 桜Index ・ <a class="underline" href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a>
+    </p>
   </footer>
 
-<script>
-  const INDEXES = [
-    {
-      key: 'astra4',
-      title: '📈 Astra4',
-      base: 'https://sakuraindex.github.io/3_Sakura_Space/outputs/',
-      files: {
-        '1d': ['astra4_intraday.png'],
-        '1w': ['astra4_7d.png', 'astra4_chart.png'],
-        '1m': ['astra4_1m.png', 'astra4_chart.png'],
-        '1y': ['astra4_1y.png', 'astra4_chart.png']
-      }
-    },
-    {
-      key: 'scoin',
-      title: '💰 S-COIN+',
-      base: 'https://sakuraindex.github.io/S-COIN-/outputs/',
-      files: {
-        '1d': ['scoin_plus_intraday.png'],
-        '1w': ['scoin_plus_7d.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
-        '1m': ['scoin_plus_1m.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png'],
-        '1y': ['scoin_plus_1y.png', 'scoin_plus_chart.png', 'scoin_plus_intraday.png']
-      }
-    },
-    {
-      key: 'rbank9',
-      title: '🏦 R-BANK9',
-      base: 'https://sakuraindex.github.io/R-BANK9/outputs/',
-      files: {
-        '1d': ['rbank9_intraday.png'],
-        '1w': ['rbank9_7d.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
-        '1m': ['rbank9_1m.png', 'rbank9_chart.png', 'rbank9_intraday.png'],
-        '1y': ['rbank9_1y.png', 'rbank9_chart.png', 'rbank9_intraday.png']
-      }
-    },
-    {
-      key: 'ain10',
-      title: '🤖 AIN-10',
-      base: 'https://sakuraindex.github.io/AIN-10/outputs/',
-      files: {
-        '1d': ['ain10_intraday.png'],
-        '1w': ['ain10_7d.png', 'ain10_chart.png', 'ain10_intraday.png'],
-        '1m': ['ain10_1m.png', 'ain10_chart.png', 'ain10_intraday.png'],
-        '1y': ['ain10_1y.png', 'ain10_chart.png', 'ain10_intraday.png']
+  <script>
+    // 参照ファイル名のマップ（sync-charts.yml が配置している命名に一致）
+    const FILES = {
+      astra4:     { label:'Astra4',     img:{'1d':'astra4_1d.png','7d':'astra4_7d.png','1m':'astra4_1m.png','1y':'astra4_1y.png'} },
+      scoin_plus: { label:'S-COIN+',    img:{'1d':'scoin_plus_1d.png','7d':'scoin_plus_7d.png','1m':'scoin_plus_1m.png','1y':'scoin_plus_1y.png'} },
+      rbank9:     { label:'R-BANK9',    img:{'1d':'rbank9_1d.png','7d':'rbank9_7d.png','1m':'rbank9_1m.png','1y':'rbank9_1y.png'} },
+      ain10:      { label:'AIN-10',     img:{'1d':'ain10_1d.png','7d':'ain10_7d.png','1m':'ain10_1m.png','1y':'ain10_1y.png'} },
+    };
+
+    // 状態
+    let currentIndex = 'astra4';
+    let currentRange = '1d';
+
+    const indexTabs = document.getElementById('index-tabs');
+    const rangeTabs = document.getElementById('range-tabs');
+    const imgEl     = document.getElementById('chart-img');
+    const titleEl   = document.getElementById('panel-title');
+
+    function setActive(container, attr, value){
+      [...container.querySelectorAll('button')].forEach(b=>{
+        if(b.getAttribute(attr)===value){ b.classList.add('active'); }
+        else{ b.classList.remove('active'); }
+      });
+    }
+
+    function refresh(){
+      const meta = FILES[currentIndex];
+      const file = meta?.img?.[currentRange];
+      const src  = file ? `docs/charts/${file}` : '';
+      titleEl.textContent = `${meta?.label ?? ''}（${rangeLabel(currentRange)}）`;
+      if(src){
+        // キャッシュバスターを付与（PagesのCDNキャッシュを避ける）
+        imgEl.src = `${src}?v=${Date.now()}`;
+        imgEl.alt = `${meta?.label} ${currentRange}`;
       }
     }
-  ];
-</script>
 
+    function rangeLabel(k){
+      return { '1d':'1日','7d':'1週間','1m':'1ヶ月','1y':'1年' }[k] || k;
+    }
 
+    // クリックイベント
+    indexTabs.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      currentIndex = btn.dataset.index;
+      setActive(indexTabs,'data-index', currentIndex);
+      refresh();
+    });
+    rangeTabs.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      currentRange = btn.dataset.range;
+      setActive(rangeTabs,'data-range', currentRange);
+      refresh();
+    });
+
+    // 最終同期（_last_sync.txt があれば表示）
+    (async function showLastSync(){
+      try{
+        const r = await fetch('docs/charts/_last_sync.txt?'+Date.now());
+        if(r.ok){
+          const t = await r.text();
+          document.getElementById('last-sync').textContent = `最終同期: ${t.trim()}`;
+        }
+      }catch(_){}
+    })();
+
+    // 初期表示
+    refresh();
+  </script>
 </body>
 </html>
