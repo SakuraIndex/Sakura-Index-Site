@@ -2,167 +2,221 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌸 桜Index - 公式サイト</title>
-  <meta name="color-scheme" content="dark light" />
-  <link rel="preconnect" href="https://cdn.tailwindcss.com">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="AI・金融・仮想通貨・地方銀行など、独自テーマ株指数の自動算出／配信。Astra4・S-COIN+・R-BANK9・AIN-10 の4指数を1画面で表示。">
   <style>
     :root{
-      --bg:#0e1117; --card:#111827; --fg:#e6e6e6; --muted:#9aa4b2;
-      --accent:#3bd6c6; --title:#f2b6c6;
+      --bg:#0e1014;
+      --panel:#171a22;
+      --text:#e9ecf1;
+      --muted:#a7afc0;
+      --brand:#ff86b5;
+      --chip:#232838;
+      --chip-active:#33405c;
+      --accent:#79e3d6;
+      --ring:#384055;
     }
-    html,body{background:var(--bg); color:var(--fg);}
-    .chip{background:#1f2937; color:#cbd5e1; border:1px solid #374151;}
-    .chip.active{border-color:var(--accent); color:var(--accent);}
-    .btn{background:#1f2937; border:1px solid #374151;}
-    .btn:hover{border-color:var(--accent); color:var(--accent);}
-    .card{background:var(--card)}
-    img{image-rendering:-webkit-optimize-contrast; border-radius:16px;}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+    }
+    header{
+      padding:28px 20px 12px;
+      text-align:center;
+    }
+    h1{margin:0 0 8px;font-size:28px;font-weight:800;letter-spacing:.02em}
+    .sub{color:var(--muted);font-size:14px}
+    .toolbar{
+      margin:18px auto 10px;
+      display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+    }
+    .chip{
+      appearance:none;border:none;cursor:pointer;
+      padding:8px 14px;border-radius:999px;
+      background:var(--chip);color:var(--text);
+      font-weight:600;letter-spacing:.02em;
+      box-shadow:inset 0 0 0 1px var(--ring);
+      transition:.15s ease;
+    }
+    .chip:hover{transform:translateY(-1px)}
+    .chip.is-active{background:var(--chip-active);box-shadow:0 0 0 2px var(--accent) inset;color:#fff}
+    .grid{
+      width:min(1280px,92vw);margin:0 auto 28px;
+      display:grid;gap:16px;
+      grid-template-columns:1fr; 
+    }
+    @media (min-width:900px){
+      .grid{grid-template-columns:1fr 1fr}
+    }
+    .card{
+      background:var(--panel);border-radius:16px;
+      box-shadow:0 0 0 1px var(--ring);
+      overflow:hidden;
+    }
+    .card__head{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;border-bottom:1px solid var(--ring);
+      background:linear-gradient(180deg,rgba(255,134,181,.07),transparent);
+    }
+    .title{
+      display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em
+    }
+    .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#2a3044;color:#cdd7ff;box-shadow:inset 0 0 0 1px var(--ring)}
+    .pngnote{color:var(--muted);font-size:12px}
+    .imgWrap{position:relative;background:#0b0d12}
+    .chart{
+      display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#0b0d12
+    }
+    .nodata{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      color:#91a0c4;font-weight:700;letter-spacing:.02em;background:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0 10px,transparent 10px 20px);
+      opacity:0;transition:.15s;
+    }
+    .imgWrap.is-error .nodata{opacity:1}
+    footer{
+      padding:18px 12px 28px;text-align:center;color:var(--muted);font-size:13px
+    }
+    a{color:#a7dfff}
+    .headLinks{display:flex;gap:8px;justify-content:center;margin-top:10px}
+    .headLinks a{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--chip);color:#fff;text-decoration:none;box-shadow:inset 0 0 0 1px var(--ring)}
   </style>
 </head>
-<body class="min-h-screen">
-  <!-- Header -->
-  <header class="max-w-6xl mx-auto px-4 pt-10">
-    <h1 class="text-3xl sm:text-4xl font-extrabold text-[var(--title)]">🌸桜Index - 公式サイト</h1>
-    <p class="mt-2 text-sm text-[var(--muted)]">
-      AI・金融・仮想通貨・地域銀行など、独自テーマ株指数を自動算出・配信
-    </p>
-
-    <div class="mt-4 flex flex-wrap items-center gap-3">
-      <a class="btn px-4 py-2 rounded-2xl" href="https://x.com/Sakura_Index" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a class="btn px-4 py-2 rounded-2xl" href="https://note.com/sakura_index" target="_blank" rel="noopener">公式note</a>
-
-      <!-- 定期更新案内（静的表示） -->
-      <span class="chip px-3 py-1 rounded-2xl">Astra4：毎日 15:35</span>
-      <span class="chip px-3 py-1 rounded-2xl">S-COIN+：毎日 15:35</span>
-      <span class="chip px-3 py-1 rounded-2xl">R-BANK9：毎日 15:35</span>
-      <span class="chip px-3 py-1 rounded-2xl">AIN-10：毎日 06:35</span>
+<body>
+  <header>
+    <h1>🌸 桜Index - 公式サイト</h1>
+    <div class="sub">Astra4・S-COIN+・R-BANK9・AIN-10 を同時表示。時間軸を一括で切替できます。</div>
+    <div class="headLinks">
+      <a href="https://twitter.com/SakuraIndex" target="_blank" rel="noreferrer noopener">公式X（Twitter）</a>
+      <a href="https://note.com/sakuraindex" target="_blank" rel="noreferrer noopener">公式note</a>
+      <a href="https://github.com/SakuraIndex" target="_blank" rel="noreferrer noopener">GitHub</a>
     </div>
 
-    <!-- 自動最終同期 -->
-    <div id="last-sync" class="mt-2 text-xs text-[var(--muted)]"></div>
+    <div class="toolbar" id="tfToolbar" role="tablist" aria-label="時間軸">
+      <button class="chip is-active" data-tf="1d"  aria-selected="true">1日</button>
+      <button class="chip"          data-tf="7d"  aria-selected="false">1週間</button>
+      <button class="chip"          data-tf="1m"  aria-selected="false">1ヶ月</button>
+      <button class="chip"          data-tf="1y"  aria-selected="false">1年</button>
+    </div>
   </header>
 
-  <!-- Controls -->
-  <section class="max-w-6xl mx-auto px-4 mt-8">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div class="card rounded-2xl p-3">
-        <div class="text-xs text-[var(--muted)] mb-1">指数を選択</div>
-        <div id="index-tabs" class="flex flex-wrap gap-2">
-          <button data-index="astra4"  class="chip px-3 py-1 rounded-2xl active">Astra4</button>
-          <button data-index="scoin_plus" class="chip px-3 py-1 rounded-2xl">S-COIN+</button>
-          <button data-index="rbank9" class="chip px-3 py-1 rounded-2xl">R-BANK9</button>
-          <button data-index="ain10" class="chip px-3 py-1 rounded-2xl">AIN-10</button>
-        </div>
+  <main class="grid" id="grid">
+    <!-- Astra4 -->
+    <section class="card" data-prefix="astra4" aria-labelledby="h-astra4">
+      <div class="card__head">
+        <div class="title"><span id="h-astra4">Astra4</span><span class="badge">等加重指数</span></div>
+        <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
+      <div class="imgWrap">
+        <img class="chart" alt="Astra4 chart" />
+        <div class="nodata">No data</div>
+      </div>
+    </section>
 
-      <div class="card rounded-2xl p-3">
-        <div class="text-xs text-[var(--muted)] mb-1">時間軸</div>
-        <div id="range-tabs" class="flex flex-wrap gap-2">
-          <button data-range="1d" class="chip px-3 py-1 rounded-2xl active">1日</button>
-          <button data-range="7d" class="chip px-3 py-1 rounded-2xl">1週間</button>
-          <button data-range="1m" class="chip px-3 py-1 rounded-2xl">1ヶ月</button>
-          <button data-range="1y" class="chip px-3 py-1 rounded-2xl">1年</button>
-        </div>
+    <!-- S-COIN+ -->
+    <section class="card" data-prefix="scoin_plus" aria-labelledby="h-scoin">
+      <div class="card__head">
+        <div class="title"><span id="h-scoin">S-COIN+</span><span class="badge">仮想通貨</span></div>
+        <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-    </div>
-  </section>
+      <div class="imgWrap">
+        <img class="chart" alt="S-COIN+ chart" />
+        <div class="nodata">No data</div>
+      </div>
+    </section>
 
-  <!-- Chart -->
-  <main class="max-w-6xl mx-auto px-4 mt-6 pb-16">
-    <div class="card rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h2 id="panel-title" class="text-xl font-semibold">Astra4（1日）</h2>
-        <div class="text-xs text-[var(--muted)]">PNGを静的表示（自動更新）</div>
+    <!-- R-BANK9 -->
+    <section class="card" data-prefix="rbank9" aria-labelledby="h-rb9">
+      <div class="card__head">
+        <div class="title"><span id="h-rb9">R-BANK9</span><span class="badge">地方銀行</span></div>
+        <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-      <div class="w-full overflow-hidden">
-        <img id="chart-img" src="docs/charts/astra4_1d.png" alt="chart" class="w-full block" />
+      <div class="imgWrap">
+        <img class="chart" alt="R-BANK9 chart" />
+        <div class="nodata">No data</div>
       </div>
-      <div class="mt-3 text-xs text-[var(--muted)]">
-        データ：等加重指数（詳細は各リポジトリ参照）／ 画像は自動生成された最新スナップショットです。
+    </section>
+
+    <!-- AIN-10 -->
+    <section class="card" data-prefix="ain10" aria-labelledby="h-ain10">
+      <div class="card__head">
+        <div class="title"><span id="h-ain10">AIN-10</span><span class="badge">AI関連10</span></div>
+        <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-    </div>
+      <div class="imgWrap">
+        <img class="chart" alt="AIN-10 chart" />
+        <div class="nodata">No data</div>
+      </div>
+    </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="max-w-6xl mx-auto px-4 pb-12">
-    <p class="text-xs text-center text-[var(--muted)]">
-      ※ 本サイトの情報は投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。
-    </p>
-    <p class="text-xs text-center mt-2 text-[var(--muted)]">
-      © 2025 桜Index ・ <a class="underline" href="https://github.com/SakuraIndex" target="_blank" rel="noopener">GitHub</a>
-    </p>
+  <footer>
+    データ：等加重指数（詳細は各リポジトリ参照） ／ 画像は各指数レポの自動生成スナップショットを同期しています。<br>
+    © 2025 桜Index
   </footer>
 
   <script>
-    // 参照ファイル名のマップ（sync-charts.yml が配置している命名に一致）
-    const FILES = {
-      astra4:     { label:'Astra4',     img:{'1d':'astra4_1d.png','7d':'astra4_7d.png','1m':'astra4_1m.png','1y':'astra4_1y.png'} },
-      scoin_plus: { label:'S-COIN+',    img:{'1d':'scoin_plus_1d.png','7d':'scoin_plus_7d.png','1m':'scoin_plus_1m.png','1y':'scoin_plus_1y.png'} },
-      rbank9:     { label:'R-BANK9',    img:{'1d':'rbank9_1d.png','7d':'rbank9_7d.png','1m':'rbank9_1m.png','1y':'rbank9_1y.png'} },
-      ain10:      { label:'AIN-10',     img:{'1d':'ain10_1d.png','7d':'ain10_7d.png','1m':'ain10_1m.png','1y':'ain10_1y.png'} },
-    };
+    // === 設定 ===
+    const ASSET_BASE = "docs/charts";   // 画像保存先（レポ内パス）
+    const INDEX_PREFIXES = ["astra4","scoin_plus","rbank9","ain10"];
+    const DEFAULT_TF = "1d";            // 初期表示
+    const AUTO_REFRESH_MS = 3 * 60 * 1000; // 自動再読込（ミリ秒）。不要なら null
 
-    // 状態
-    let currentIndex = 'astra4';
-    let currentRange = '1d';
+    // クエリ ?tf=1d の指定を優先
+    const urlTf = new URL(location.href).searchParams.get("tf");
+    let currentTf = (urlTf && ["1d","7d","1m","1y"].includes(urlTf)) ? urlTf : DEFAULT_TF;
 
-    const indexTabs = document.getElementById('index-tabs');
-    const rangeTabs = document.getElementById('range-tabs');
-    const imgEl     = document.getElementById('chart-img');
-    const titleEl   = document.getElementById('panel-title');
+    // キャッシュバスター
+    const cacheBust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
 
-    function setActive(container, attr, value){
-      [...container.querySelectorAll('button')].forEach(b=>{
-        if(b.getAttribute(attr)===value){ b.classList.add('active'); }
-        else{ b.classList.remove('active'); }
+    // 画像URLを構築
+    function buildSrc(prefix, tf){
+      return `${ASSET_BASE}/${prefix}_${tf}.png?v=${cacheBust()}`;
+    }
+
+    // すべてのカードの画像を張り替え
+    function updateAll(tf){
+      currentTf = tf;
+      document.querySelectorAll(".card").forEach(card=>{
+        const prefix = card.dataset.prefix;
+        const img = card.querySelector("img.chart");
+        const wrap = card.querySelector(".imgWrap");
+        wrap.classList.remove("is-error");
+        img.onerror = () => wrap.classList.add("is-error");
+        img.src = buildSrc(prefix, tf);
       });
+
+      // ボタンの選択状態
+      document.querySelectorAll("#tfToolbar .chip").forEach(b=>{
+        const active = b.dataset.tf === tf;
+        b.classList.toggle("is-active", active);
+        b.setAttribute("aria-selected", active ? "true":"false");
+      });
+
+      // URLのクエリも保持（ブックマークしやすく）
+      const u = new URL(location.href);
+      u.searchParams.set("tf", tf);
+      history.replaceState(null, "", u.toString());
     }
 
-    function refresh(){
-      const meta = FILES[currentIndex];
-      const file = meta?.img?.[currentRange];
-      const src  = file ? `docs/charts/${file}` : '';
-      titleEl.textContent = `${meta?.label ?? ''}（${rangeLabel(currentRange)}）`;
-      if(src){
-        // キャッシュバスターを付与（PagesのCDNキャッシュを避ける）
-        imgEl.src = `${src}?v=${Date.now()}`;
-        imgEl.alt = `${meta?.label} ${currentRange}`;
-      }
-    }
-
-    function rangeLabel(k){
-      return { '1d':'1日','7d':'1週間','1m':'1ヶ月','1y':'1年' }[k] || k;
-    }
-
-    // クリックイベント
-    indexTabs.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button'); if(!btn) return;
-      currentIndex = btn.dataset.index;
-      setActive(indexTabs,'data-index', currentIndex);
-      refresh();
-    });
-    rangeTabs.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button'); if(!btn) return;
-      currentRange = btn.dataset.range;
-      setActive(rangeTabs,'data-range', currentRange);
-      refresh();
+    // 時間軸ボタン
+    document.getElementById("tfToolbar").addEventListener("click", (e)=>{
+      const btn = e.target.closest("button[data-tf]");
+      if(!btn) return;
+      updateAll(btn.dataset.tf);
     });
 
-    // 最終同期（_last_sync.txt があれば表示）
-    (async function showLastSync(){
-      try{
-        const r = await fetch('docs/charts/_last_sync.txt?'+Date.now());
-        if(r.ok){
-          const t = await r.text();
-          document.getElementById('last-sync').textContent = `最終同期: ${t.trim()}`;
-        }
-      }catch(_){}
-    })();
+    // 初期化
+    updateAll(currentTf);
 
-    // 初期表示
-    refresh();
+    // オートリフレッシュ（PNGの差し替え）
+    if (AUTO_REFRESH_MS){
+      setInterval(()=>updateAll(currentTf), AUTO_REFRESH_MS);
+    }
   </script>
 </body>
 </html>
