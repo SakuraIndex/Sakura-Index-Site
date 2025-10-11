@@ -117,18 +117,19 @@
     <div class="disclaimer">※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
   </footer>
 
-  <!-- %算出：S-COIN+は水準法のみ／他は従来ロジック -->
+  <!-- %算出：S-COIN+ は頭尾の平均で安定化＋異常は history にフォールバック -->
   <script>
   (async function computeDeltas(){
     const series = [
       {key:"astra4",     txt:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"],       history:"astra4_history.csv",     slot:"delta-astra4", tz:"Asia/Tokyo",        type:"session"},
-      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true, levelOnly:true},
+      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true, scoin:true},
       {key:"rbank9",     txt:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"],       history:"rbank9_history.csv",     slot:"delta-rbank9", tz:"Asia/Tokyo",        type:"session"},
       {key:"ain10",      txt:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],          history:"ain10_history.csv",      slot:"delta-ain10",  tz:"America/New_York", type:"sessionUS"},
     ];
-    const CAP = 120;            // 120%超は異常扱いで破棄
-    const GAP_PREFERRED = 5;    // intraday と TXT が5pt以上ズレたら intraday を採用
-    const MIN_DEN = 1e-6;       // 分母がこれ未満なら無効
+
+    const CAP_GENERIC = 120; // 他指数の上限
+    const CAP_SCOIN   = 50;  // S-COIN+ は±50%超で異常扱い
+    const MIN_DEN     = 1e-6;
 
     const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
     async function fetchText(path){
@@ -191,12 +192,25 @@
     }
     function pctLvl(rows){
       if(rows.length<2) return null;
-      // 先頭の非ゼロ（|v|>=MIN_DEN相当）を始点にする
+      // 先頭非ゼロを始点
       let first = null;
       for(const r of rows){ if(Math.abs(r.v) >= MIN_DEN){ first = r.v; break; } }
       const last = rows[rows.length-1].v;
       if(first===null || Math.abs(first) < MIN_DEN) return null;
       return ((last/first) - 1) * 100;
+    }
+    // S-COIN+用：頭6本・尻6本の平均で安定化
+    function pctHeadTailMean(rows, k=6){
+      const vals = rows.map(r=>r.v).filter(v=>Number.isFinite(v));
+      if(vals.length < Math.max(2,k*2)) return null;
+      const head = vals.filter(v=>Math.abs(v)>=MIN_DEN).slice(0,k);
+      const tail = vals.slice(-k);
+      if(head.length===0) return null;
+      const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
+      const base = avg(head);
+      const last = avg(tail);
+      if(!Number.isFinite(base) || !Number.isFinite(last) || Math.abs(base)<MIN_DEN) return null;
+      return ((last/base)-1)*100;
     }
 
     for(const s of series){
@@ -211,25 +225,25 @@
         const rows = parseCsv(csv);
         const win  = windowFilter(rows, s.type);
 
-        if(s.levelOnly){
-          // S-COIN+：水準法のみ
-          const p = pctLvl(win);
-          pIntr = (p!==null && Math.abs(p)<=CAP) ? p : null;
+        if(s.scoin){
+          // 先頭・末尾の平均を使った安定化
+          const pHT = pctHeadTailMean(win, 6);
+          pIntr = (pHT!==null && Math.abs(pHT)<=CAP_SCOIN) ? pHT : null;
         }else{
-          // 従来：積み上げ式と水準式の小さい方を採用
+          // 従来：積み上げ vs 水準の小さい方
           const pm = pctMul(win);
           const pl = pctLvl(win);
-          const okm = (pm!==null && Math.abs(pm)<=CAP);
-          const okl = (pl!==null && Math.abs(pl)<=CAP);
+          const okm = (pm!==null && Math.abs(pm)<=CAP_GENERIC);
+          const okl = (pl!==null && Math.abs(pl)<=CAP_GENERIC);
           pIntr = okm && okl ? (Math.abs(pm)<=Math.abs(pl)?pm:pl) : (okm?pm:(okl?pl:null));
         }
       }catch(_){}
 
-      if(!s.forceIntraday){
+      if(!s.scoin){ // S-COIN+はTXTを使わない（ばらつき要因）
         for(const f of s.txt){ try{
           const t = await fetchText(f);
           const v = pickPctFromText(t);
-          if(v!==null && Math.abs(v)<=CAP){ pTxt=v; break; }
+          if(v!==null && Math.abs(v)<=CAP_GENERIC){ pTxt=v; break; }
         }catch(_){/* next */} }
       }
 
@@ -241,17 +255,21 @@
           const b = parseFloat(lines[lines.length-2].split(",")[1]);
           if(Number.isFinite(a) && Number.isFinite(b) && Math.abs(b)>MIN_DEN){
             const v = ((a-b)/Math.abs(b))*100;
-            if(Math.abs(v)<=CAP) pHist = v;
+            if(Math.abs(v) <= (s.scoin?CAP_SCOIN:CAP_GENERIC)) pHist = v;
           }
         }
       }catch(_){}
 
       let delta = null;
-      if(s.forceIntraday && pIntr!==null) delta = pIntr;
-      else if(pIntr!==null && pTxt!==null) delta = (Math.abs(pIntr - pTxt) >= GAP_PREFERRED) ? pIntr : pTxt;
-      else if(pIntr!==null) delta = pIntr;
-      else if(pTxt!==null)  delta = pTxt;
-      else if(pHist!==null) delta = pHist;
+      if(s.scoin){
+        // intraday（安定化済）が取れればそれを、無理ならhistory
+        delta = (pIntr!==null)? pIntr : pHist;
+      }else{
+        if(pIntr!==null && pTxt!==null) delta = (Math.abs(pIntr - pTxt) >= 5) ? pIntr : pTxt;
+        else if(pIntr!==null) delta = pIntr;
+        else if(pTxt!==null)  delta = pTxt;
+        else if(pHist!==null) delta = pHist;
+      }
 
       if(delta===null){
         el.textContent="—"; el.classList.add("flat");
