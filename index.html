@@ -9,24 +9,25 @@
     :root{
       --bg:#0e1014; --panel:#171a22; --text:#e9ecf1; --muted:#a7afc0;
       --chip:#232838; --chip-active:#33405c; --ring:#384055; --accent:#79e3d6;
-      --pink:#ff86b5;
-      --up:#32e0cf; --down:#ff6b6b;
+      --pink:#ff86b5; --up:#32e0cf; --down:#ff6b6b;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Yu Gothic","Meiryo",sans-serif;}
+    body{margin:0;background:var(--bg);color:var(--text);
+      font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Yu Gothic","Meiryo",sans-serif}
     header{padding:28px 20px 12px;text-align:center}
     h1{margin:0 0 8px;font-size:28px;font-weight:800;color:var(--pink)}
     .sub{color:var(--muted);font-size:14px}
     .headLinks{display:flex;gap:8px;justify-content:center;margin-top:10px}
     .headLinks a{padding:8px 12px;border-radius:10px;background:var(--chip);color:#fff;text-decoration:none;box-shadow:inset 0 0 0 1px var(--ring)}
     .toolbar{margin:18px auto 10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .chip{padding:8px 14px;border:none;border-radius:999px;background:var(--chip);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);cursor:pointer;transition:.15s}
+    .chip{padding:8px 14px;border:none;border-radius:999px;background:var(--chip);color:var(--text);
+      font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);cursor:pointer;transition:.15s}
     .chip:hover{transform:translateY(-1px)}
     .chip.is-active{background:var(--chip-active);box-shadow:0 0 0 2px var(--accent) inset;color:#fff}
     .grid{width:min(1280px,92vw);margin:0 auto 28px;display:grid;gap:16px;grid-template-columns:1fr}
     @media (min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-    .card{background:var(--panel);border-radius:16px;box-shadow:0 0 0 1px var(--ring);overflow:hidden;transition:box-shadow .3s ease}
+    .card{background:var(--panel);border-radius:16px;box-shadow:0 0 0 1px var(--ring);overflow:hidden;transition:box-shadow .25s}
     .card.up{box-shadow:0 0 0 2px var(--up)}
     .card.down{box-shadow:0 0 0 2px var(--down)}
     .card__head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--ring)}
@@ -35,7 +36,7 @@
     .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#2a3044;color:#cdd7ff}
     .pngnote{color:var(--muted);font-size:12px}
     .delta{font-weight:700;margin-left:6px;font-variant-numeric:tabular-nums}
-    .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:#9aa0a6}
+    .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:#9aa0a6}
     .imgWrap{position:relative;background:#0b0d12}
     .chart{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}
     .nodata{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#91a0c4;font-weight:700;opacity:0}
@@ -51,8 +52,8 @@
     <h1>🌸 桜Index - 公式サイト</h1>
     <div class="sub">Astra4・S-COIN+・R-BANK9・AIN-10 を同時表示。時間軸を一括で切替できます。</div>
     <div class="headLinks">
-      <a href="https://twitter.com/SakuraIndex" target="_blank">公式X（Twitter）</a>
-      <a href="https://note.com/sakuraindex" target="_blank">公式note</a>
+      <a href="https://twitter.com/SakuraIndex" target="_blank" rel="noreferrer noopener">公式X（Twitter）</a>
+      <a href="https://note.com/sakuraindex" target="_blank" rel="noreferrer noopener">公式note</a>
     </div>
     <div class="toolbar" id="tfToolbar">
       <button class="chip is-active" data-tf="1d">1日</button>
@@ -63,95 +64,169 @@
   </header>
 
   <main class="grid">
+    <!-- Astra4 -->
     <section class="card" data-prefix="astra4">
-      <div class="card__head"><div class="title"><span class="flag">🇯🇵</span>Astra4<span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div><div class="pngnote">PNGを静的表示</div></div>
-      <div class="imgWrap"><img class="chart"/><div class="nodata">No data</div></div><div class="timestamp">最終更新：読込中...</div>
+      <div class="card__head">
+        <div class="title"><span class="flag">🇯🇵</span>Astra4<span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div>
+        <div class="pngnote">PNGを静的表示</div>
+      </div>
+      <div class="imgWrap"><img class="chart" alt="Astra4 chart"><div class="nodata">No data</div></div>
+      <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- S-COIN+ -->
     <section class="card" data-prefix="scoin_plus">
-      <div class="card__head"><div class="title"><span class="flag">🇯🇵</span>S-COIN+<span class="badge">仮想通貨</span><span id="delta-scoin" class="delta flat">—</span></div><div class="pngnote">PNGを静的表示</div></div>
-      <div class="imgWrap"><img class="chart"/><div class="nodata">No data</div></div><div class="timestamp">最終更新：読込中...</div>
+      <div class="card__head">
+        <div class="title"><span class="flag">🇯🇵</span>S-COIN+<span class="badge">仮想通貨</span><span id="delta-scoin" class="delta flat">—</span></div>
+        <div class="pngnote">PNGを静的表示</div>
+      </div>
+      <div class="imgWrap"><img class="chart" alt="S-COIN+ chart"><div class="nodata">No data</div></div>
+      <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- R-BANK9 -->
     <section class="card" data-prefix="rbank9">
-      <div class="card__head"><div class="title"><span class="flag">🇯🇵</span>R-BANK9<span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div><div class="pngnote">PNGを静的表示</div></div>
-      <div class="imgWrap"><img class="chart"/><div class="nodata">No data</div></div><div class="timestamp">最終更新：読込中...</div>
+      <div class="card__head">
+        <div class="title"><span class="flag">🇯🇵</span>R-BANK9<span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div>
+        <div class="pngnote">PNGを静的表示</div>
+      </div>
+      <div class="imgWrap"><img class="chart" alt="R-BANK9 chart"><div class="nodata">No data</div></div>
+      <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- AIN-10 -->
     <section class="card" data-prefix="ain10">
-      <div class="card__head"><div class="title"><span class="flag">🇺🇸</span>AIN-10<span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div><div class="pngnote">PNGを静的表示</div></div>
-      <div class="imgWrap"><img class="chart"/><div class="nodata">No data</div></div><div class="timestamp">最終更新：読込中...</div>
+      <div class="card__head">
+        <div class="title"><span class="flag">🇺🇸</span>AIN-10<span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div>
+        <div class="pngnote">PNGを静的表示</div>
+      </div>
+      <div class="imgWrap"><img class="chart" alt="AIN-10 chart"><div class="nodata">No data</div></div>
+      <div class="timestamp">最終更新：読込中...</div>
     </section>
   </main>
 
   <footer>
     データ：等加重指数（詳細は各リポジトリ参照）<br>© 2025 桜Index
-    <div class="disclaimer">※ 本サイトは投資助言ではありません。</div>
+    <div class="disclaimer">※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
   </footer>
 
   <script>
-    const ASSET_BASE="docs/charts";const DEFAULT_TF="1d";
-    const cacheBust=()=>new Date().toISOString().replace(/\D/g,"").slice(0,14);
-    const buildSrc=(p,tf)=>`${ASSET_BASE}/${p}_${tf}.png?v=${cacheBust()}`;
-    let currentTf=DEFAULT_TF;
-    function updateAll(tf){
-      currentTf=tf;
-      document.querySelectorAll(".card").forEach(c=>{
-        const p=c.dataset.prefix,img=c.querySelector("img"),wrap=c.querySelector(".imgWrap"),ts=c.querySelector(".timestamp");
-        wrap.classList.remove("is-error");img.onerror=()=>{wrap.classList.add("is-error");ts.textContent="最終更新：データなし"};
-        img.onload=()=>{const jst=new Date(Date.now()+9*3600e3);ts.textContent=`最終更新：${jst.toISOString().slice(0,16).replace('T',' ')}`};
-        img.src=buildSrc(p,tf);
+    // ======== 表示設定 ========
+    const ASSET_BASE = "docs/charts";
+    const DEFAULT_TF = "1d";
+    const CACHE_BUST = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
+
+    function buildPng(prefix, tf){ return `${ASSET_BASE}/${prefix}_${tf}.png?v=${CACHE_BUST()}` }
+
+    function updateImages(tf){
+      document.querySelectorAll(".card").forEach(card=>{
+        const p = card.dataset.prefix;
+        const img = card.querySelector("img.chart");
+        const wrap = card.querySelector(".imgWrap");
+        const ts = card.querySelector(".timestamp");
+        wrap.classList.remove("is-error");
+        img.onerror = ()=>{ wrap.classList.add("is-error"); ts.textContent = "最終更新：データなし" };
+        img.onload  = ()=>{ const j = new Date(Date.now()+9*3600e3);
+          ts.textContent = `最終更新：${j.toISOString().slice(0,16).replace("T"," ")}`; };
+        img.src = buildPng(p, tf);
       });
     }
-    document.getElementById("tfToolbar").onclick=e=>{
-      const b=e.target.closest("button[data-tf]");if(b)updateAll(b.dataset.tf);
-    };updateAll(currentTf);
 
-    // === 改良版変化率表示 ===
-    (async()=>{
-      const SERIES=[
-        {k:"astra4",i:"astra4_intraday.csv",h:"astra4_history.csv",a:"delta-astra4"},
-        {k:"scoin_plus",i:"scoin_plus_intraday.csv",h:"scoin_plus_history.csv",a:"delta-scoin"},
-        {k:"rbank9",i:"rbank9_intraday.csv",h:"rbank9_history.csv",a:"delta-rbank9"},
-        {k:"ain10",i:"ain10_intraday.csv",h:"ain10_history.csv",a:"delta-ain10"},
+    // 初期表示
+    let currentTf = DEFAULT_TF;
+    updateImages(currentTf);
+    document.getElementById("tfToolbar").addEventListener("click",(e)=>{
+      const b = e.target.closest("button[data-tf]"); if(!b) return;
+      document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("is-active", x===b));
+      currentTf = b.dataset.tf; updateImages(currentTf);
+    });
+
+    // ======== %表示：サマリTXT → history.csv の順で採用 ========
+    (async function computeDeltas(){
+      const SERIES = [
+        { key:"astra4",     txts:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"], history:"astra4_history.csv",   slot:"delta-astra4" },
+        { key:"scoin_plus", txts:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin" },
+        { key:"rbank9",     txts:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"], history:"rbank9_history.csv",   slot:"delta-rbank9" },
+        { key:"ain10",      txts:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],    history:"ain10_history.csv",    slot:"delta-ain10" },
       ];
-      const toJST=d=>new Date(d.getTime()+9*3600e3);
-      const nowJST=new Date(Date.now()+9*3600e3);
-      const today=nowJST.toISOString().slice(0,10);
-      const minDen=1e-6,cap=300;
-      async function get(url){const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw 0;return await r.text();}
-      function parse(text){
-        const lines=text.trim().split(/\r?\n/).slice(1);
-        return lines.map(l=>{
-          const c=l.split(",").map(v=>v.trim());
-          const t=new Date(c[0]);
-          const vals=c.slice(1).map(Number).filter(v=>isFinite(v));
-          return{t,v:vals.reduce((a,b)=>a+b,0)/vals.length};
-        }).filter(r=>isFinite(r.v)&&r.t);
+      const CAP = 200;     // 200% 以上は異常値扱い
+      const MIN_DEN = 1e-9;
+
+      async function fetchText(path){
+        const res = await fetch(`${ASSET_BASE}/${path}?v=${CACHE_BUST()}`, {cache:"no-store"});
+        if(!res.ok) throw new Error("fetch failed");
+        return await res.text();
       }
-      function pct(a,b){if(Math.abs(b)<minDen)return null;const p=((a-b)/Math.abs(b))*100;if(!isFinite(p)||Math.abs(p)>cap)return null;return p;}
+      function pickPctFromText(txt){
+        // 例: "+1.23%", "-0.56 %", "… change: 3.0%"
+        const m = txt.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
+        if(!m) return null;
+        const v = parseFloat(m[0].replace("%",""));
+        return Number.isFinite(v) ? v : null;
+      }
+      function pct(a,b){
+        if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+        if(Math.abs(b) < MIN_DEN) return null;
+        const p = ( (a-b) / Math.abs(b) ) * 100;
+        if(!Number.isFinite(p) || Math.abs(p) > CAP) return null;
+        return p;
+      }
+      function parseCsv2col(text){
+        // 汎用: 1行目ヘッダ、1列目=日付/日時、2列目=値  以外は破棄
+        const lines = text.trim().split(/\r?\n/);
+        if(lines.length <= 1) return [];
+        const rows = [];
+        for(let i=1;i<lines.length;i++){
+          const cols = lines[i].split(",").map(s=>s.trim());
+          if(cols.length < 2) continue;
+          const t = new Date(cols[0]);
+          const v = parseFloat(cols[1]);
+          if(Number.isFinite(v)) rows.push({t,v});
+        }
+        return rows.sort((a,b)=>a.t-b.t);
+      }
+
       for(const s of SERIES){
-        let d=null;
-        try{
-          const txt=await get(`${ASSET_BASE}/${s.i}?v=${cacheBust()}`);
-          const arr=parse(txt).sort((a,b)=>a.t-b.t);
-          const latest=arr[arr.length-1];const first=arr[0];
-          if(latest&&first){
-            // UTC→JST補正、直近5h以内なら「今日」と扱う
-            const diffH=(nowJST-latest.t)/3600000;
-            if(toJST(latest.t).toISOString().slice(0,10)===today||diffH<5)d=pct(latest.v,first.v);
-          }
-          if(d===null){
-            const htxt=await get(`${ASSET_BASE}/${s.h}?v=${cacheBust()}`);
-            const hist=parse(htxt).sort((a,b)=>a.t-b.t);
-            if(hist.length>=2)d=pct(hist.at(-1).v,hist.at(-2).v);
-          }
-        }catch{}
-        const el=document.getElementById(s.a),card=document.querySelector(`[data-prefix="${s.k}"]`);
-        el.classList.remove("up","down","flat");card.classList.remove("up","down");
-        if(d==null){el.textContent="—";el.classList.add("flat");continue;}
-        el.textContent=(d>=0?"+":"")+d.toFixed(2)+"%";
-        const cls=d>0?"up":d<0?"down":"flat";el.classList.add(cls);card.classList.add(cls);
+        let delta = null;
+
+        // 1) サマリTXTの最初にヒットしたものを採用
+        for(const name of s.txts){
+          try{
+            const txt = await fetchText(name);
+            const p = pickPctFromText(txt);
+            if(p !== null) { delta = p; break; }
+          }catch(_){}
+        }
+
+        // 2) だめなら history.csv の直近2件
+        if(delta === null){
+          try{
+            const hist = await fetchText(s.history);
+            const rows = parseCsv2col(hist);
+            if(rows.length >= 2){
+              const a = rows[rows.length-1].v;
+              const b = rows[rows.length-2].v;
+              const p = pct(a,b);
+              if(p !== null) delta = p;
+            }
+          }catch(_){}
+        }
+
+        // 反映
+        const el   = document.getElementById(s.slot);
+        const card = document.querySelector(`.card[data-prefix="${s.key}"]`);
+        el.classList.remove("up","down","flat");
+        card.classList.remove("up","down");
+        if(delta === null){
+          el.textContent = "—";
+          el.classList.add("flat");
+        }else{
+          const sign = delta >= 0 ? "+" : "";
+          el.textContent = `${sign}${delta.toFixed(2)}%`;
+          if(delta > 0){ el.classList.add("up");   card.classList.add("up"); }
+          else if(delta < 0){ el.classList.add("down"); card.classList.add("down"); }
+          else { el.classList.add("flat"); }
+        }
       }
     })();
   </script>
