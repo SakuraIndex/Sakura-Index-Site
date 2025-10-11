@@ -87,6 +87,16 @@
     }
     .pngnote{color:var(--muted);font-size:12px}
 
+    /* 上昇率/下落率 表示 */
+    .delta {
+      font-weight:700;
+      margin-left:6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .delta.up { color:#32e0cf; }   /* 青緑 */
+    .delta.down { color:#ff6b6b; } /* 赤 */
+    .delta.flat { color:#9aa0a6; } /* グレー */
+
     /* Chart area */
     .imgWrap{position:relative;background:#0b0d12}
     .chart{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#0b0d12}
@@ -142,7 +152,10 @@
     <!-- Astra4 🇯🇵 宇宙ベンチャー -->
     <section class="card" data-prefix="astra4">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>Astra4</span><span class="badge">宇宙ベンチャー</span></div>
+        <div class="title">
+          <span class="flag">🇯🇵</span><span>Astra4</span><span class="badge">宇宙ベンチャー</span>
+          <span id="delta-astra4" class="delta flat">—</span>
+        </div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
       <div class="imgWrap">
@@ -155,7 +168,10 @@
     <!-- S-COIN+ 🇯🇵 -->
     <section class="card" data-prefix="scoin_plus">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>S-COIN+</span><span class="badge">仮想通貨</span></div>
+        <div class="title">
+          <span class="flag">🇯🇵</span><span>S-COIN+</span><span class="badge">仮想通貨</span>
+          <span id="delta-scoin" class="delta flat">—</span>
+        </div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
       <div class="imgWrap">
@@ -168,7 +184,10 @@
     <!-- R-BANK9 🇯🇵 -->
     <section class="card" data-prefix="rbank9">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>R-BANK9</span><span class="badge">地方銀行</span></div>
+        <div class="title">
+          <span class="flag">🇯🇵</span><span>R-BANK9</span><span class="badge">地方銀行</span>
+          <span id="delta-rbank9" class="delta flat">—</span>
+        </div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
       <div class="imgWrap">
@@ -181,7 +200,10 @@
     <!-- AIN-10 🇺🇸 -->
     <section class="card" data-prefix="ain10">
       <div class="card__head">
-        <div class="title"><span class="flag">🇺🇸</span><span>AIN-10</span><span class="badge">AI関連10</span></div>
+        <div class="title">
+          <span class="flag">🇺🇸</span><span>AIN-10</span><span class="badge">AI関連10</span>
+          <span id="delta-ain10" class="delta flat">—</span>
+        </div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
       <div class="imgWrap">
@@ -250,6 +272,63 @@
     if (AUTO_REFRESH_MS){
       setInterval(()=>updateAll(currentTf), AUTO_REFRESH_MS);
     }
+
+    // === 追加: 上昇率/下落率 表示 ===
+    (function () {
+      const SERIES = [
+        { key:'astra4',    file:'astra4_history.csv',     anchor:'delta-astra4' },
+        { key:'scoin_plus',file:'scoin_plus_history.csv', anchor:'delta-scoin'  },
+        { key:'rbank9',    file:'rbank9_history.csv',     anchor:'delta-rbank9' },
+        { key:'ain10',     file:'ain10_history.csv',      anchor:'delta-ain10'  },
+      ];
+      const DECIMALS = 2;
+
+      function parseCsv(text){
+        const rows = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+        if (rows.length<=1) return [];
+        const out=[];
+        for(let i=1;i<rows.length;i++){
+          const cols = rows[i].split(',');
+          if(cols.length<2) continue;
+          const d = new Date(cols[0]);
+          const v = Number(cols[1]);
+          if(!isFinite(d)||!isFinite(v)) continue;
+          out.push({date:d,value:v});
+        }
+        out.sort((a,b)=>a.date-b.date);
+        return out;
+      }
+      function calcPct(points){
+        if(!points||points.length<2) return null;
+        const valid = points.slice(-10).map(p=>p.value).filter(v=>isFinite(v));
+        if(valid.length<2) return null;
+        const vNow = valid[valid.length-1], vPrev = valid[valid.length-2];
+        if(Math.abs(vPrev)<1e-12) return null;
+        return ((vNow - vPrev)/Math.abs(vPrev))*100;
+      }
+      function setDelta(id,pct){
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.classList.remove('up','down','flat');
+        if(pct===null){ el.textContent='—'; el.classList.add('flat'); return; }
+        const s=(pct>=0?'+':'')+pct.toFixed(DECIMALS)+'%';
+        el.textContent=s;
+        el.classList.add(pct>0?'up':pct<0?'down':'flat');
+      }
+      async function loadOne(s){
+        try{
+          const url=`${ASSET_BASE}/${s.file}?v=${cacheBust()}`;
+          const res=await fetch(url,{cache:'no-store'});
+          if(!res.ok) throw new Error(res.status);
+          const text=await res.text();
+          const data=parseCsv(text);
+          const pct=calcPct(data);
+          setDelta(s.anchor,pct);
+        }catch(e){setDelta(s.anchor,null);}
+      }
+      function init(){SERIES.forEach(loadOne);}
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+    })();
   </script>
 </body>
 </html>
