@@ -75,7 +75,6 @@
   </header>
 
   <main class="grid">
-    <!-- Astra4 -->
     <section class="card" data-prefix="astra4">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>Astra4<span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div>
@@ -85,7 +84,6 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- S-COIN+ -->
     <section class="card" data-prefix="scoin_plus">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>S-COIN+<span class="badge">仮想通貨</span><span id="delta-scoin" class="delta flat">—</span></div>
@@ -95,7 +93,6 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- R-BANK9 -->
     <section class="card" data-prefix="rbank9">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>R-BANK9<span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div>
@@ -105,7 +102,6 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- AIN-10 -->
     <section class="card" data-prefix="ain10">
       <div class="card__head">
         <div class="title"><span class="flag">🇺🇸</span>AIN-10<span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div>
@@ -121,18 +117,18 @@
     <div class="disclaimer">※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
   </footer>
 
-  <!-- ▼▼ %計算：intraday優先（S-COIN+は常にintraday）＋フェイルセーフ ▼▼ -->
+  <!-- %算出：S-COIN+は水準法のみ／他は従来ロジック -->
   <script>
   (async function computeDeltas(){
     const series = [
       {key:"astra4",     txt:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"],       history:"astra4_history.csv",     slot:"delta-astra4", tz:"Asia/Tokyo",        type:"session"},
-      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true},
+      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true, levelOnly:true},
       {key:"rbank9",     txt:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"],       history:"rbank9_history.csv",     slot:"delta-rbank9", tz:"Asia/Tokyo",        type:"session"},
       {key:"ain10",      txt:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],          history:"ain10_history.csv",      slot:"delta-ain10",  tz:"America/New_York", type:"sessionUS"},
     ];
-    const CAP = 120;         // 120%超は異常扱いで破棄
-    const GAP_PREFERRED = 5; // TXTとintradayに5pt以上の差があればintradayを採用
-    const MIN_DEN = 1e-9;
+    const CAP = 120;            // 120%超は異常扱いで破棄
+    const GAP_PREFERRED = 5;    // intraday と TXT が5pt以上ズレたら intraday を採用
+    const MIN_DEN = 1e-6;       // 分母がこれ未満なら無効
 
     const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
     async function fetchText(path){
@@ -145,8 +141,6 @@
       const v = parseFloat(m[0].replace("%",""));
       return Number.isFinite(v)?v:null;
     }
-
-    // CSV -> {t,v}[]
     function parseCsv(text){
       const lines = text.trim().split(/\r?\n/); if(lines.length<=1) return [];
       const hdr = lines[0].split(",").map(s=>s.trim().toLowerCase());
@@ -154,7 +148,7 @@
       let vi = -1;
       for(let i=0;i<hdr.length;i++){
         if(i===ti) continue;
-        if(/mean|value|index|score/i.test(hdr[i])){ vi=i; break; }
+        if(/mean|value|index|score|s-?coin\+?/i.test(hdr[i])){ vi=i; break; }
       }
       if(vi<0){ vi = (ti===0 && hdr.length>1)?1:hdr.length-1; }
       const rows=[];
@@ -169,8 +163,6 @@
       rows.sort((a,b)=>a.t-b.t);
       return rows;
     }
-
-    // セッション窓（JST 09:00–15:30。データが0件なら前営業日を再試行）/ rolling24h
     function windowFilter(rows, kind){
       const now = new Date();
       const jst = new Date(now.getTime()+9*3600e3);
@@ -190,26 +182,21 @@
       }
       return win;
     }
-
-    // 値が「すでに小数か%ポイントか」を自動判定
     function toFrac(x){ return Math.abs(x)>0.5 ? x/100 : x; }
-
-    // intradayから%を推定：積み上げ式と水準式の両方を計算し、小さい方の絶対値を採用
-    function pctFromIntraday(rows){
+    function pctMul(rows){
       if(rows.length<3) return null;
       let prod=1;
       for(const r of rows){ prod *= (1 + toFrac(r.v)); if(!Number.isFinite(prod)) return null; }
-      const pMul = (prod - 1) * 100;
-
-      const first = rows[0].v, last = rows[rows.length-1].v;
-      const pLvl = (Math.abs(first) < MIN_DEN) ? null : ((last/first - 1) * 100);
-
-      const okMul = Number.isFinite(pMul) && Math.abs(pMul)<=CAP;
-      const okLvl = Number.isFinite(pLvl) && Math.abs(pLvl)<=CAP;
-      if(okMul && !okLvl) return pMul;
-      if(okLvl && !okMul) return pLvl;
-      if(okMul && okLvl)  return Math.abs(pMul)<=Math.abs(pLvl)?pMul:pLvl;
-      return null;
+      return (prod - 1) * 100;
+    }
+    function pctLvl(rows){
+      if(rows.length<2) return null;
+      // 先頭の非ゼロ（|v|>=MIN_DEN相当）を始点にする
+      let first = null;
+      for(const r of rows){ if(Math.abs(r.v) >= MIN_DEN){ first = r.v; break; } }
+      const last = rows[rows.length-1].v;
+      if(first===null || Math.abs(first) < MIN_DEN) return null;
+      return ((last/first) - 1) * 100;
     }
 
     for(const s of series){
@@ -219,15 +206,25 @@
 
       let pTxt=null, pIntr=null, pHist=null;
 
-      // 1) intraday（S-COIN+は常に最優先）
       try{
         const csv = await fetchText(`${s.key}_intraday.csv`);
         const rows = parseCsv(csv);
         const win  = windowFilter(rows, s.type);
-        pIntr = pctFromIntraday(win);
+
+        if(s.levelOnly){
+          // S-COIN+：水準法のみ
+          const p = pctLvl(win);
+          pIntr = (p!==null && Math.abs(p)<=CAP) ? p : null;
+        }else{
+          // 従来：積み上げ式と水準式の小さい方を採用
+          const pm = pctMul(win);
+          const pl = pctLvl(win);
+          const okm = (pm!==null && Math.abs(pm)<=CAP);
+          const okl = (pl!==null && Math.abs(pl)<=CAP);
+          pIntr = okm && okl ? (Math.abs(pm)<=Math.abs(pl)?pm:pl) : (okm?pm:(okl?pl:null));
+        }
       }catch(_){}
 
-      // 2) TXT（確定系）—S-COIN+はスキップ
       if(!s.forceIntraday){
         for(const f of s.txt){ try{
           const t = await fetchText(f);
@@ -236,7 +233,6 @@
         }catch(_){/* next */} }
       }
 
-      // 3) history 最終手段
       try{
         const h = await fetchText(s.history);
         const lines = h.trim().split(/\r?\n/);
@@ -250,7 +246,6 @@
         }
       }catch(_){}
 
-      // 採用ルール
       let delta = null;
       if(s.forceIntraday && pIntr!==null) delta = pIntr;
       else if(pIntr!==null && pTxt!==null) delta = (Math.abs(pIntr - pTxt) >= GAP_PREFERRED) ? pIntr : pTxt;
@@ -270,11 +265,11 @@
   })();
   </script>
 
-  <!-- ▼▼ PNGロード／時間軸切替（1d/7d/1m/1y） ▼▼ -->
+  <!-- PNG読み込み＆時間軸切替 -->
   <script>
     const ASSET_BASE = "docs/charts";
     const DEFAULT_TF = "1d";
-    const AUTO_REFRESH_MS = 3 * 60 * 1000; // 3分ごと再読込
+    const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
     const urlTf = new URL(location.href).searchParams.get("tf");
     let currentTf = (urlTf && ["1d","7d","1m","1y"].includes(urlTf)) ? urlTf : DEFAULT_TF;
@@ -298,7 +293,6 @@
         };
         img.src = buildSrc(prefix, tf);
       });
-
       document.querySelectorAll("#tfToolbar .chip").forEach(b=>{
         b.classList.toggle("is-active", b.dataset.tf === tf);
       });
