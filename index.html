@@ -13,20 +13,29 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);
-      font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Yu Gothic","Meiryo",sans-serif}
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Yu Gothic","Meiryo",sans-serif
+    }
     header{padding:28px 20px 12px;text-align:center}
     h1{margin:0 0 8px;font-size:28px;font-weight:800;color:var(--pink)}
     .sub{color:var(--muted);font-size:14px}
     .headLinks{display:flex;gap:8px;justify-content:center;margin-top:10px}
-    .headLinks a{padding:8px 12px;border-radius:10px;background:var(--chip);color:#fff;text-decoration:none;box-shadow:inset 0 0 0 1px var(--ring)}
+    .headLinks a{
+      padding:8px 12px;border-radius:10px;background:var(--chip);color:#fff;text-decoration:none;
+      box-shadow:inset 0 0 0 1px var(--ring)
+    }
     .toolbar{margin:18px auto 10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .chip{padding:8px 14px;border:none;border-radius:999px;background:var(--chip);color:var(--text);
-      font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);cursor:pointer;transition:.15s}
+    .chip{
+      padding:8px 14px;border:none;border-radius:999px;background:var(--chip);color:var(--text);
+      font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);cursor:pointer;transition:.15s
+    }
     .chip:hover{transform:translateY(-1px)}
     .chip.is-active{background:var(--chip-active);box-shadow:0 0 0 2px var(--accent) inset;color:#fff}
+
     .grid{width:min(1280px,92vw);margin:0 auto 28px;display:grid;gap:16px;grid-template-columns:1fr}
     @media (min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+
     .card{background:var(--panel);border-radius:16px;box-shadow:0 0 0 1px var(--ring);overflow:hidden;transition:box-shadow .2s}
     .card.up{box-shadow:0 0 0 2px var(--up)}
     .card.down{box-shadow:0 0 0 2px var(--down)}
@@ -37,11 +46,13 @@
     .pngnote{color:var(--muted);font-size:12px}
     .delta{font-weight:700;margin-left:6px;font-variant-numeric:tabular-nums}
     .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:#9aa0a6}
+
     .imgWrap{position:relative;background:#0b0d12}
     .chart{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}
     .nodata{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#91a0c4;font-weight:700;opacity:0}
     .imgWrap.is-error .nodata{opacity:1}
     .timestamp{text-align:right;font-size:12px;color:var(--muted);padding:6px 10px 10px;border-top:1px solid var(--ring)}
+
     footer{padding:20px 12px 28px;text-align:center;color:var(--muted);font-size:13px}
     .disclaimer{margin-top:10px;font-size:13px;color:#ffb2b2}
     a{color:#a7dfff}
@@ -64,6 +75,7 @@
   </header>
 
   <main class="grid">
+    <!-- Astra4 -->
     <section class="card" data-prefix="astra4">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>Astra4<span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div>
@@ -73,6 +85,7 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- S-COIN+ -->
     <section class="card" data-prefix="scoin_plus">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>S-COIN+<span class="badge">仮想通貨</span><span id="delta-scoin" class="delta flat">—</span></div>
@@ -82,6 +95,7 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- R-BANK9 -->
     <section class="card" data-prefix="rbank9">
       <div class="card__head">
         <div class="title"><span class="flag">🇯🇵</span>R-BANK9<span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div>
@@ -91,6 +105,7 @@
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
+    <!-- AIN-10 -->
     <section class="card" data-prefix="ain10">
       <div class="card__head">
         <div class="title"><span class="flag">🇺🇸</span>AIN-10<span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div>
@@ -106,186 +121,199 @@
     <div class="disclaimer">※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
   </footer>
 
+  <!-- ▼▼ %計算：intraday優先（S-COIN+は常にintraday）＋フェイルセーフ ▼▼ -->
   <script>
-    // ===== 基本設定 =====
+  (async function computeDeltas(){
+    const series = [
+      {key:"astra4",     txt:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"],       history:"astra4_history.csv",     slot:"delta-astra4", tz:"Asia/Tokyo",        type:"session"},
+      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true},
+      {key:"rbank9",     txt:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"],       history:"rbank9_history.csv",     slot:"delta-rbank9", tz:"Asia/Tokyo",        type:"session"},
+      {key:"ain10",      txt:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],          history:"ain10_history.csv",      slot:"delta-ain10",  tz:"America/New_York", type:"sessionUS"},
+    ];
+    const CAP = 120;         // 120%超は異常扱いで破棄
+    const GAP_PREFERRED = 5; // TXTとintradayに5pt以上の差があればintradayを採用
+    const MIN_DEN = 1e-9;
+
+    const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
+    async function fetchText(path){
+      const url = `docs/charts/${path}?v=${bust()}`;
+      const r = await fetch(url,{cache:"no-store"}); if(!r.ok) throw 0; return await r.text();
+    }
+    function pickPctFromText(txt){
+      const m = txt.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
+      if(!m) return null;
+      const v = parseFloat(m[0].replace("%",""));
+      return Number.isFinite(v)?v:null;
+    }
+
+    // CSV -> {t,v}[]
+    function parseCsv(text){
+      const lines = text.trim().split(/\r?\n/); if(lines.length<=1) return [];
+      const hdr = lines[0].split(",").map(s=>s.trim().toLowerCase());
+      const ti = hdr.findIndex(h=>/time|date|datetime|日時/.test(h));
+      let vi = -1;
+      for(let i=0;i<hdr.length;i++){
+        if(i===ti) continue;
+        if(/mean|value|index|score/i.test(hdr[i])){ vi=i; break; }
+      }
+      if(vi<0){ vi = (ti===0 && hdr.length>1)?1:hdr.length-1; }
+      const rows=[];
+      for(let i=1;i<lines.length;i++){
+        const c = lines[i].split(",");
+        if(c.length<=Math.max(ti,vi)) continue;
+        const t = new Date(c[ti]);
+        const v = parseFloat(c[vi]);
+        if(!Number.isFinite(v) || isNaN(t.getTime())) continue;
+        rows.push({t,v});
+      }
+      rows.sort((a,b)=>a.t-b.t);
+      return rows;
+    }
+
+    // セッション窓（JST 09:00–15:30。データが0件なら前営業日を再試行）/ rolling24h
+    function windowFilter(rows, kind){
+      const now = new Date();
+      const jst = new Date(now.getTime()+9*3600e3);
+      if(kind==="rolling24"){
+        const from = new Date(now.getTime()-24*3600e3);
+        return rows.filter(r=>r.t>=from && r.t<=now);
+      }
+      const day  = new Date(jst.getFullYear(), jst.getMonth(), jst.getDate());
+      const s1 = new Date(day.getTime() + 9*3600e3);
+      const e1 = new Date(day.getTime() + 15*3600e3 + 30*60e3);
+      let win = rows.filter(r=>r.t>=s1 && r.t<=e1);
+      if(win.length===0){
+        const y  = new Date(day.getTime()-24*3600e3);
+        const s2 = new Date(y.getTime() + 9*3600e3);
+        const e2 = new Date(y.getTime() + 15*3600e3 + 30*60e3);
+        win = rows.filter(r=>r.t>=s2 && r.t<=e2);
+      }
+      return win;
+    }
+
+    // 値が「すでに小数か%ポイントか」を自動判定
+    function toFrac(x){ return Math.abs(x)>0.5 ? x/100 : x; }
+
+    // intradayから%を推定：積み上げ式と水準式の両方を計算し、小さい方の絶対値を採用
+    function pctFromIntraday(rows){
+      if(rows.length<3) return null;
+      let prod=1;
+      for(const r of rows){ prod *= (1 + toFrac(r.v)); if(!Number.isFinite(prod)) return null; }
+      const pMul = (prod - 1) * 100;
+
+      const first = rows[0].v, last = rows[rows.length-1].v;
+      const pLvl = (Math.abs(first) < MIN_DEN) ? null : ((last/first - 1) * 100);
+
+      const okMul = Number.isFinite(pMul) && Math.abs(pMul)<=CAP;
+      const okLvl = Number.isFinite(pLvl) && Math.abs(pLvl)<=CAP;
+      if(okMul && !okLvl) return pMul;
+      if(okLvl && !okMul) return pLvl;
+      if(okMul && okLvl)  return Math.abs(pMul)<=Math.abs(pLvl)?pMul:pLvl;
+      return null;
+    }
+
+    for(const s of series){
+      const el   = document.getElementById(s.slot);
+      const card = document.querySelector(`.card[data-prefix="${s.key}"]`);
+      el.className="delta"; card.classList.remove("up","down");
+
+      let pTxt=null, pIntr=null, pHist=null;
+
+      // 1) intraday（S-COIN+は常に最優先）
+      try{
+        const csv = await fetchText(`${s.key}_intraday.csv`);
+        const rows = parseCsv(csv);
+        const win  = windowFilter(rows, s.type);
+        pIntr = pctFromIntraday(win);
+      }catch(_){}
+
+      // 2) TXT（確定系）—S-COIN+はスキップ
+      if(!s.forceIntraday){
+        for(const f of s.txt){ try{
+          const t = await fetchText(f);
+          const v = pickPctFromText(t);
+          if(v!==null && Math.abs(v)<=CAP){ pTxt=v; break; }
+        }catch(_){/* next */} }
+      }
+
+      // 3) history 最終手段
+      try{
+        const h = await fetchText(s.history);
+        const lines = h.trim().split(/\r?\n/);
+        if(lines.length>=3){
+          const a = parseFloat(lines[lines.length-1].split(",")[1]);
+          const b = parseFloat(lines[lines.length-2].split(",")[1]);
+          if(Number.isFinite(a) && Number.isFinite(b) && Math.abs(b)>MIN_DEN){
+            const v = ((a-b)/Math.abs(b))*100;
+            if(Math.abs(v)<=CAP) pHist = v;
+          }
+        }
+      }catch(_){}
+
+      // 採用ルール
+      let delta = null;
+      if(s.forceIntraday && pIntr!==null) delta = pIntr;
+      else if(pIntr!==null && pTxt!==null) delta = (Math.abs(pIntr - pTxt) >= GAP_PREFERRED) ? pIntr : pTxt;
+      else if(pIntr!==null) delta = pIntr;
+      else if(pTxt!==null)  delta = pTxt;
+      else if(pHist!==null) delta = pHist;
+
+      if(delta===null){
+        el.textContent="—"; el.classList.add("flat");
+      }else{
+        el.textContent = (delta>=0?"+":"") + delta.toFixed(2) + "%";
+        if(delta>0){ el.classList.add("up"); card.classList.add("up"); }
+        else if(delta<0){ el.classList.add("down"); card.classList.add("down"); }
+        else { el.classList.add("flat"); }
+      }
+    }
+  })();
+  </script>
+
+  <!-- ▼▼ PNGロード／時間軸切替（1d/7d/1m/1y） ▼▼ -->
+  <script>
     const ASSET_BASE = "docs/charts";
     const DEFAULT_TF = "1d";
-    const cacheBust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
-    const png = (p,tf)=>`${ASSET_BASE}/${p}_${tf}.png?v=${cacheBust()}`;
+    const AUTO_REFRESH_MS = 3 * 60 * 1000; // 3分ごと再読込
 
-    function updateImages(tf){
+    const urlTf = new URL(location.href).searchParams.get("tf");
+    let currentTf = (urlTf && ["1d","7d","1m","1y"].includes(urlTf)) ? urlTf : DEFAULT_TF;
+
+    const cacheBust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
+    const buildSrc  = (prefix, tf) => `${ASSET_BASE}/${prefix}_${tf}.png?v=${cacheBust()}`;
+
+    function updateAll(tf){
+      currentTf = tf;
       document.querySelectorAll(".card").forEach(card=>{
-        const p = card.dataset.prefix;
+        const prefix = card.dataset.prefix;
         const img = card.querySelector("img.chart");
         const wrap = card.querySelector(".imgWrap");
         const ts = card.querySelector(".timestamp");
         wrap.classList.remove("is-error");
-        img.onerror = ()=>{ wrap.classList.add("is-error"); ts.textContent="最終更新：データなし"; };
-        img.onload  = ()=>{ const j = new Date(Date.now()+9*3600e3);
-          ts.textContent=`最終更新：${j.toISOString().slice(0,16).replace("T"," ")}`; };
-        img.src = png(p, tf);
+        img.onerror = () => { wrap.classList.add("is-error"); ts.textContent = "最終更新：データなし"; };
+        img.onload  = () => {
+          const now = new Date();
+          const jst = new Date(now.getTime() + 9*60*60*1000);
+          ts.textContent = `最終更新：${jst.toISOString().slice(0,16).replace('T',' ')}`;
+        };
+        img.src = buildSrc(prefix, tf);
       });
+
+      document.querySelectorAll("#tfToolbar .chip").forEach(b=>{
+        b.classList.toggle("is-active", b.dataset.tf === tf);
+      });
+      const u = new URL(location.href);
+      u.searchParams.set("tf", tf);
+      history.replaceState(null, "", u.toString());
     }
 
-    let currentTf = DEFAULT_TF;
-    updateImages(currentTf);
     document.getElementById("tfToolbar").addEventListener("click",(e)=>{
-      const b = e.target.closest("button[data-tf]");
-      if(!b) return;
-      document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("is-active", x===b));
-      currentTf = b.dataset.tf;
-      updateImages(currentTf);
+      const btn = e.target.closest("button[data-tf]");
+      if(btn) updateAll(btn.dataset.tf);
     });
 
-    // ========= %算出（TXT -> intraday.csv再計算） =========
-    (async function computeDeltas(){
-      const series = [
-        {key:"astra4",     txt:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"], history:"astra4_history.csv",   slot:"delta-astra4", tz:"Asia/Tokyo",  type:"session"},
-        {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",         type:"rolling24"},
-        {key:"rbank9",     txt:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"], history:"rbank9_history.csv",   slot:"delta-rbank9", tz:"Asia/Tokyo",  type:"session"},
-        {key:"ain10",      txt:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],    history:"ain10_history.csv",    slot:"delta-ain10", tz:"America/New_York", type:"sessionUS"},
-      ];
-      const CAP = 120;     // 120%を超えるのは異常扱い
-      const MIN_DEN = 1e-9;
-
-      async function fetchText(path){
-        const url = `${ASSET_BASE}/${path}?v=${cacheBust()}`;
-        const r = await fetch(url, {cache:"no-store"}); if(!r.ok) throw 0; return await r.text();
-      }
-      function pickPctFromText(txt){
-        const m = txt.match(/[+\-]?\d+(?:\.\d+)?\s*%/); if(!m) return null;
-        const v = parseFloat(m[0].replace("%","")); return Number.isFinite(v)?v:null;
-      }
-      function fmtDelta(p){ const s = (p>=0?"+":"") + p.toFixed(2) + "%"; return s; }
-
-      // --- intraday.csv から堅牢に再計算 ---
-      function parseCsv(text){
-        const lines = text.trim().split(/\r?\n/); if(lines.length<=1) return [];
-        const hdr = lines[0].split(",").map(s=>s.trim().toLowerCase());
-        const ti = hdr.findIndex(h=>/time|date|datetime|日時/.test(h));
-        let vi = -1;
-        for(let i=0;i<hdr.length;i++){
-          if(i===ti) continue;
-          const h = hdr[i];
-          if(/mean|value|index|score/i.test(h)){ vi=i; break; }
-        }
-        if(vi<0){ vi = hdr.length-1; if(vi===ti && hdr.length>=2) vi=1; }
-        const rows = [];
-        for(let i=1;i<lines.length;i++){
-          const c = lines[i].split(","); if(c.length<=Math.max(ti,vi)) continue;
-          const t = new Date(c[ti]); const v = parseFloat(c[vi]);
-          if(!Number.isFinite(v) || isNaN(t.getTime())) continue;
-          rows.push({t,v});
-        }
-        rows.sort((a,b)=>a.t-b.t);
-        return rows;
-      }
-      function windowFilter(rows, kind){
-        const now = new Date();
-        const jst = new Date(now.getTime()+9*3600e3);
-        if(kind==="rolling24"){
-          const from = new Date(now.getTime()-24*3600e3);
-          return rows.filter(r=>r.t>=from && r.t<=now);
-        }
-        // 東京セッション 09:00–15:30
-        if(kind==="session"||kind==="sessionUS"){
-          // JSTかUSでも、CSVのタイムゾーンはISOならUTC扱いでOK。時間帯境界は JST/NY の時刻で比較したいが、
-          // サイト側では近似として JST セッションを使用（AIN-10はhistory代替に落ちることが多い）。
-          const base = jst; // 近似
-          const day = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-          const start = new Date(day.getTime() + 9*3600e3);               // 09:00 JST
-          const end   = new Date(day.getTime() + 15*3600e3 + 30*60e3);    // 15:30 JST
-          let win = rows.filter(r=>r.t>=start && r.t<=end);
-          if(win.length===0){
-            // 前日
-            const y = new Date(day.getTime()-24*3600e3);
-            const s2 = new Date(y.getTime() + 9*3600e3);
-            const e2 = new Date(y.getTime() + 15*3600e3 + 30*60e3);
-            win = rows.filter(r=>r.t>=s2 && r.t<=e2);
-          }
-          return win;
-        }
-        return rows;
-      }
-      function toFrac(x){
-        // 返り値：小数の変化率 r （例: 1% -> 0.01）
-        if(!Number.isFinite(x)) return 0;
-        const ax = Math.abs(x);
-        // バー値が % ポイント（±1.2 など）っぽい → 100 で割る
-        if(ax > 0.5) return x/100;
-        return x; // すでに小数（0.002 など）
-      }
-      function pctFromIntraday(rows){
-        if(rows.length<2) return null;
-        // 1) 積上げ（変化率系列と仮定）
-        let prod = 1;
-        for(const r of rows){ prod *= (1 + toFrac(r.v)); if(!Number.isFinite(prod)) return null; }
-        const pMul = (prod - 1) * 100;
-
-        // 2) レベル値と仮定
-        const first = rows[0].v, last = rows[rows.length-1].v;
-        const pLvl = (Math.abs(first) < MIN_DEN) ? null : ((last/first - 1) * 100);
-
-        // どちらを採用？（より常識的な方）
-        const okMul = Number.isFinite(pMul) && Math.abs(pMul) <= CAP;
-        const okLvl = Number.isFinite(pLvl) && Math.abs(pLvl) <= CAP;
-        if(okMul && !okLvl) return pMul;
-        if(okLvl && !okMul) return pLvl;
-        if(okMul && okLvl) return Math.abs(pMul) <= Math.abs(pLvl) ? pMul : pLvl;
-        return null;
-      }
-
-      for(const s of series){
-        const el = document.getElementById(s.slot);
-        const card = document.querySelector(`.card[data-prefix="${s.key}"]`);
-        el.className = "delta"; // reset
-        card.classList.remove("up","down");
-
-        let delta = null;
-
-        // 1) TXT（確定値）優先
-        for(const f of s.txt){ try{
-          const t = await fetchText(f);
-          const p = pickPctFromText(t);
-          if(p!==null && Math.abs(p) <= CAP){ delta = p; break; }
-        }catch(_){/* next */} }
-
-        // 2) intraday.csv から再計算（TXTが無い/異常のとき）
-        if(delta === null){
-          try{
-            const csv = await fetchText(`${s.key}_intraday.csv`);
-            const rows = parseCsv(csv);
-            const win = windowFilter(rows, s.type);
-            const p = pctFromIntraday(win);
-            if(p!==null) delta = p;
-          }catch(_){}
-        }
-
-        // 3) history.csv 直近2日（最後の砦）
-        if(delta === null){
-          try{
-            const h = await fetchText(s.history);
-            const lines = h.trim().split(/\r?\n/); if(lines.length>=3){
-              const a = parseFloat(lines[lines.length-1].split(",")[1]);
-              const b = parseFloat(lines[lines.length-2].split(",")[1]);
-              if(Number.isFinite(a) && Number.isFinite(b) && Math.abs(b)>MIN_DEN){
-                const p = ((a-b)/Math.abs(b))*100; if(Math.abs(p)<=CAP) delta = p;
-              }
-            }
-          }catch(_){}
-        }
-
-        if(delta === null){
-          el.textContent = "—";
-          el.classList.add("flat");
-        }else{
-          el.textContent = fmtDelta(delta);
-          if(delta > 0){ el.classList.add("up"); card.classList.add("up"); }
-          else if(delta < 0){ el.classList.add("down"); card.classList.add("down"); }
-          else { el.classList.add("flat"); }
-        }
-      }
-    })();
+    updateAll(currentTf);
+    if (AUTO_REFRESH_MS) setInterval(()=>updateAll(currentTf), AUTO_REFRESH_MS);
   </script>
 </body>
 </html>
