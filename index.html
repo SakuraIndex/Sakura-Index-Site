@@ -6,79 +6,36 @@
   <title>🌸 桜Index - 公式サイト</title>
   <meta name="description" content="Astra4・S-COIN+・R-BANK9・AIN-10 の4指数を1画面で同時表示。時間軸を一括切替。">
   <style>
-    :root{
-      --bg:#0e1014; --panel:#171a22; --text:#e9ecf1; --muted:#a7afc0;
-      --chip:#232838; --chip-active:#33405c; --ring:#384055; --accent:#79e3d6;
-      --pink:#ff86b5; --up:#32e0cf; --down:#ff6b6b;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;background:var(--bg);color:var(--text);
-      font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans JP","Yu Gothic","Meiryo",sans-serif;
-    }
-
+    :root{ --bg:#0e1014; --panel:#171a22; --text:#e9ecf1; --muted:#a7afc0;
+           --chip:#232838; --chip-active:#33405c; --ring:#384055; --accent:#79e3d6;
+           --pink:#ff86b5; --up:#32e0cf; --down:#ff6b6b; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);
+         font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Yu Gothic","Meiryo",sans-serif}
     header{padding:28px 20px 12px;text-align:center}
     h1{margin:0 0 8px;font-size:28px;font-weight:800;color:var(--pink)}
     .sub{color:var(--muted);font-size:14px}
     .headLinks{display:flex;gap:8px;justify-content:center;margin-top:10px}
-    .headLinks a{
-      display:inline-flex;gap:8px;align-items:center;
-      padding:8px 12px;border-radius:10px;
-      background:var(--chip);color:#fff;text-decoration:none;
-      box-shadow:inset 0 0 0 1px var(--ring);
-    }
-
+    .headLinks a{padding:8px 12px;border-radius:10px;background:var(--chip);color:#fff;text-decoration:none;box-shadow:inset 0 0 0 1px var(--ring)}
     .toolbar{margin:18px auto 10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .chip{
-      appearance:none;border:none;cursor:pointer;
-      padding:8px 14px;border-radius:999px;
-      background:var(--chip);color:var(--text);
-      font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);
-      transition:.15s;
-    }
-    .chip:hover{transform:translateY(-1px)}
-    .chip.is-active{background:var(--chip-active);box-shadow:0 0 0 2px var(--accent) inset;color:#fff}
-
+    .chip{padding:8px 14px;border:none;border-radius:999px;background:var(--chip);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px var(--ring);cursor:pointer;transition:.15s}
+    .chip:hover{transform:translateY(-1px)} .chip.is-active{background:var(--chip-active);box-shadow:0 0 0 2px var(--accent) inset;color:#fff}
     .grid{width:min(1280px,92vw);margin:0 auto 28px;display:grid;gap:16px;grid-template-columns:1fr}
     @media (min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-
-    .card{
-      background:var(--panel);
-      border-radius:16px;
-      box-shadow:0 0 0 1px var(--ring);
-      overflow:hidden;transition:box-shadow .2s, filter .2s;
-    }
-    .card.up{box-shadow:0 0 0 2px var(--up)}
-    .card.down{box-shadow:0 0 0 2px var(--down)}
-
-    .card__head{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:12px 14px;border-bottom:1px solid var(--ring);
-      background:linear-gradient(180deg,rgba(121,227,214,.07),transparent);
-    }
+    .card{background:var(--panel);border-radius:16px;box-shadow:0 0 0 1px var(--ring);overflow:hidden;transition:box-shadow .2s,filter .2s}
+    .card.up{box-shadow:0 0 0 2px var(--up)} .card.down{box-shadow:0 0 0 2px var(--down)}
+    .card__head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--ring);background:linear-gradient(180deg,rgba(121,227,214,.07),transparent)}
     .title{display:flex;align-items:center;gap:10px;font-weight:800}
-    .flag{font-size:18px;line-height:1}
-    .badge{
-      font-size:12px;padding:2px 8px;border-radius:999px;
-      background:#2a3044;color:#cdd7ff;box-shadow:inset 0 0 0 1px var(--ring);
-    }
+    .flag{font-size:18px}
+    .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#2a3044;color:#cdd7ff}
     .pngnote{color:var(--muted);font-size:12px}
     .delta{font-weight:700;margin-left:6px;font-variant-numeric:tabular-nums}
     .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:#9aa0a6}
-
     .imgWrap{position:relative;background:#0b0d12}
     .chart{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#0b0d12}
-    .nodata{
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      color:#91a0c4;font-weight:700;letter-spacing:.02em;opacity:0;transition:.15s;
-    }
+    .nodata{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#91a0c4;font-weight:700;opacity:0;transition:.15s}
     .imgWrap.is-error .nodata{opacity:1}
-    .timestamp{
-      text-align:right;font-size:12px;color:var(--muted);
-      padding:6px 10px 10px;border-top:1px solid var(--ring);
-    }
-
+    .timestamp{text-align:right;font-size:12px;color:var(--muted);padding:6px 10px 10px;border-top:1px solid var(--ring)}
     footer{padding:20px 12px 28px;text-align:center;color:var(--muted);font-size:13px;line-height:1.8}
     .disclaimer{margin-top:10px;font-size:13px;color:#ffb2b2}
     a{color:#a7dfff}
@@ -94,63 +51,47 @@
     </div>
 
     <div class="toolbar" id="tfToolbar" role="tablist" aria-label="時間軸">
-      <button class="chip is-active" data-tf="1d"  aria-selected="true">1日</button>
-      <button class="chip"          data-tf="7d"  aria-selected="false">1週間</button>
-      <button class="chip"          data-tf="1m"  aria-selected="false">1ヶ月</button>
-      <button class="chip"          data-tf="1y"  aria-selected="false">1年</button>
+      <button class="chip is-active" data-tf="1d" aria-selected="true">1日</button>
+      <button class="chip" data-tf="7d" aria-selected="false">1週間</button>
+      <button class="chip" data-tf="1m" aria-selected="false">1ヶ月</button>
+      <button class="chip" data-tf="1y" aria-selected="false">1年</button>
     </div>
   </header>
 
   <main class="grid" id="grid">
-    <!-- Astra4 🇯🇵 宇宙ベンチャー -->
     <section class="card" data-prefix="astra4">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>Astra4</span><span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div>
+        <div class="title"><span class="flag">🇯🇵</span>Astra4 <span class="badge">宇宙ベンチャー</span><span id="delta-astra4" class="delta flat">—</span></div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-      <div class="imgWrap">
-        <img class="chart" alt="Astra4 chart" />
-        <div class="nodata">No data</div>
-      </div>
+      <div class="imgWrap"><img class="chart" alt="Astra4 chart"><div class="nodata">No data</div></div>
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- S-COIN+ 🇯🇵 -->
     <section class="card" data-prefix="scoin_plus">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>S-COIN+</span><span class="badge">仮想通貨</span><span id="delta-scoin" class="delta flat">—</span></div>
+        <div class="title"><span class="flag">🇯🇵</span>S-COIN+ <span class="badge">仮想通貨</span><span id="delta-scoin_plus" class="delta flat">—</span></div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-      <div class="imgWrap">
-        <img class="chart" alt="S-COIN+ chart" />
-        <div class="nodata">No data</div>
-      </div>
+      <div class="imgWrap"><img class="chart" alt="S-COIN+ chart"><div class="nodata">No data</div></div>
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- R-BANK9 🇯🇵 -->
     <section class="card" data-prefix="rbank9">
       <div class="card__head">
-        <div class="title"><span class="flag">🇯🇵</span><span>R-BANK9</span><span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div>
+        <div class="title"><span class="flag">🇯🇵</span>R-BANK9 <span class="badge">地方銀行</span><span id="delta-rbank9" class="delta flat">—</span></div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-      <div class="imgWrap">
-        <img class="chart" alt="R-BANK9 chart" />
-        <div class="nodata">No data</div>
-      </div>
+      <div class="imgWrap"><img class="chart" alt="R-BANK9 chart"><div class="nodata">No data</div></div>
       <div class="timestamp">最終更新：読込中...</div>
     </section>
 
-    <!-- AIN-10 🇺🇸 -->
     <section class="card" data-prefix="ain10">
       <div class="card__head">
-        <div class="title"><span class="flag">🇺🇸</span><span>AIN-10</span><span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div>
+        <div class="title"><span class="flag">🇺🇸</span>AIN-10 <span class="badge">AI関連10</span><span id="delta-ain10" class="delta flat">—</span></div>
         <div class="pngnote">PNGを静的表示（自動更新）</div>
       </div>
-      <div class="imgWrap">
-        <img class="chart" alt="AIN-10 chart" />
-        <div class="nodata">No data</div>
-      </div>
+      <div class="imgWrap"><img class="chart" alt="AIN-10 chart"><div class="nodata">No data</div></div>
       <div class="timestamp">最終更新：読込中...</div>
     </section>
   </main>
@@ -161,232 +102,101 @@
     <div class="disclaimer">※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。</div>
   </footer>
 
-  <!-- ===== 画像の読込（時間軸切替＋キャッシュバスター） ===== -->
+  <!-- 画像切替（時間軸） -->
   <script>
     const ASSET_BASE = "docs/charts";
-    const INDEX_PREFIXES = ["astra4","scoin_plus","rbank9","ain10"];
+    const INDEXES = ["astra4","scoin_plus","rbank9","ain10"];
     const DEFAULT_TF = "1d";
     const AUTO_REFRESH_MS = 3 * 60 * 1000;
 
     const urlTf = new URL(location.href).searchParams.get("tf");
     let currentTf = (urlTf && ["1d","7d","1m","1y"].includes(urlTf)) ? urlTf : DEFAULT_TF;
 
-    const cacheBustStr = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
-    const buildSrc = (prefix, tf) => `${ASSET_BASE}/${prefix}_${tf}.png?v=${cacheBustStr()}`;
+    const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
+    const png = (k, tf) => `${ASSET_BASE}/${k}_${tf}.png?v=${bust()}`;
 
-    function updateAll(tf){
+    function updateCharts(tf){
       currentTf = tf;
       document.querySelectorAll(".card").forEach(card=>{
-        const prefix = card.dataset.prefix;
+        const k = card.dataset.prefix;
         const img = card.querySelector("img.chart");
         const wrap = card.querySelector(".imgWrap");
         const ts = card.querySelector(".timestamp");
         wrap.classList.remove("is-error");
-        img.onerror = () => {
-          wrap.classList.add("is-error");
-          ts.textContent = "最終更新：データなし";
-        };
-        img.onload = () => {
-          const now = new Date();
-          const jst = new Date(now.getTime() + 9*60*60*1000);
+        img.onerror = ()=>{ wrap.classList.add("is-error"); ts.textContent="最終更新：データなし"; };
+        img.onload  = ()=>{
+          const now = new Date(), jst = new Date(now.getTime()+9*3600e3);
           ts.textContent = `最終更新：${jst.toISOString().slice(0,16).replace('T',' ')}`;
         };
-        img.src = buildSrc(prefix, tf);
+        img.src = png(k, tf);
       });
       document.querySelectorAll("#tfToolbar .chip").forEach(b=>{
-        const active = b.dataset.tf === tf;
-        b.classList.toggle("is-active", active);
-        b.setAttribute("aria-selected", active ? "true" : "false");
+        const on = b.dataset.tf === tf;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
       });
-      const u = new URL(location.href);
-      u.searchParams.set("tf", tf);
-      history.replaceState(null, "", u.toString());
+      const u = new URL(location.href); u.searchParams.set("tf", tf); history.replaceState(null,"",u.toString());
     }
 
-    document.getElementById("tfToolbar").addEventListener("click", (e)=>{
-      const btn = e.target.closest("button[data-tf]");
-      if(!btn) return;
-      updateAll(btn.dataset.tf);
+    document.getElementById("tfToolbar").addEventListener("click",e=>{
+      const b = e.target.closest("button[data-tf]"); if(!b) return;
+      updateCharts(b.dataset.tf);
+      updateDeltas(); // 時間軸変更時も最新のTXTを取りに行く
     });
 
-    updateAll(currentTf);
-    if (AUTO_REFRESH_MS){
-      setInterval(()=>updateAll(currentTf), AUTO_REFRESH_MS);
-    }
+    updateCharts(currentTf);
+    if(AUTO_REFRESH_MS){ setInterval(()=>{ updateCharts(currentTf); updateDeltas(); }, AUTO_REFRESH_MS); }
   </script>
 
-  <!-- ===== 騰落率（%）算出：S-COIN+ の極小・異常値に強い版 ===== -->
+  <!-- 騰落率の表示（TXT最優先） -->
   <script>
-  (async function computeDeltas(){
-    const series = [
-      {key:"astra4",     txt:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"],       history:"astra4_history.csv",     slot:"delta-astra4", tz:"Asia/Tokyo",        type:"session"},
-      {key:"scoin_plus", txt:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], history:"scoin_plus_history.csv", slot:"delta-scoin",  tz:"UTC",               type:"rolling24", forceIntraday:true, scoin:true},
-      {key:"rbank9",     txt:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"],       history:"rbank9_history.csv",     slot:"delta-rbank9", tz:"Asia/Tokyo",        type:"session"},
-      {key:"ain10",      txt:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],          history:"ain10_history.csv",      slot:"delta-ain10",  tz:"America/New_York", type:"sessionUS"},
-    ];
-
-    const CAP_GENERIC = 120;    // 汎用の上限
-    const CAP_SCOIN   = 50;     // S-COIN+ は特に厳しめ
-    const MIN_DEN     = 1e-6;
-
-    const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
-    async function fetchText(path){
-      const url = `docs/charts/${path}?v=${bust()}`;
-      const r = await fetch(url,{cache:"no-store"}); if(!r.ok) throw 0; return await r.text();
-    }
-    function pickPctFromText(txt){
-      const m = txt.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
-      if(!m) return null;
-      const v = parseFloat(m[0].replace("%",""));
-      return Number.isFinite(v)?v:null;
-    }
-    function parseCsv(text){
-      const lines = text.trim().split(/\r?\n/); if(lines.length<=1) return [];
-      const hdr = lines[0].split(",").map(s=>s.trim().toLowerCase());
-      const ti = hdr.findIndex(h=>/time|date|datetime|日時/.test(h));
-      let vi = -1;
-      for(let i=0;i<hdr.length;i++){
-        if(i===ti) continue;
-        if(/mean|value|index|score|s-?coin\+?/i.test(hdr[i])){ vi=i; break; }
-      }
-      if(vi<0){ vi = (ti===0 && hdr.length>1)?1:hdr.length-1; }
-      const rows=[];
-      for(let i=1;i<lines.length;i++){
-        const c = lines[i].split(",");
-        if(c.length<=Math.max(ti,vi)) continue;
-        const t = new Date(c[ti]);
-        const v = parseFloat(c[vi]);
-        if(!Number.isFinite(v) || isNaN(t.getTime())) continue;
-        rows.push({t,v});
-      }
-      rows.sort((a,b)=>a.t-b.t);
-      return rows;
-    }
-    function windowFilter(rows, kind){
-      const now = new Date();
-      const jst = new Date(now.getTime()+9*3600e3);
-      if(kind==="rolling24"){
-        const from = new Date(now.getTime()-24*3600e3);
-        return rows.filter(r=>r.t>=from && r.t<=now);
-      }
-      const day  = new Date(jst.getFullYear(), jst.getMonth(), jst.getDate());
-      const s1 = new Date(day.getTime() + 9*3600e3);
-      const e1 = new Date(day.getTime() + 15*3600e3 + 30*60e3);
-      let win = rows.filter(r=>r.t>=s1 && r.t<=e1);
-      if(win.length===0){
-        const y  = new Date(day.getTime()-24*3600e3);
-        const s2 = new Date(y.getTime() + 9*3600e3);
-        const e2 = new Date(y.getTime() + 15*3600e3 + 30*60e3);
-        win = rows.filter(r=>r.t>=s2 && r.t<=e2);
-      }
-      return win;
-    }
-
-    // --- ロバストな%推定 ---
-    function pctHeadTailMean(rows, k=6){
-      const vals = rows.map(r=>r.v).filter(v=>Number.isFinite(v));
-      if(vals.length < 4) return null;
-      const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
-      const head = vals.filter(v=>Math.abs(v)>=MIN_DEN).slice(0,k); // ゼロ列は除外
-      const tail = vals.slice(-k);
-      if(head.length===0) return 0; // 見かけ上のゼロ列 → 0%
-      const base = avg(head);
-      const last = avg(tail);
-      if(Math.abs(base) < MIN_DEN) return 0;
-      return ((last/base)-1)*100;
-    }
-    function pctMul(rows){
-      if(rows.length<3) return null;
-      let prod=1;
-      for(const r of rows){
-        const inc = Math.abs(r.v)>0.5 ? r.v/100 : r.v;
-        prod *= (1 + inc);
-        if(!Number.isFinite(prod)) return null;
-      }
-      return (prod - 1) * 100;
-    }
-    function pctLvl(rows){
-      if(rows.length<2) return null;
-      const first = rows.find(r=>Math.abs(r.v)>=MIN_DEN)?.v ?? rows[0].v;
-      const last = rows[rows.length-1].v;
-      if(!Number.isFinite(first)||!Number.isFinite(last)||Math.abs(first)<MIN_DEN) return 0;
-      return ((last/first)-1)*100;
-    }
-
-    for(const s of series){
-      const el   = document.getElementById(s.slot);
-      const card = document.querySelector(`.card[data-prefix="${s.key}"]`);
-      el.className="delta"; card.classList.remove("up","down");
-
-      let pIntr=null, pTxt=null, pHist=null;
-
-      // intraday
-      try{
-        const csv = await fetchText(`${s.key}_intraday.csv`);
-        const rows = parseCsv(csv);
-        const win  = windowFilter(rows, s.type);
-        if(s.scoin){
-          // S-COIN+：平均比で頑健に
-          const p = pctHeadTailMean(win,6);
-          if(p!==null && Number.isFinite(p)){
-            pIntr = Math.max(-CAP_SCOIN, Math.min(CAP_SCOIN, p));
-          }
-        }else{
-          const pm = pctMul(win);
-          const pl = pctLvl(win);
-          const okm = (pm!==null && Math.abs(pm)<=CAP_GENERIC);
-          const okl = (pl!==null && Math.abs(pl)<=CAP_GENERIC);
-          pIntr = okm && okl ? (Math.abs(pm)<=Math.abs(pl)?pm:pl) : (okm?pm:(okl?pl:null));
+    async function updateDeltas(){
+      const CAP = 200; // 異常値のガード（%）
+      const bust = () => new Date().toISOString().replace(/\D/g,"").slice(0,14);
+      const prefer = async (paths) => {
+        for(const p of paths){
+          try{
+            const r = await fetch(`docs/charts/${p}?v=${bust()}`, {cache:"no-store"});
+            if(!r.ok) continue;
+            const t = await r.text();
+            const m = t.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
+            if(m){ const v = parseFloat(m[0]); if(Number.isFinite(v) && Math.abs(v)<=CAP) return v; }
+          }catch(_){}
         }
-      }catch(_){}
-
-      // TXT（S-COIN+は使わない）
-      if(!s.scoin){
-        for(const f of s.txt){ try{
-          const t = await fetchText(f);
-          const v = pickPctFromText(t);
-          if(v!==null && Math.abs(v)<=CAP_GENERIC){ pTxt=v; break; }
-        }catch(_){/* next */} }
-      }
-
-      // history の最終2点
-      try{
-        const h = await fetchText(s.history);
-        const lines = h.trim().split(/\r?\n/);
-        if(lines.length>=3){
-          const a = parseFloat(lines[lines.length-1].split(",")[1]);
-          const b = parseFloat(lines[lines.length-2].split(",")[1]);
-          if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(b)>MIN_DEN){
-            const v = ((a-b)/Math.abs(b))*100;
-            const cap = s.scoin?CAP_SCOIN:CAP_GENERIC;
-            if(Math.abs(v)<=cap) pHist=v;
-          }
-        }
-      }catch(_){}
-
-      // 採用ロジック
-      let delta=null;
-      if(s.scoin){
-        delta = (pIntr!==null) ? pIntr : (pHist ?? 0);
-      }else{
-        if(pIntr!==null && pTxt!==null) delta=(Math.abs(pIntr-pTxt)>=5)?pIntr:pTxt;
-        else if(pIntr!==null) delta=pIntr;
-        else if(pTxt!==null)  delta=pTxt;
-        else if(pHist!==null) delta=pHist;
-      }
-
-      // 表示
-      if(delta===null){
-        el.textContent="—"; el.classList.add("flat");
-      }else{
-        el.textContent = (delta>=0?"+":"") + delta.toFixed(2) + "%";
-        if(delta>0){ el.classList.add("up"); card.classList.add("up"); }
-        else if(delta<0){ el.classList.add("down"); card.classList.add("down"); }
-        else { el.classList.add("flat"); }
+        return null;
+      };
+      const histDelta = async (csv) => {
+        try{
+          const r = await fetch(`docs/charts/${csv}?v=${bust()}`, {cache:"no-store"});
+          if(!r.ok) return null;
+          const lines = (await r.text()).trim().split(/\r?\n/);
+          if(lines.length<3) return null;
+          const a = parseFloat(lines.at(-1).split(",")[1]);
+          const b = parseFloat(lines.at(-2).split(",")[1]);
+          if(!Number.isFinite(a)||!Number.isFinite(b)||Math.abs(b)<1e-9) return null;
+          return ((a-b)/Math.abs(b))*100;
+        }catch(_){ return null; }
+      };
+      const sets = [
+        {key:"astra4",     slot:"delta-astra4",     files:["astra4_post_intraday.txt","astra4_latest.txt","astra4_post.txt"],       hist:"astra4_history.csv"},
+        {key:"scoin_plus", slot:"delta-scoin_plus", files:["scoin_plus_post_intraday.txt","scoin_plus_post.txt","scoin_plus_latest.txt"], hist:"scoin_plus_history.csv"},
+        {key:"rbank9",     slot:"delta-rbank9",     files:["rbank9_post_intraday.txt","rbank9_latest.txt","rbank9_post.txt"],       hist:"rbank9_history.csv"},
+        {key:"ain10",      slot:"delta-ain10",      files:["ain10_post_intraday.txt","ain10_latest.txt","ain10_post.txt"],          hist:"ain10_history.csv"},
+      ];
+      for(const s of sets){
+        const el   = document.getElementById(s.slot);
+        const card = document.querySelector(`.card[data-prefix="${s.key}"]`);
+        el.className="delta"; card.classList.remove("up","down");
+        let d = await prefer(s.files);
+        if(d===null) d = await histDelta(s.hist);
+        if(d===null){ el.textContent="—"; el.classList.add("flat"); continue; }
+        el.textContent = (d>=0?"+":"") + d.toFixed(2) + "%";
+        if(d>0){ el.classList.add("up");   card.classList.add("up"); }
+        else if(d<0){ el.classList.add("down"); card.classList.add("down"); }
+        else{ el.classList.add("flat"); }
       }
     }
-  })();
+    updateDeltas();
   </script>
 </body>
 </html>
-
