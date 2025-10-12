@@ -2,9 +2,6 @@ name: Sync charts to site
 
 on:
   workflow_dispatch:
-  schedule:
-    # 例：JST 06:50 / 12:50 / 15:50 / 21:50 に同期（UTC基準）
-    - cron: '50 21,3,6,12 * * *'
 
 permissions:
   contents: write
@@ -16,103 +13,64 @@ jobs:
       - name: Checkout site repo
         uses: actions/checkout@v4
         with:
-          # rebase/pull のために履歴が必要
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Prepare folders (make snapshot for change detection)
+      - name: Prepare folders
         run: |
-          set -eux
           mkdir -p docs/charts
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest charts from RAW (no Pages delay)
+      - name: Download latest PNG/CSV from all subrepos
         shell: bash
         run: |
           set -euo pipefail
+          echo "=== Downloading charts from subrepos ==="
 
-          # 取得元（owner/repo名）
           declare -A REPOS=(
-            ["3_Sakura_Space"]="SakuraIndex/3_Sakura_Space"
-            ["S-COIN-"]="SakuraIndex/S-COIN-"
-            ["R-BANK9"]="SakuraIndex/R-BANK9"
-            ["AIN-10"]="SakuraIndex/AIN-10"
+            ["astra4"]="SakuraIndex/3_Sakura_Space"
+            ["scoin_plus"]="SakuraIndex/S-COIN-"
+            ["rbank9"]="SakuraIndex/R-BANK9"
+            ["ain10"]="SakuraIndex/AIN-10"
           )
 
-          # 取得対象（1d/7d/1m/1y + 互換ファイル）
-          FILES=(
-            # --- Astra4 ---
-            "astra4_1d.png" "astra4_1d.csv"
-            "astra4_7d.png" "astra4_7d.csv"
-            "astra4_1m.png" "astra4_1m.csv"
-            "astra4_1y.png" "astra4_1y.csv"
-            "astra4_intraday.png"
-            "astra4_intraday.csv" "astra4_intraday.txt"
-            "astra4_chart.png" "astra4_history.csv"
+          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "intraday.txt" "history.csv")
 
-            # --- S-COIN+ ---
-            "scoin_plus_1d.png" "scoin_plus_1d.csv"
-            "scoin_plus_7d.png" "scoin_plus_7d.csv"
-            "scoin_plus_1m.png" "scoin_plus_1m.csv"
-            "scoin_plus_1y.png" "scoin_plus_1y.csv"
-            "scoin_plus_intraday.png"
-            "scoin_plus_intraday.csv" "scoin_plus_intraday.txt"
-            "scoin_plus_chart.png" "scoin_plus_history.csv"
+          total=0
+          success=0
 
-            # --- R-BANK9 ---
-            "rbank9_1d.png" "rbank9_1d.csv"
-            "rbank9_7d.png" "rbank9_7d.csv"
-            "rbank9_1m.png" "rbank9_1m.csv"
-            "rbank9_1y.png" "rbank9_1y.csv"
-            "rbank9_intraday.png"
-            "rbank9_intraday.csv" "rbank9_intraday.txt"
-            "rbank9_chart.png" "rbank9_history.csv"
-
-            # --- AIN-10 ---
-            "ain10_1d.png" "ain10_1d.csv"
-            "ain10_7d.png" "ain10_7d.csv"
-            "ain10_1m.png" "ain10_1m.csv"
-            "ain10_1y.png" "ain10_1y.csv"
-            "ain10_intraday.png"
-            "ain10_intraday.csv" "ain10_intraday.txt"
-            "ain10_chart.png" "ain10_history.csv"
-          )
-
-          # ダウンロード（RAW: https://raw.githubusercontent.com/<org>/<repo>/main/docs/outputs/<file>）
-          for repo_key in "${!REPOS[@]}"; do
-            repo="${REPOS[$repo_key]}"
+          for key in "${!REPOS[@]}"; do
+            repo="${REPOS[$key]}"
             for f in "${FILES[@]}"; do
-              url="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${f}"
-              out="docs/charts/${f}"
-              if curl -fsSL --retry 3 --retry-delay 2 "$url" -o "$out"; then
-                echo "Fetched: $url -> $out"
+              total=$((total+1))
+              src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${f}"
+              dst="docs/charts/${key}_${f}"
+              echo "Fetching $src"
+              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
+                echo "✅ $dst"
+                success=$((success+1))
               else
-                rm -f "$out" || true
-                echo "Skip (not found): $url"
+                echo "❌ Failed $src"
+                rm -f "$dst" || true
               fi
             done
           done
 
-      - name: List after
-        run: |
-          echo "----- docs/charts -----"
-          ls -al docs/charts || true
-          echo "----- git status (before commit) -----"
-          git status --porcelain || true
+          echo "=== Summary ==="
+          echo "Downloaded $success / $total files successfully."
+          echo "=============== "
 
-      - name: Commit & Push if changed (with rebase + retry)
+      - name: Commit & Push if changed
         shell: bash
         run: |
           set -euo pipefail
 
-          # 変更が無ければ終了
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
-            echo "No changes in charts."
+            echo "No chart changes."
             exit 0
           fi
 
-          echo "Charts updated. Commit..."
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config pull.rebase true
@@ -120,35 +78,11 @@ jobs:
           git config --global --add safe.directory "$PWD"
 
           git add docs/charts
-          git commit -m "chore(site): sync latest charts (1d/7d/1m/1y + extras)"
+          git commit -m "chore(site): sync updated charts"
+          git pull --rebase origin main || true
+          git push origin main
 
-          # リモートの最新を取り込んでから push（非 fast-forward を回避）
-          # 競合が無ければ即完了、同時実行等の競合にも強いようリトライ
-          tries=0
-          until [ $tries -ge 3 ]
-          do
-            set +e
-            git pull --rebase origin main
-            rc_pull=$?
-            set -e
-
-            if [ $rc_pull -eq 0 ]; then
-              echo "Rebase successful. Pushing..."
-              set +e
-              git push origin HEAD:main
-              rc_push=$?
-              set -e
-              if [ $rc_push -eq 0 ]; then
-                echo "Push done."
-                exit 0
-              fi
-              echo "Push failed (rc=$rc_push). Retry..."
-            else
-              echo "Rebase failed (rc=$rc_pull). Retry..."
-            fi
-            tries=$((tries+1))
-            sleep 2
-          done
-
-          echo "ERROR: Failed to push after rebase retries."
-          exit 1
+      - name: Verify updated charts
+        run: |
+          echo "=== Updated charts ==="
+          ls -lh docs/charts || true
