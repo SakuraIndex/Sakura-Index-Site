@@ -2,6 +2,22 @@ name: Sync charts to site
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Target branch to push"
+        required: false
+        default: "main"
+        type: string
+      force_rebuild:
+        description: "Force GitHub Pages rebuild even if no file actually changed"
+        required: false
+        default: "false"
+        type: boolean
+
+# 併走防止（同時実行で競合しないように）
+concurrency:
+  group: sync-charts
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -9,25 +25,32 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout site repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
+          ref: ${{ inputs.branch || 'main' }}
 
-      - name: Prepare folders
+      - name: Prepare folders (cache before/after)
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p docs/charts
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
+          echo "CWD=$(pwd)"
+          ls -lah docs/charts || true
 
-      - name: Download latest PNG/CSV from all subrepos
+      - name: Download latest from sub-repos
         shell: bash
         run: |
           set -euo pipefail
           echo "=== Downloading charts from subrepos ==="
 
+          # key -> repo
           declare -A REPOS=(
             ["astra4"]="SakuraIndex/3_Sakura_Space"
             ["scoin_plus"]="SakuraIndex/S-COIN-"
@@ -35,7 +58,8 @@ jobs:
             ["ain10"]="SakuraIndex/AIN-10"
           )
 
-          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "intraday.txt" "history.csv")
+          # 同期対象（拡張）
+          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "intraday.txt" "history.csv" "post_intraday.txt")
 
           total=0
           success=0
@@ -46,12 +70,12 @@ jobs:
               total=$((total+1))
               src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${f}"
               dst="docs/charts/${key}_${f}"
-              echo "Fetching $src"
+              printf "Fetching %s\n" "$src"
               if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
-                echo "✅ $dst"
+                echo "  ✅ ${dst}"
                 success=$((success+1))
               else
-                echo "❌ Failed $src"
+                echo "  ❌ missing: ${src}"
                 rm -f "$dst" || true
               fi
             done
@@ -61,28 +85,63 @@ jobs:
           echo "Downloaded $success / $total files successfully."
           echo "=============== "
 
-      - name: Commit & Push if changed
+      - name: List AFTER download
         shell: bash
+        run: |
+          echo "=== AFTER download ==="
+          ls -lah docs/charts || true
+
+      - name: Commit & Push (only if changed)
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ inputs.branch || 'main' }}
         run: |
           set -euo pipefail
 
+          # 変更チェック（before/after の差分）
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
-            echo "No chart changes."
-            exit 0
+            echo "No chart changes detected."
+            NO_CHANGES=1
+          else
+            NO_CHANGES=0
           fi
 
+          # Git の準備（先に rebase してからコミット）
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config pull.rebase true
-          git config rebase.autoStash true
           git config --global --add safe.directory "$PWD"
+          git fetch origin "$TARGET_BRANCH"
+          git checkout "$TARGET_BRANCH"
+          git rebase "origin/$TARGET_BRANCH"
 
-          git add docs/charts
-          git commit -m "chore(site): sync updated charts"
-          git pull --rebase origin main || true
-          git push origin main
+          # 変更があればコミットして push（Pages は push をトリガーに自動ビルド）
+          if [ "$NO_CHANGES" -eq 0 ]; then
+            git add docs/charts
+            git commit -m "chore(site): sync updated charts"
+            git push origin "$TARGET_BRANCH"
+            echo "PUSHED_WITH_CHANGES=1" >> $GITHUB_ENV
+          else
+            echo "PUSHED_WITH_CHANGES=0" >> $GITHUB_ENV
+          fi
+
+      - name: Trigger Pages rebuild even if no file changed (optional)
+        if: env.PUSHED_WITH_CHANGES == '0' && inputs.force_rebuild == true
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ inputs.branch || 'main' }}
+        run: |
+          set -euo pipefail
+          echo "Force rebuild requested — creating an empty commit to trigger Pages."
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$TARGET_BRANCH"
+          git checkout "$TARGET_BRANCH"
+          git rebase "origin/$TARGET_BRANCH"
+          git commit --allow-empty -m "chore(site): trigger GitHub Pages rebuild (no file changes)"
+          git push origin "$TARGET_BRANCH"
 
       - name: Verify updated charts
+        shell: bash
         run: |
-          echo "=== Updated charts ==="
+          echo "=== Updated charts in docs/charts ==="
           ls -lh docs/charts || true
