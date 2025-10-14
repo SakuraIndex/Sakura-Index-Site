@@ -1,18 +1,10 @@
-name: Sync charts to site
+name: Sync charts & stats to site
 
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [charts-updated]
-  schedule:
-    - cron: "15 * * * *"   # 任意。不要なら削除
 
 permissions:
   contents: write
-
-concurrency:
-  group: sync-charts-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   sync:
@@ -33,12 +25,13 @@ jobs:
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest from sub-repos (atomic)
+      - name: Download latest charts & stats from sub-repos
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== Downloading charts from subrepos (atomic) ==="
+          echo "=== Downloading from subrepos ==="
 
+          # sub-repo → index_key の対応
           declare -A REPOS=(
             ["astra4"]="SakuraIndex/3_Sakura_Space"
             ["scoin_plus"]="SakuraIndex/S-COIN-"
@@ -46,69 +39,81 @@ jobs:
             ["ain10"]="SakuraIndex/AIN-10"
           )
 
+          # 取得するファイルサフィックス
           FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv" "stats.json")
 
-          tmpdir="$(mktemp -d)"
-          mkdir -p "$tmpdir"
-
-          total=0; updated=0; unchanged=0; missed=0
+          total=0
+          success=0
 
           for key in "${!REPOS[@]}"; do
             repo="${REPOS[$key]}"
             for suffix in "${FILES[@]}"; do
               total=$((total+1))
               src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${suffix}"
-              dst_tmp="${tmpdir}/${key}_${suffix}"
-              dst_cur="docs/charts/${key}_${suffix}"
-
-              if [ -f "$dst_cur" ]; then
-                if curl -fsSL --retry 3 --retry-delay 2 -z "$dst_cur" "$src" -o "$dst_tmp"; then
-                  if [ -s "$dst_tmp" ]; then
-                    echo "  ✅ updated -> ${key}_${suffix}"
-                    updated=$((updated+1))
-                  else
-                    cp -f "$dst_cur" "$dst_tmp"
-                    echo "  ↔︎ unchanged -> ${key}_${suffix}"
-                    unchanged=$((unchanged+1))
-                  fi
-                else
-                  echo "  ❌ fetch error (kept old) -> ${key}_${suffix}"
-                  [ -f "$dst_cur" ] && cp -f "$dst_cur" "$dst_tmp" || true
-                  missed=$((missed+1))
-                fi
+              dst="docs/charts/${key}_${suffix}"
+              echo "Fetching: $src"
+              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
+                echo "  ✅ saved -> $dst"
+                success=$((success+1))
               else
-                if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst_tmp"; then
-                  echo "  ✅ new -> ${key}_${suffix}"
-                  updated=$((updated+1))
-                else
-                  echo "  ❌ missing (no old to keep) -> ${key}_${suffix}"
-                  missed=$((missed+1))
-                fi
+                echo "  ❌ missing -> $src"
+                rm -f "$dst" || true
               fi
             done
           done
 
           echo "=== Summary ==="
-          echo "Total: $total, Updated: $updated, Unchanged: $unchanged, Missed: $missed"
-          echo "================"
+          echo "Downloaded $success / $total files successfully."
+          echo "==============="
 
-          rsync -a --delete "$tmpdir"/ docs/charts/
-          rm -rf "$tmpdir"
+      - name: Normalize legacy prefixes in site repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="docs/charts"
+          shopt -s nullglob
 
-      - name: List AFTER download
+          normalize_prefix () {
+            local wrong="$1"; local right="$2"
+            for f in "$OUT"/${wrong}*; do
+              base="$(basename "$f")"
+              new="$OUT/${base/$wrong/$right}"
+              if [ "$f" != "$new" ]; then
+                if [ -e "$new" ]; then
+                  rm -f "$f" && echo "removed duplicate: $base"
+                else
+                  mv -f "$f" "$new" && echo "renamed: $base -> $(basename "$new")"
+                fi
+              fi
+            done
+          }
+
+          normalize_prefix "ain_10_" "ain10_"
+          normalize_prefix "r_bank9_" "rbank9_"
+          normalize_prefix "3_sakura_space_" "astra4_"
+          normalize_prefix "s_coin__" "scoin_plus_"
+          normalize_prefix "s_coin_"  "scoin_plus_"
+
+      - name: List AFTER download/normalize
         shell: bash
         run: |
           set -euo pipefail
           echo "=== AFTER ==="
           ls -lah docs/charts || true
+          echo "--- sample markers ---"
+          for f in docs/charts/*_post_intraday.txt; do echo ">> $f"; cat "$f" || true; done
+          echo "--- sample stats ---"
+          for f in docs/charts/*_stats.json; do echo ">> $f"; head -n 1 "$f" || true; done
 
       - name: Commit & Push (only if changed)
         shell: bash
         run: |
           set -euo pipefail
+
           BRANCH="${{ github.ref_name }}"
           [ -z "$BRANCH" ] && BRANCH="main"
 
+          # 差分なければ終了
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
             echo "No chart changes."
             exit 0
@@ -119,8 +124,14 @@ jobs:
           git config --global --add safe.directory "$PWD"
 
           git add -A docs/charts
-          git commit -m "chore(site): sync updated charts"
+          if git diff --cached --quiet; then
+            echo "Nothing to commit after staging."
+            exit 0
+          fi
+
+          git commit -m "chore(site): sync charts & stats"
           if git push origin "HEAD:${BRANCH}"; then
+            echo "Pushed without rebase."
             exit 0
           fi
 
@@ -130,7 +141,6 @@ jobs:
           git push origin "HEAD:${BRANCH}"
 
       - name: Verify updated charts
-        if: always()
         shell: bash
         run: |
           set -euo pipefail
