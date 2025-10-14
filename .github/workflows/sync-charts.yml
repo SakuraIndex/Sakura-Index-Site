@@ -2,9 +2,18 @@ name: Sync charts & stats to site
 
 on:
   workflow_dispatch:
+  schedule:
+    # 日本株クローズ後（15:30 JST = 06:30 UTC）に少し遅らせて同期
+    - cron: "40 6 * * 1-5"
+    # 米株クローズ後（16:00 ET = 21:00 UTC）に少し遅らせて同期
+    - cron: "20 21 * * 1-5"
 
 permissions:
   contents: write
+
+concurrency:
+  group: sync-charts-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -25,7 +34,7 @@ jobs:
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest charts & stats from sub-repos
+      - name: Download latest charts & stats from sub-repos (atomic)
         shell: bash
         run: |
           set -euo pipefail
@@ -39,32 +48,57 @@ jobs:
             ["ain10"]="SakuraIndex/AIN-10"
           )
 
-          # 取得するファイルサフィックス
+          # 取得するファイルサフィックス（stats.json を含む）
           FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv" "stats.json")
 
-          total=0
-          success=0
+          tmpdir="$(mktemp -d)"
+          mkdir -p "$tmpdir"
+
+          total=0; updated=0; unchanged=0; missed=0
 
           for key in "${!REPOS[@]}"; do
             repo="${REPOS[$key]}"
             for suffix in "${FILES[@]}"; do
               total=$((total+1))
               src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${suffix}"
-              dst="docs/charts/${key}_${suffix}"
-              echo "Fetching: $src"
-              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
-                echo "  ✅ saved -> $dst"
-                success=$((success+1))
+              dst_tmp="${tmpdir}/${key}_${suffix}"
+              dst_cur="docs/charts/${key}_${suffix}"
+
+              if [ -f "$dst_cur" ]; then
+                # If-Modified-Since で差分のみ取得
+                if curl -fsSL --retry 3 --retry-delay 2 -z "$dst_cur" "$src" -o "$dst_tmp"; then
+                  if [ -s "$dst_tmp" ]; then
+                    echo "  ✅ updated -> ${key}_${suffix}"
+                    updated=$((updated+1))
+                  else
+                    cp -f "$dst_cur" "$dst_tmp"
+                    echo "  ↔︎ unchanged -> ${key}_${suffix}"
+                    unchanged=$((unchanged+1))
+                  fi
+                else
+                  echo "  ❌ fetch error (kept old) -> ${key}_${suffix}"
+                  [ -f "$dst_cur" ] && cp -f "$dst_cur" "$dst_tmp" || true
+                  missed=$((missed+1))
+                fi
               else
-                echo "  ❌ missing -> $src"
-                rm -f "$dst" || true
+                if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst_tmp"; then
+                  echo "  ✅ new -> ${key}_${suffix}"
+                  updated=$((updated+1))
+                else
+                  echo "  ❌ missing (no old to keep) -> ${key}_${suffix}"
+                  missed=$((missed+1))
+                fi
               fi
             done
           done
 
           echo "=== Summary ==="
-          echo "Downloaded $success / $total files successfully."
-          echo "==============="
+          echo "Total: $total, Updated: $updated, Unchanged: $unchanged, Missed: $missed"
+          echo "================"
+
+          # 原子的に入れ替え
+          rsync -a --delete "$tmpdir"/ docs/charts/
+          rm -rf "$tmpdir"
 
       - name: Normalize legacy prefixes in site repo
         shell: bash
@@ -113,7 +147,7 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           [ -z "$BRANCH" ] && BRANCH="main"
 
-          # 差分なければ終了
+          # 差分がなければ終了
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
             echo "No chart changes."
             exit 0
@@ -124,11 +158,6 @@ jobs:
           git config --global --add safe.directory "$PWD"
 
           git add -A docs/charts
-          if git diff --cached --quiet; then
-            echo "Nothing to commit after staging."
-            exit 0
-          fi
-
           git commit -m "chore(site): sync charts & stats"
           if git push origin "HEAD:${BRANCH}"; then
             echo "Pushed without rebase."
@@ -141,6 +170,7 @@ jobs:
           git push origin "HEAD:${BRANCH}"
 
       - name: Verify updated charts
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
