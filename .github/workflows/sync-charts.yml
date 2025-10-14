@@ -2,9 +2,17 @@ name: Sync charts to site
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [charts-updated]
+  schedule:
+    - cron: "15 * * * *"   # 任意。不要なら削除
 
 permissions:
   contents: write
+
+concurrency:
+  group: sync-charts-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -25,13 +33,12 @@ jobs:
           mkdir -p .cache_old
           rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest from sub-repos
+      - name: Download latest from sub-repos (atomic)
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== Downloading charts from subrepos ==="
+          echo "=== Downloading charts from subrepos (atomic) ==="
 
-          # sub-repo -> ファイル名の key の対応表
           declare -A REPOS=(
             ["astra4"]="SakuraIndex/3_Sakura_Space"
             ["scoin_plus"]="SakuraIndex/S-COIN-"
@@ -39,34 +46,54 @@ jobs:
             ["ain10"]="SakuraIndex/AIN-10"
           )
 
-          # 取得するファイル拡張（サフィックス）
-          # 例: astra4_1d.png / astra4_7d.png / astra4_1m.png / astra4_1y.png
-          #     astra4_intraday.png / astra4_post_intraday.txt / astra4_history.csv
-          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv")
+          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv" "stats.json")
 
-          total=0
-          success=0
+          tmpdir="$(mktemp -d)"
+          mkdir -p "$tmpdir"
+
+          total=0; updated=0; unchanged=0; missed=0
 
           for key in "${!REPOS[@]}"; do
             repo="${REPOS[$key]}"
             for suffix in "${FILES[@]}"; do
               total=$((total+1))
               src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${suffix}"
-              dst="docs/charts/${key}_${suffix}"
-              echo "Fetching: $src"
-              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
-                echo "  ✅ saved -> $dst"
-                success=$((success+1))
+              dst_tmp="${tmpdir}/${key}_${suffix}"
+              dst_cur="docs/charts/${key}_${suffix}"
+
+              if [ -f "$dst_cur" ]; then
+                if curl -fsSL --retry 3 --retry-delay 2 -z "$dst_cur" "$src" -o "$dst_tmp"; then
+                  if [ -s "$dst_tmp" ]; then
+                    echo "  ✅ updated -> ${key}_${suffix}"
+                    updated=$((updated+1))
+                  else
+                    cp -f "$dst_cur" "$dst_tmp"
+                    echo "  ↔︎ unchanged -> ${key}_${suffix}"
+                    unchanged=$((unchanged+1))
+                  fi
+                else
+                  echo "  ❌ fetch error (kept old) -> ${key}_${suffix}"
+                  [ -f "$dst_cur" ] && cp -f "$dst_cur" "$dst_tmp" || true
+                  missed=$((missed+1))
+                fi
               else
-                echo "  ❌ missing -> $src"
-                rm -f "$dst" || true
+                if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst_tmp"; then
+                  echo "  ✅ new -> ${key}_${suffix}"
+                  updated=$((updated+1))
+                else
+                  echo "  ❌ missing (no old to keep) -> ${key}_${suffix}"
+                  missed=$((missed+1))
+                fi
               fi
             done
           done
 
           echo "=== Summary ==="
-          echo "Downloaded $success / $total files successfully."
-          echo "==============="
+          echo "Total: $total, Updated: $updated, Unchanged: $unchanged, Missed: $missed"
+          echo "================"
+
+          rsync -a --delete "$tmpdir"/ docs/charts/
+          rm -rf "$tmpdir"
 
       - name: List AFTER download
         shell: bash
@@ -75,16 +102,13 @@ jobs:
           echo "=== AFTER ==="
           ls -lah docs/charts || true
 
-      # ←← ここが修正の肝：先に add/commit、その後 push。push が NG なら rebase+autostash の順
       - name: Commit & Push (only if changed)
         shell: bash
         run: |
           set -euo pipefail
-
           BRANCH="${{ github.ref_name }}"
           [ -z "$BRANCH" ] && BRANCH="main"
 
-          # 差分がなければ終了
           if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
             echo "No chart changes."
             exit 0
@@ -94,29 +118,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global --add safe.directory "$PWD"
 
-          # まずは必ず add/commit（未ステージが原因の rebase 失敗を防ぐ）
           git add -A docs/charts
-          if git diff --cached --quiet; then
-            echo "Nothing to commit after staging."
-            exit 0
-          fi
-
           git commit -m "chore(site): sync updated charts"
-
-          # まずはそのまま push を試す（fast-forward ならこれで OK）
           if git push origin "HEAD:${BRANCH}"; then
-            echo "Pushed without rebase."
             exit 0
           fi
 
-          # 非 fast-forward や保護設定で弾かれた場合のみ rebase を実施
           echo "Push rejected; rebasing onto origin/${BRANCH}…"
           git fetch origin "${BRANCH}"
           git pull --rebase --autostash origin "${BRANCH}"
           git push origin "HEAD:${BRANCH}"
 
-      # 目視用の確認ログ
       - name: Verify updated charts
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
