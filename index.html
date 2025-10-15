@@ -17,9 +17,7 @@
       text-align: center;
       padding: 20px 0;
     }
-    h1 {
-      font-size: 1.8rem;
-    }
+    h1 { font-size: 1.8rem; }
     .info {
       font-size: 0.9rem;
       color: #aaa;
@@ -41,69 +39,34 @@
       justify-content: space-between;
     }
     .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 10px;
     }
     .title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: bold;
+      display: flex; align-items: center; gap: 8px; font-weight: bold;
     }
     .category {
-      font-size: 0.8rem;
-      background: #333;
-      color: #ccc;
-      padding: 2px 6px;
-      border-radius: 6px;
+      font-size: 0.8rem; background: #333; color: #ccc;
+      padding: 2px 6px; border-radius: 6px;
     }
-    .percent {
-      font-weight: bold;
-    }
-    .percent.positive {
-      color: #28e07c;
-    }
-    .percent.negative {
-      color: #ff4d4d;
-    }
+    .percent { font-weight: bold; }
+    .percent.positive { color: #28e07c; }
+    .percent.negative { color: #ff4d4d; }
     footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: 20px;
-      padding-bottom: 20px;
+      text-align: center; font-size: 0.8rem; color: #888;
+      margin-top: 20px; padding-bottom: 20px;
     }
     .chart {
-      width: 100%;
-      border-radius: 12px;
-      background: #0f0f12;
-      display: flex;
-      justify-content: center;
+      width: 100%; border-radius: 12px; background: #0f0f12;
+      display: flex; justify-content: center;
     }
-    img {
-      width: 100%;
-      border-radius: 12px;
-    }
-    .links {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+    img { width: 100%; border-radius: 12px; }
+    .links { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
     .links a {
-      background: #333;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      transition: background 0.2s;
+      background: #333; color: #fff; text-decoration: none;
+      padding: 8px 14px; border-radius: 8px; font-size: 0.9rem; transition: background 0.2s;
     }
-    .links a:hover {
-      background: #555;
-    }
+    .links a:hover { background: #555; }
   </style>
 </head>
 <body>
@@ -125,44 +88,81 @@
   </footer>
 
   <script>
+    // 表示するカード定義（id はファイル接頭辞と一致させる）
     const charts = [
-      { id: 'astra4', name: 'Astra4', category: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'scoin', name: 'S-COIN+', category: '仮想通貨関連', flag: '💱' },
-      { id: 'rbank9', name: 'R-BANK9', category: '地方銀行', flag: '🇯🇵' },
-      { id: 'ain10', name: 'AIN-10', category: 'AI関連10', flag: '🇺🇸' },
+      { id: 'astra4',     name: 'Astra4',  category: '宇宙ベンチャー', flag: '🇯🇵' },
+      { id: 'scoin_plus', name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵' },
+      { id: 'rbank9',     name: 'R-BANK9', category: '地方銀行',       flag: '🇯🇵' },
+      { id: 'ain10',      name: 'AIN-10',  category: 'AI関連10',       flag: '🇺🇸' },
     ];
+
+    function fmtJST(isoOrNull) {
+      try {
+        const d = isoOrNull ? new Date(isoOrNull) : new Date();
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleString('ja-JP', {
+          timeZone: 'Asia/Tokyo',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false
+        });
+      } catch { return '—'; }
+    }
 
     async function loadData() {
       const container = document.getElementById("charts");
-      const syncInfo = document.getElementById("sync-info");
-      const time = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
-      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
+      const syncInfo  = document.getElementById("sync-info");
+      let latestUpdated = null;
 
       for (const chart of charts) {
-        const statsPath = `docs/charts/${chart.id}_stats.json`;
-        const imgPath = `docs/charts/${chart.id}_1d.png`;
-        let percent = "N/A", colorClass = "";
+        const statsPath = `docs/charts/${chart.id}_stats.json?ts=${Date.now()}`;
+        const imgPath   = `docs/charts/${chart.id}_1d.png?ts=${Date.now()}`;
+
+        let percentText = "N/A";
+        let colorClass  = "";
+        let updatedAt   = null;
 
         try {
-          const res = await fetch(statsPath);
+          const res = await fetch(statsPath, { cache: 'no-store' });
           if (res.ok) {
             const data = await res.json();
-            percent = data.change_percent?.toFixed(2) + "%";
-            colorClass = data.change_percent >= 0 ? "positive" : "negative";
+            // 期待: pct_1d（百分率値）。後方互換: scale==="fraction" なら ×100
+            let v = Number(data?.pct_1d);
+            if (!Number.isFinite(v) && typeof data?.change_percent === 'number') {
+              v = Number(data.change_percent); // 旧キー保険
+            }
+            const scale = String(data?.scale || 'pct').toLowerCase();
+            if (scale === 'fraction') v = v * 100;
+
+            if (Number.isFinite(v)) {
+              percentText = `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+              colorClass  = v >= 0 ? 'positive' : 'negative';
+            }
+
+            if (typeof data?.updated_at === 'string') updatedAt = data.updated_at;
           }
-        } catch (e) { console.warn(`${chart.id} stats missing`); }
+        } catch (e) {
+          console.warn(`${chart.id} stats fetch failed`, e);
+        }
+
+        // 最新の updated_at を採用
+        if (updatedAt) latestUpdated = updatedAt;
 
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="card-header">
             <div class="title">${chart.flag} ${chart.name} <span class="category">${chart.category}</span></div>
-            <div class="percent ${colorClass}">${percent}</div>
+            <div class="percent ${colorClass}">${percentText}</div>
           </div>
-          <div class="chart"><img src="${imgPath}" alt="${chart.name} chart"></div>
+          <div class="chart">
+            <img src="${imgPath}" alt="${chart.name} chart" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';">
+          </div>
         `;
         container.appendChild(card);
       }
+
+      syncInfo.textContent = `同期完了: ${fmtJST(latestUpdated)} / データ: docs/charts/*`;
     }
 
     loadData();
