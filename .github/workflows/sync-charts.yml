@@ -3,44 +3,20 @@ name: Sync charts & stats to site
 on:
   workflow_dispatch:
   schedule:
-    # 日本株クローズ後（15:30 JST = 06:30 UTC）に少し遅らせて同期
-    - cron: "40 6 * * 1-5"
-    # 米株クローズ後（16:00 ET = 21:00 UTC）に少し遅らせて同期
-    - cron: "20 21 * * 1-5"
-
-permissions:
-  contents: write
-
-concurrency:
-  group: sync-charts-${{ github.ref }}
-  cancel-in-progress: false
+    - cron: "0 * * * *"  # 毎時実行（必要に応じて調整）
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout site repo
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
 
-      - name: Prepare folders (cache before/after)
+      - name: Download latest from sub-repos
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p docs/charts
-          mkdir -p .cache_old
-          rsync -a docs/charts/ .cache_old/ || true
 
-      - name: Download latest charts & stats from sub-repos (atomic)
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Downloading from subrepos ==="
-
-          # sub-repo → index_key の対応
           declare -A REPOS=(
             ["astra4"]="SakuraIndex/3_Sakura_Space"
             ["scoin_plus"]="SakuraIndex/S-COIN-"
@@ -48,131 +24,40 @@ jobs:
             ["ain10"]="SakuraIndex/AIN-10"
           )
 
-          # 取得するファイルサフィックス（stats.json を含む）
-          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv" "stats.json")
+          # --- 更新：stats.jsonを追加 ---
+          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "history.csv" "post_intraday.txt" "stats.json")
 
-          tmpdir="$(mktemp -d)"
-          mkdir -p "$tmpdir"
-
-          total=0; updated=0; unchanged=0; missed=0
+          mkdir -p docs/charts
+          total=0; success=0
 
           for key in "${!REPOS[@]}"; do
             repo="${REPOS[$key]}"
             for suffix in "${FILES[@]}"; do
               total=$((total+1))
               src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${suffix}"
-              dst_tmp="${tmpdir}/${key}_${suffix}"
-              dst_cur="docs/charts/${key}_${suffix}"
+              dst="docs/charts/${key}_${suffix}"
 
-              if [ -f "$dst_cur" ]; then
-                # If-Modified-Since で差分のみ取得
-                if curl -fsSL --retry 3 --retry-delay 2 -z "$dst_cur" "$src" -o "$dst_tmp"; then
-                  if [ -s "$dst_tmp" ]; then
-                    echo "  ✅ updated -> ${key}_${suffix}"
-                    updated=$((updated+1))
-                  else
-                    cp -f "$dst_cur" "$dst_tmp"
-                    echo "  ↔︎ unchanged -> ${key}_${suffix}"
-                    unchanged=$((unchanged+1))
-                  fi
-                else
-                  echo "  ❌ fetch error (kept old) -> ${key}_${suffix}"
-                  [ -f "$dst_cur" ] && cp -f "$dst_cur" "$dst_tmp" || true
-                  missed=$((missed+1))
-                fi
+              echo "Fetching: $src"
+              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
+                echo "✅ saved -> $dst"
+                success=$((success+1))
               else
-                if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst_tmp"; then
-                  echo "  ✅ new -> ${key}_${suffix}"
-                  updated=$((updated+1))
-                else
-                  echo "  ❌ missing (no old to keep) -> ${key}_${suffix}"
-                  missed=$((missed+1))
-                fi
+                echo "⚠️ missing -> $src"
+                rm -f "$dst" || true
               fi
             done
           done
 
-          echo "=== Summary ==="
-          echo "Total: $total, Updated: $updated, Unchanged: $unchanged, Missed: $missed"
-          echo "================"
+          echo "Downloaded $success / $total files."
 
-          # 原子的に入れ替え
-          rsync -a --delete "$tmpdir"/ docs/charts/
-          rm -rf "$tmpdir"
-
-      - name: Normalize legacy prefixes in site repo
-        shell: bash
+      - name: Commit & Push if changed
         run: |
-          set -euo pipefail
-          OUT="docs/charts"
-          shopt -s nullglob
-
-          normalize_prefix () {
-            local wrong="$1"; local right="$2"
-            for f in "$OUT"/${wrong}*; do
-              base="$(basename "$f")"
-              new="$OUT/${base/$wrong/$right}"
-              if [ "$f" != "$new" ]; then
-                if [ -e "$new" ]; then
-                  rm -f "$f" && echo "removed duplicate: $base"
-                else
-                  mv -f "$f" "$new" && echo "renamed: $base -> $(basename "$new")"
-                fi
-              fi
-            done
-          }
-
-          normalize_prefix "ain_10_" "ain10_"
-          normalize_prefix "r_bank9_" "rbank9_"
-          normalize_prefix "3_sakura_space_" "astra4_"
-          normalize_prefix "s_coin__" "scoin_plus_"
-          normalize_prefix "s_coin_"  "scoin_plus_"
-
-      - name: List AFTER download/normalize
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== AFTER ==="
-          ls -lah docs/charts || true
-          echo "--- sample markers ---"
-          for f in docs/charts/*_post_intraday.txt; do echo ">> $f"; cat "$f" || true; done
-          echo "--- sample stats ---"
-          for f in docs/charts/*_stats.json; do echo ">> $f"; head -n 1 "$f" || true; done
-
-      - name: Commit & Push (only if changed)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          BRANCH="${{ github.ref_name }}"
-          [ -z "$BRANCH" ] && BRANCH="main"
-
-          # 差分がなければ終了
-          if diff -qr .cache_old docs/charts >/dev/null 2>&1; then
-            echo "No chart changes."
-            exit 0
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add docs/charts || true
+          if git diff --cached --quiet; then
+            echo "No changes detected."
+          else
+            git commit -m "chore(sync): update charts & stats"
+            git push
           fi
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global --add safe.directory "$PWD"
-
-          git add -A docs/charts
-          git commit -m "chore(site): sync charts & stats"
-          if git push origin "HEAD:${BRANCH}"; then
-            echo "Pushed without rebase."
-            exit 0
-          fi
-
-          echo "Push rejected; rebasing onto origin/${BRANCH}…"
-          git fetch origin "${BRANCH}"
-          git pull --rebase --autostash origin "${BRANCH}"
-          git push origin "HEAD:${BRANCH}"
-
-      - name: Verify updated charts
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== Updated charts (latest) ==="
-          ls -lh docs/charts || true
