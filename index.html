@@ -2,87 +2,94 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🌸 桜Index - 公式サイト</title>
   <link rel="icon" href="https://emojiapi.dev/api/v1/cherry-blossom.svg" />
   <style>
-    :root{
-      --bg:#0d0d0f;        /* ページ背景 */
-      --panel:#1a1a1f;     /* カード */
-      --chart:#0b0c10;     /* チャート下地（Matplotlibの軸色に合わせる） */
-      --text:#ddd;
-      --muted:#aaa;
-      --pos:#28e07c;
-      --neg:#ff4d4d;
-      --shadow:0 0 12px rgba(255,255,255,0.05);
-      --radius:16px;
-      --gap:22px;
-      --maxw:1400px;
+    :root {
+      --bg: #0d0d0f;
+      --card: #1a1a1f;
+      --axis: #0b0c10;   /* ← 画像の背景をこれに統一 */
+      --text: #ddd;
+      --muted: #aaa;
+      --pos: #28e07c;
+      --neg: #ff4d4d;
+      --chip: #333;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; color:var(--text); background:var(--bg);
-      font-family: 'Inter','Noto Sans JP',system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans JP', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+      margin: 0;
     }
-    header{ text-align:center; padding:24px 16px 10px }
-    h1{ margin:0 0 10px; font-size:28px }
-    .info{ color:var(--muted); font-size:14px; margin-bottom:14px }
-    .links{ display:flex; justify-content:center; gap:10px; margin-bottom:18px }
-    .links a{
-      background:#333; color:#fff; text-decoration:none;
-      padding:8px 14px; border-radius:8px; font-size:14px;
+    header { text-align: center; padding: 20px 0; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; }
+    .info { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+    .links { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .links a {
+      background: var(--chip); color: #fff; text-decoration: none;
+      padding: 8px 14px; border-radius: 8px; font-size: 0.9rem;
     }
-    main{
-      max-width:var(--maxw); margin:0 auto; padding:0 16px 28px;
-      display:grid; gap:var(--gap);
-      grid-template-columns: repeat(2, minmax(0, 1fr));   /* 常に2x2 */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap: 24px;
+      padding: 0 28px 28px;
+      max-width: 1280px;
+      margin: 0 auto 28px;
     }
-    .card{
-      background:var(--panel); border-radius:var(--radius);
-      box-shadow:var(--shadow); padding:14px;
-      display:flex; flex-direction:column; gap:12px;
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 0 12px rgba(255,255,255,0.05);
+      display: flex; flex-direction: column; gap: 12px;
     }
-    .head{
-      display:flex; align-items:center; justify-content:space-between; gap:10px
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .title{ display:flex; align-items:center; gap:8px; font-weight:700 }
-    .badge{
-      font-size:12px; color:#ccc; background:#333; border-radius:8px;
-      padding:2px 8px;
+    .title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .category {
+      font-size: 0.8rem; background: var(--chip); color: #ccc;
+      padding: 2px 6px; border-radius: 6px;
     }
-    .pct{ font-weight:800; letter-spacing:.3px }
-    .pct.pos{ color:var(--pos) }
-    .pct.neg{ color:var(--neg) }
-    .chart{
-      background:var(--chart);
-      border-radius:12px; padding:0; overflow:hidden;
-      display:flex; align-items:center; justify-content:center;
-      min-height:260px;    /* 見た目を揃える */
+    .percent { font-weight: 700; }
+    .percent.positive { color: var(--pos); }
+    .percent.negative { color: var(--neg); }
+    .chart {
+      width: 100%;
+      border-radius: 12px;
+      background: var(--axis);   /* ← コンテナ側も同色で統一 */
+      overflow: hidden;
+      display: flex; justify-content: center;
     }
-    .chart img{
-      width:100%; height:auto; display:block;
-      background:var(--chart); /* 透過PNGでも同色で統一 */
+    /* ここがポイント：画像側にも背景を敷く（透明PNGでも同じ見た目） */
+    .chart img {
+      width: 100%;
+      display: block;
+      background: var(--axis);   /* ← 明示 */
     }
-    footer{
-      text-align:center; color:#888; font-size:12px;
-      padding:8px 0 22px; max-width:var(--maxw); margin:0 auto;
+    footer {
+      text-align: center; font-size: 0.8rem; color: #888;
+      margin-top: 8px; padding-bottom: 20px;
     }
-    @media (max-width: 980px){
-      main{ grid-template-columns: 1fr } /* モバイルは1列 */
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>🌸 桜Index - 公式サイト</h1>
-    <div class="info" id="sync-info">同期完了: ー / データ: docs/charts/*</div>
+    <div class="info" id="sync-info">同期完了: ロード中...</div>
     <div class="links">
       <a href="https://x.com/SakuraIndex" target="_blank" rel="noopener">公式X（Twitter）</a>
       <a href="https://note.com/sakuraindex" target="_blank" rel="noopener">公式note</a>
     </div>
   </header>
 
-  <main id="grid"></main>
+  <main class="grid" id="charts"></main>
 
   <footer>
     データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
@@ -91,74 +98,67 @@
   </footer>
 
   <script>
-    const INDEXES = [
-      { key:'astra4',     name:'Astra4',  cat:'宇宙ベンチャー', flag:'🇯🇵' },
-      { key:'scoin_plus', name:'S-COIN+', cat:'仮想通貨関連',   flag:'🇯🇵' },
-      { key:'rbank9',     name:'R-BANK9', cat:'地方銀行',       flag:'🇯🇵' },
-      { key:'ain10',      name:'AIN-10',  cat:'AI関連10',       flag:'🇺🇸' },
+    // 表示する4指数
+    const charts = [
+      { id: 'astra4',    name: 'Astra4',  category: '宇宙ベンチャー', flag: '🇯🇵' },
+      { id: 'scoin_plus',name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵' }, // ← 指定どおり 🇯🇵
+      { id: 'rbank9',    name: 'R-BANK9', category: '地方銀行',       flag: '🇯🇵' },
+      { id: 'ain10',     name: 'AIN-10',  category: 'AI関連10',       flag: '🇺🇸' },
     ];
 
-    const grid = document.getElementById('grid');
-    const info = document.getElementById('sync-info');
-
-    function pctText(v){
+    function fmtPct(v) {
       if (v === null || v === undefined || isNaN(v)) return 'N/A';
-      return (v>=0? '+' : '') + v.toFixed(2) + '%';
+      const s = (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+      return s;
     }
 
-    (async () => {
-      let latestISO = null;
+    async function loadData() {
+      const container = document.getElementById('charts');
+      const syncInfo  = document.getElementById('sync-info');
 
-      for (const it of INDEXES){
-        const base = `docs/charts/${it.key}`;
-        const statUrl = `${base}_stats.json`;
+      const time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
 
-        let pct = null, updatedAt = null;
+      for (const chart of charts) {
+        const statsPath = `docs/charts/${chart.id}_stats.json`;
+        const baseImg   = `docs/charts/${chart.id}_1d.png`;
 
-        try{
-          const r = await fetch(statUrl, {cache:'no-cache'});
-          if (r.ok){
-            const s = await r.json();
-            // 期待フォーマット: { index_key, pct_1d, scale: "pct", updated_at }
-            if (typeof s.pct_1d === 'number') pct = s.pct_1d;
-            updatedAt = s.updated_at || null;
+        let pct = null, cls = '', ver = null;
+
+        try {
+          const res = await fetch(statsPath, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            // 仕様: { pct_1d: <number>, scale: "pct", updated_at: "...Z" }
+            if (typeof data.pct_1d === 'number') {
+              pct = data.pct_1d;
+              cls = pct >= 0 ? 'positive' : 'negative';
+            }
+            ver = data.updated_at || null;
           }
-        }catch(e){ /* ignore */ }
-
-        // 画像のキャッシュバスター（updated_at がなければタイムスタンプ代用）
-        const bust = encodeURIComponent(updatedAt || (new Date()).toISOString());
-        const img1d = `${base}_1d.png?t=${bust}`;
-
-        // 最新時刻更新
-        if (updatedAt){
-          const d = new Date(updatedAt);
-          if (!latestISO || d > new Date(latestISO)) latestISO = updatedAt;
+        } catch (e) {
+          console.warn(`${chart.id}: stats fetch failed`, e);
         }
 
-        const card = document.createElement('section');
+        // キャッシュ無効化（stats の updated_at をバージョンに）
+        const imgSrc = `${baseImg}?v=${encodeURIComponent(ver || Date.now())}`;
+
+        const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <div class="head">
-            <div class="title">
-              <span>${it.flag}</span>
-              <span>${it.name}</span>
-              <span class="badge">${it.cat}</span>
-            </div>
-            <div class="pct ${pct==null ? '' : (pct>=0?'pos':'neg')}">${pctText(pct)}</div>
+          <div class="card-header">
+            <div class="title">${chart.flag} ${chart.name} <span class="category">${chart.category}</span></div>
+            <div class="percent ${cls}">${pct === null ? 'N/A' : fmtPct(pct)}</div>
           </div>
           <div class="chart">
-            <img src="${img1d}" alt="${it.name} (1d)">
+            <img src="${imgSrc}" alt="${chart.name} chart" loading="eager" />
           </div>
         `;
-        grid.appendChild(card);
+        container.appendChild(card);
       }
+    }
 
-      // ヘッダの同期表示
-      const ts = latestISO
-        ? new Date(latestISO).toLocaleString('ja-JP', { timeZone:'Asia/Tokyo'})
-        : 'ー';
-      info.textContent = `同期完了: ${ts} / データ: docs/charts/*`;
-    })();
+    loadData();
   </script>
 </body>
 </html>
