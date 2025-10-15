@@ -1,112 +1,171 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌸 桜Index - 公式サイト</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="https://emojiapi.dev/api/v1/cherry-blossom.svg">
+  <style>
+    body {
+      background-color: #0d0d0f;
+      color: #ddd;
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      text-align: center;
+      padding: 20px 0;
+    }
+    h1 {
+      font-size: 1.8rem;
+    }
+    .info {
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+      padding: 0 40px 40px;
+    }
+    .card {
+      background: #1a1a1f;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 0 12px rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+    }
+    .category {
+      font-size: 0.8rem;
+      background: #333;
+      color: #ccc;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .percent {
+      font-weight: bold;
+    }
+    .percent.positive {
+      color: #28e07c;
+    }
+    .percent.negative {
+      color: #ff4d4d;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 20px;
+      padding-bottom: 20px;
+    }
+    .chart {
+      width: 100%;
+      border-radius: 12px;
+      background: #0f0f12;
+      display: flex;
+      justify-content: center;
+    }
+    img {
+      width: 100%;
+      border-radius: 12px;
+    }
+    .links {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .links a {
+      background: #333;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .links a:hover {
+      background: #555;
+    }
+  </style>
 </head>
-
-<body class="bg-dark text-light">
+<body>
   <header>
     <h1>🌸 桜Index - 公式サイト</h1>
-    <p id="synctime">同期完了: --</p>
+    <div class="info" id="sync-info">同期完了: ロード中...</div>
+    <div class="links">
+      <a href="https://x.com/SakuraIndex" target="_blank">公式X（Twitter）</a>
+      <a href="https://note.com/sakuraindex" target="_blank">公式note</a>
+    </div>
   </header>
 
-  <main id="dashboard" class="grid grid-cols-2 gap-4 p-4">
-    <!-- 各指数パネル -->
-    <section id="astra4" class="panel">
-      <div class="si-header">
-        <span class="si-title">🇯🇵 Astra4</span>
-        <span class="si-percent">—</span>
-      </div>
-      <img src="docs/charts/astra4_1d.png" alt="Astra4 chart" />
-      <p class="si-updated">—</p>
-    </section>
+  <main class="grid" id="charts"></main>
 
-    <section id="scoin_plus" class="panel">
-      <div class="si-header">
-        <span class="si-title">🇯🇵 S-COIN+</span>
-        <span class="si-percent">—</span>
-      </div>
-      <img src="docs/charts/scoin_plus_1d.png" alt="S-COIN+ chart" />
-      <p class="si-updated">—</p>
-    </section>
-
-    <section id="rbank9" class="panel">
-      <div class="si-header">
-        <span class="si-title">🇯🇵 R-BANK9</span>
-        <span class="si-percent">—</span>
-      </div>
-      <img src="docs/charts/rbank9_1d.png" alt="R-BANK9 chart" />
-      <p class="si-updated">—</p>
-    </section>
-
-    <section id="ain10" class="panel">
-      <div class="si-header">
-        <span class="si-title">🇺🇸 AIN-10</span>
-        <span class="si-percent">—</span>
-      </div>
-      <img src="docs/charts/ain10_1d.png" alt="AIN-10 chart" />
-      <p class="si-updated">—</p>
-    </section>
-  </main>
-
-  <footer class="text-center text-gray-400 p-2 text-sm">
-    データ：等加重指数（仕様は各リポジトリ参照）／画像は各指数リポの自動生成スナップショットを同期しています。<br>
+  <footer>
+    データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br>
     ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
     © 2025 桜Index
   </footer>
 
-  <!-- 改良版スクリプト -->
   <script>
-    const META = {
-      astra4:    { label: 'Astra4',  flag: '🇯🇵' },
-      scoin_plus:{ label: 'S-COIN+', flag: '🇯🇵' },
-      rbank9:    { label: 'R-BANK9', flag: '🇯🇵' },
-      ain10:     { label: 'AIN-10',  flag: '🇺🇸' },
-    };
+    const charts = [
+      { id: 'astra4', name: 'Astra4', category: '宇宙ベンチャー', flag: '🇯🇵' },
+      { id: 'scoin', name: 'S-COIN+', category: '仮想通貨関連', flag: '💱' },
+      { id: 'rbank9', name: 'R-BANK9', category: '地方銀行', flag: '🇯🇵' },
+      { id: 'ain10', name: 'AIN-10', category: 'AI関連10', flag: '🇺🇸' },
+    ];
 
-    function fmtJST(iso) {
-      try {
-        const d = new Date(iso);
-        if (Number.isNaN(d.getTime())) return '—';
-        return d.toLocaleString('ja-JP', {
-          timeZone: 'Asia/Tokyo',
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
-          hour12: false
-        });
-      } catch {
-        return '—';
+    async function loadData() {
+      const container = document.getElementById("charts");
+      const syncInfo = document.getElementById("sync-info");
+      const time = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
+
+      for (const chart of charts) {
+        const statsPath = `docs/charts/${chart.id}_stats.json`;
+        const imgPath = `docs/charts/${chart.id}_1d.png`;
+        let percent = "N/A", colorClass = "";
+
+        try {
+          const res = await fetch(statsPath);
+          if (res.ok) {
+            const data = await res.json();
+            percent = data.change_percent?.toFixed(2) + "%";
+            colorClass = data.change_percent >= 0 ? "positive" : "negative";
+          }
+        } catch (e) { console.warn(`${chart.id} stats missing`); }
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="title">${chart.flag} ${chart.name} <span class="category">${chart.category}</span></div>
+            <div class="percent ${colorClass}">${percent}</div>
+          </div>
+          <div class="chart"><img src="${imgPath}" alt="${chart.name} chart"></div>
+        `;
+        container.appendChild(card);
       }
     }
 
-    async function loadPanel(key) {
-      const meta = META[key] || {label:key, flag:''};
-      const el = document.getElementById(key);
-      if (!el) return;
-
-      let pct = null, updated = '—';
-      try {
-        const s = await (await fetch(`docs/charts/${key}_stats.json`, {cache:'no-store'})).json();
-        if (typeof s?.pct_1d === 'number') pct = s.pct_1d;
-        if (typeof s?.updated_at === 'string') updated = fmtJST(s.updated_at);
-      } catch {}
-
-      el.querySelector('.si-title').textContent   = `${meta.flag} ${meta.label}`;
-      el.querySelector('.si-percent').textContent = (pct === null) ? '—' : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
-      el.querySelector('.si-updated').textContent = updated || '—';
-    }
-
-    async function init() {
-      const keys = ['astra4','scoin_plus','rbank9','ain10'];
-      for (const k of keys) await loadPanel(k);
-      document.getElementById('synctime').textContent = 
-        `同期完了: ${fmtJST(new Date().toISOString())} / データ: docs/charts/*`;
-    }
-
-    init();
+    loadData();
   </script>
 </body>
 </html>
