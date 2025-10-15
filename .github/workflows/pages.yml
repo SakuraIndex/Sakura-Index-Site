@@ -1,0 +1,47 @@
+name: pages
+
+on:
+  push:
+    branches: [ main ]
+    # ← サイトに必要な全変更で必ず発火させる
+    paths:
+      - 'index.html'
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+  # ← Sync ワークフローから明示通知して起動させる経路（後述）
+  repository_dispatch:
+    types: [sync-complete]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # ルートを公開（index.html がルート、charts は docs/charts/*）
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
