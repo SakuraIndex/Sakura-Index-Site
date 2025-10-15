@@ -86,3 +86,10 @@ jobs:
       - name: No changes
         if: steps.changes.outputs.changed != 'true'
         run: echo "No chart/stat changes."
+        - name: Trigger Pages deploy (repository_dispatch)
+  if: always()
+  uses: peter-evans/repository-dispatch@v3
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    repository: SakuraIndex/Sakura-Index-Site
+    event-type: sync-complete
