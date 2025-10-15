@@ -1,167 +1,112 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🌸 桜Index - 公式サイト</title>
-  <meta name="color-scheme" content="dark light" />
-  <style>
-    :root{
-      --bg:#0e0f13; --panel:#161821; --text:#e7ecf1; --muted:#9aa4ad;
-      --accent:#ff70a6; --line:#2a2e3a; --up:#ff6b6b; --down:#4ecdc4;
-      --chip:#202431; --chip-active:#2a3142;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif}
-    a{color:inherit}
-    .wrap{max-width:1240px;margin:24px auto;padding:0 16px}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .title{display:flex;gap:10px;align-items:center}
-    .title h1{font-size:22px;margin:0}
-    .links{display:flex;gap:8px}
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--chip);color:var(--text);text-decoration:none;border:1px solid var(--line)}
-    .btn:hover{background:var(--chip-active)}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-    @media (max-width:880px){.grid{grid-template-columns:1fr}}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .name{display:flex;align-items:center;gap:8px}
-    .badge{font-size:12px;color:var(--muted);padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:var(--chip)}
-    .pct{font-weight:600;font-size:18px;min-width:92px;text-align:right}
-    .tabs{display:flex;gap:6px}
-    .tab{padding:4px 8px;border-radius:8px;background:var(--chip);border:1px solid var(--line);cursor:pointer;color:var(--text);font-size:12px}
-    .tab.active{background:var(--chip-active);border-color:var(--accent)}
-    .chart{width:100%;aspect-ratio:16/9;background:#0b0c10;border:1px solid var(--line);border-radius:10px;display:block;object-fit:cover}
-    footer{margin:22px 0 8px;color:var(--muted);font-size:12px;text-align:center}
-    .tiny{font-size:12px;color:var(--muted)}
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="title">
-        <span style="font-size:20px">🌸</span>
-        <h1>桜Index - 公式サイト</h1>
-      </div>
-      <div class="links">
-        <a class="btn" href="https://x.com" rel="noopener" target="_blank">公式X（Twitter）</a>
-        <a class="btn" href="https://note.com" rel="noopener" target="_blank">公式note</a>
-      </div>
-    </header>
 
-    <div class="tiny" id="syncInfo">charts loading…</div>
+<body class="bg-dark text-light">
+  <header>
+    <h1>🌸 桜Index - 公式サイト</h1>
+    <p id="synctime">同期完了: --</p>
+  </header>
 
-    <!-- 4指数パネル -->
-    <section class="grid" id="panels">
-      <!-- テンプレはJSで増殖 -->
+  <main id="dashboard" class="grid grid-cols-2 gap-4 p-4">
+    <!-- 各指数パネル -->
+    <section id="astra4" class="panel">
+      <div class="si-header">
+        <span class="si-title">🇯🇵 Astra4</span>
+        <span class="si-percent">—</span>
+      </div>
+      <img src="docs/charts/astra4_1d.png" alt="Astra4 chart" />
+      <p class="si-updated">—</p>
     </section>
 
-    <footer>
-      <div>データ：等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットを同期しています。</div>
-      <div>※ 本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。</div>
-      <div class="tiny">© 2025 桜Index</div>
-    </footer>
-  </div>
+    <section id="scoin_plus" class="panel">
+      <div class="si-header">
+        <span class="si-title">🇯🇵 S-COIN+</span>
+        <span class="si-percent">—</span>
+      </div>
+      <img src="docs/charts/scoin_plus_1d.png" alt="S-COIN+ chart" />
+      <p class="si-updated">—</p>
+    </section>
 
+    <section id="rbank9" class="panel">
+      <div class="si-header">
+        <span class="si-title">🇯🇵 R-BANK9</span>
+        <span class="si-percent">—</span>
+      </div>
+      <img src="docs/charts/rbank9_1d.png" alt="R-BANK9 chart" />
+      <p class="si-updated">—</p>
+    </section>
+
+    <section id="ain10" class="panel">
+      <div class="si-header">
+        <span class="si-title">🇺🇸 AIN-10</span>
+        <span class="si-percent">—</span>
+      </div>
+      <img src="docs/charts/ain10_1d.png" alt="AIN-10 chart" />
+      <p class="si-updated">—</p>
+    </section>
+  </main>
+
+  <footer class="text-center text-gray-400 p-2 text-sm">
+    データ：等加重指数（仕様は各リポジトリ参照）／画像は各指数リポの自動生成スナップショットを同期しています。<br>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
+    © 2025 桜Index
+  </footer>
+
+  <!-- 改良版スクリプト -->
   <script>
-    // ===== 設定 =====
-    const INDEXES = [
-      { key: "astra4",     label: "Astra4",     tag: "宇宙ベンチャー", flag: "🇯🇵" },
-      { key: "scoin_plus", label: "S-COIN+",    tag: "仮想通貨関連",   flag: "💱" },
-      { key: "rbank9",     label: "R-BANK9",    tag: "地方銀行",       flag: "🇯🇵" },
-      { key: "ain10",      label: "AIN-10",     tag: "AI関連10",       flag: "🇺🇸" },
-    ];
-    const HORIZONS = [
-      { id: "1d", label: "1日" },
-      { id: "7d", label: "1週間" },
-      { id: "1m", label: "1ヶ月" },
-      { id: "1y", label: "1年" },
-    ];
+    const META = {
+      astra4:    { label: 'Astra4',  flag: '🇯🇵' },
+      scoin_plus:{ label: 'S-COIN+', flag: '🇯🇵' },
+      rbank9:    { label: 'R-BANK9', flag: '🇯🇵' },
+      ain10:     { label: 'AIN-10',  flag: '🇺🇸' },
+    };
 
-    const qs = sel => document.querySelector(sel);
-    const elPanels = qs("#panels");
-    const cacheBust = () => `?v=${Date.now()}`;
-
-    function fmtPct(v) {
-      if (typeof v !== "number" || !isFinite(v)) return "–";
-      const sign = v >= 0 ? "+" : "";
-      return `${sign}${v.toFixed(2)}%`;
-    }
-    function colorPct(v) {
-      if (typeof v !== "number" || !isFinite(v)) return "var(--text)";
-      return v >= 0 ? "var(--up)" : "var(--down)";
+    function fmtJST(iso) {
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleString('ja-JP', {
+          timeZone: 'Asia/Tokyo',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false
+        });
+      } catch {
+        return '—';
+      }
     }
 
-    function panelHTML(idx) {
-      const tabs = HORIZONS.map((h,i)=>
-        `<button class="tab${i===0?" active":""}" data-h="${h.id}">${h.label}</button>`
-      ).join("");
-      return `
-        <article class="card" id="card-${idx.key}">
-          <div class="row">
-            <div class="name">
-              <div class="badge">${idx.flag}</div>
-              <strong>${idx.label}</strong>
-              <span class="badge">${idx.tag}</span>
-            </div>
-            <div class="pct" id="${idx.key}-pct">–</div>
-          </div>
-          <div class="row">
-            <div class="tabs" id="${idx.key}-tabs">${tabs}</div>
-            <div class="tiny" id="${idx.key}-updated"></div>
-          </div>
-          <img id="${idx.key}-img" class="chart" alt="${idx.label} chart" src="">
-        </article>
-      `;
+    async function loadPanel(key) {
+      const meta = META[key] || {label:key, flag:''};
+      const el = document.getElementById(key);
+      if (!el) return;
+
+      let pct = null, updated = '—';
+      try {
+        const s = await (await fetch(`docs/charts/${key}_stats.json`, {cache:'no-store'})).json();
+        if (typeof s?.pct_1d === 'number') pct = s.pct_1d;
+        if (typeof s?.updated_at === 'string') updated = fmtJST(s.updated_at);
+      } catch {}
+
+      el.querySelector('.si-title').textContent   = `${meta.flag} ${meta.label}`;
+      el.querySelector('.si-percent').textContent = (pct === null) ? '—' : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+      el.querySelector('.si-updated').textContent = updated || '—';
     }
 
-    // パネル生成
-    INDEXES.forEach(idx => elPanels.insertAdjacentHTML("beforeend", panelHTML(idx)));
-
-    // 画像と統計をロード
-    async function loadFor(key){
-      // stats.json
-      try{
-        const res = await fetch(`docs/charts/${key}_stats.json${cacheBust()}`);
-        if(res.ok){
-          const s = await res.json();
-          const pct = Number(s.pct_1d);
-          const elPct = qs(`#${key}-pct`);
-          const elUpd = qs(`#${key}-updated`);
-          elPct.textContent = fmtPct(pct);
-          elPct.style.color = colorPct(pct);
-          elUpd.textContent = s.updated_at ? new Date(s.updated_at).toLocaleString() : "";
-          elPct.title = `scale: ${s.scale || "n/a"} / updated: ${s.updated_at || "n/a"}`;
-        }
-      }catch(e){ console.warn("stats load failed:", key, e); }
-
-      // 初期チャート（1d）
-      const img = qs(`#${key}-img`);
-      img.src = `docs/charts/${key}_1d.png${cacheBust()}`;
+    async function init() {
+      const keys = ['astra4','scoin_plus','rbank9','ain10'];
+      for (const k of keys) await loadPanel(k);
+      document.getElementById('synctime').textContent = 
+        `同期完了: ${fmtJST(new Date().toISOString())} / データ: docs/charts/*`;
     }
 
-    // タブ切替
-    function bindTabs(key){
-      const wrap = qs(`#${key}-tabs`);
-      wrap.addEventListener("click", ev=>{
-        const btn = ev.target.closest(".tab");
-        if(!btn) return;
-        wrap.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
-        const h = btn.getAttribute("data-h");
-        const img = qs(`#${key}-img`);
-        img.src = `docs/charts/${key}_${h}.png${cacheBust()}`;
-      });
-    }
-
-    (async function init(){
-      INDEXES.forEach(i => bindTabs(i.key));
-      await Promise.all(INDEXES.map(i=>loadFor(i.key)));
-
-      // 同期ログ（サイト内のファイル時刻をざっくり表示）
-      const stamp = new Date().toLocaleString();
-      qs("#syncInfo").textContent = `同期完了: ${stamp} / データ: docs/charts/*`;
-    })();
+    init();
   </script>
 </body>
 </html>
