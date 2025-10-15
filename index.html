@@ -9,7 +9,7 @@
     :root {
       --bg: #0d0d0f;
       --card: #1a1a1f;
-      --axis: #0b0c10;   /* ← 画像の背景をこれに統一 */
+      --axis: #0b0c10;
       --text: #ddd;
       --muted: #aaa;
       --pos: #28e07c;
@@ -29,7 +29,10 @@
     .links a {
       background: var(--chip); color: #fff; text-decoration: none;
       padding: 8px 14px; border-radius: 8px; font-size: 0.9rem;
+      transition: background 0.2s;
     }
+    .links a:hover { background: #444; }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(420px, 1fr));
@@ -59,15 +62,14 @@
     .chart {
       width: 100%;
       border-radius: 12px;
-      background: var(--axis);   /* ← コンテナ側も同色で統一 */
+      background: var(--axis);
       overflow: hidden;
       display: flex; justify-content: center;
     }
-    /* ここがポイント：画像側にも背景を敷く（透明PNGでも同じ見た目） */
     .chart img {
       width: 100%;
       display: block;
-      background: var(--axis);   /* ← 明示 */
+      background: var(--axis);
     }
     footer {
       text-align: center; font-size: 0.8rem; color: #888;
@@ -84,8 +86,8 @@
     <h1>🌸 桜Index - 公式サイト</h1>
     <div class="info" id="sync-info">同期完了: ロード中...</div>
     <div class="links">
-      <a href="https://x.com/SakuraIndex" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a href="https://note.com/sakuraindex" target="_blank" rel="noopener">公式note</a>
+      <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener noreferrer">公式X（Twitter）</a>
+      <a href="https://note.com/sakura_index" target="_blank" rel="noopener noreferrer">公式note</a>
     </div>
   </header>
 
@@ -101,7 +103,7 @@
     // 表示する4指数
     const charts = [
       { id: 'astra4',    name: 'Astra4',  category: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'scoin_plus',name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵' }, // ← 指定どおり 🇯🇵
+      { id: 'scoin_plus',name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵' },
       { id: 'rbank9',    name: 'R-BANK9', category: '地方銀行',       flag: '🇯🇵' },
       { id: 'ain10',     name: 'AIN-10',  category: 'AI関連10',       flag: '🇺🇸' },
     ];
@@ -129,7 +131,6 @@
           const res = await fetch(statsPath, { cache: 'no-store' });
           if (res.ok) {
             const data = await res.json();
-            // 仕様: { pct_1d: <number>, scale: "pct", updated_at: "...Z" }
             if (typeof data.pct_1d === 'number') {
               pct = data.pct_1d;
               cls = pct >= 0 ? 'positive' : 'negative';
@@ -140,7 +141,6 @@
           console.warn(`${chart.id}: stats fetch failed`, e);
         }
 
-        // キャッシュ無効化（stats の updated_at をバージョンに）
         const imgSrc = `${baseImg}?v=${encodeURIComponent(ver || Date.now())}`;
 
         const card = document.createElement('div');
