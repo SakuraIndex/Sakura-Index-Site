@@ -1,1 +1,1 @@
-RBANK9 1d: -51.55%
+RBANK9 1d: +inf% (basis first-row invalid→used first valid)
