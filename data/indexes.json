@@ -1,0 +1,34 @@
+[
+  {
+    "key": "ASTRA4",
+    "label": "ASTRA4",
+    "market": "JP",
+    "category": "宇宙ベンチャー",
+    "flag": "🇯🇵",
+    "description": "宇宙関連4銘柄で構成。大きめのボラティリティを等ウェイトで可視化。"
+  },
+  {
+    "key": "R-BANK9",
+    "label": "R-BANK9",
+    "market": "JP",
+    "category": "地方銀行",
+    "flag": "🇯🇵",
+    "description": "地方銀行9銘柄の等ウェイト指数。前日終値比（%）で日中推移を表示。"
+  },
+  {
+    "key": "AIN10",
+    "label": "AIN-10",
+    "market": "US",
+    "category": "AI関連10",
+    "flag": "🇺🇸",
+    "description": "米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+  },
+  {
+    "key": "S-COIN+",
+    "label": "S-COIN+",
+    "market": "CRYPTO",
+    "category": "仮想通貨関連",
+    "flag": "🪙",
+    "description": "暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移に対応。"
+  }
+]
