@@ -15,11 +15,13 @@
       --pos: #28e07c;
       --neg: #ff4d4d;
       --chip: #333;
+      --tab: #26262c;
+      --tab-active: #3a3a44;
     }
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans JP', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+      font-family: 'Inter','Noto Sans JP',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol',sans-serif;
       margin: 0;
     }
     header { text-align: center; padding: 20px 0; }
@@ -33,13 +35,14 @@
     }
     .links a:hover { background: #444; }
 
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 28px 28px; }
+
+    .section-title { font-size: 1.2rem; font-weight: 700; margin: 24px 0 12px; }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(420px, 1fr));
       gap: 24px;
-      padding: 0 28px 28px;
-      max-width: 1280px;
-      margin: 0 auto 28px;
     }
     .card {
       background: var(--card);
@@ -48,17 +51,17 @@
       box-shadow: 0 0 12px rgba(255,255,255,0.05);
       display: flex; flex-direction: column; gap: 12px;
     }
-    .card-header {
-      display: flex; align-items: center; justify-content: space-between;
-    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
     .category {
       font-size: 0.8rem; background: var(--chip); color: #ccc;
       padding: 2px 6px; border-radius: 6px;
     }
-    .percent { font-weight: 700; }
+    .desc { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .percent { font-weight: 700; white-space: nowrap; }
     .percent.positive { color: var(--pos); }
     .percent.negative { color: var(--neg); }
+
     .chart {
       width: 100%;
       border-radius: 12px;
@@ -71,11 +74,21 @@
       display: block;
       background: var(--axis);
     }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      border: none; cursor: pointer; color: #ddd;
+      background: var(--tab); padding: 6px 10px; border-radius: 10px;
+      font-size: 0.85rem;
+    }
+    .tab.active { background: var(--tab-active); }
+
+    .empty { color: var(--muted); font-size: 0.9rem; }
+
     footer {
       text-align: center; font-size: 0.8rem; color: #888;
       margin-top: 8px; padding-bottom: 20px;
     }
-
     @media (max-width: 980px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -91,7 +104,16 @@
     </div>
   </header>
 
-  <main class="grid" id="charts"></main>
+  <div class="container">
+    <!-- 1) 日本株 前場スナップ -->
+    <div class="section-title">前場スナップ（日本株）</div>
+    <div class="grid" id="am-grid"></div>
+    <div id="am-empty" class="empty" style="display:none;">現在、前場スナップ（intraday_am.png）がありません。</div>
+
+    <!-- 2) 全指数（説明 + タブで長期切替） -->
+    <div class="section-title">全指数</div>
+    <main class="grid" id="cards-grid"></main>
+  </div>
 
   <footer>
     データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
@@ -100,65 +122,154 @@
   </footer>
 
   <script>
-    // 表示する4指数
-    const charts = [
-      { id: 'astra4',    name: 'Astra4',  category: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'scoin_plus',name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵' },
-      { id: 'rbank9',    name: 'R-BANK9', category: '地方銀行',       flag: '🇯🇵' },
-      { id: 'ain10',     name: 'AIN-10',  category: 'AI関連10',       flag: '🇺🇸' },
-    ];
+    // メタ定義の場所
+    const INDEX_JSON = 'data/indexes.json';
 
-    function fmtPct(v) {
-      if (v === null || v === undefined || isNaN(v)) return 'N/A';
+    // 画像の存在確認（HEAD）
+    async function imgExists(url) {
+      try {
+        const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+        return res.ok;
+      } catch { return false; }
+    }
+
+    // 任意: charts/<key>/stats.json があれば%を表示（無ければN/A）
+    async function fetchPct(key) {
+      const url = `charts/${encodeURIComponent(key)}/stats.json`;
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) {
+          const js = await res.json();
+          const p = js.pct_intraday ?? js.pct_1d ?? null;
+          return (typeof p === 'number') ? p : null;
+        }
+      } catch {}
+      return null;
+    }
+    function fmtPct(v){
+      if (v === null || isNaN(v)) return 'N/A';
       const s = (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
       return s;
     }
 
-    async function loadData() {
-      const container = document.getElementById('charts');
-      const syncInfo  = document.getElementById('sync-info');
+    // カード生成
+    function makeCard(meta) {
+      const key = meta.key;
+      const base = `charts/${encodeURIComponent(key)}`;
+      const tabs = [
+        { id:'intraday', label:'Intraday', file:'intraday.png' },
+        { id:'am',       label:'前場(AM)', file:'intraday_am.png' },
+        { id:'7d',       label:'7日',      file:'7d.png' },
+        { id:'1m',       label:'1ヶ月',    file:'1m.png' },
+        { id:'1y',       label:'1年',      file:'1y.png' },
+      ];
 
-      const time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
+      const root = document.createElement('div');
+      root.className = 'card';
 
-      for (const chart of charts) {
-        const statsPath = `docs/charts/${chart.id}_stats.json`;
-        const baseImg   = `docs/charts/${chart.id}_1d.png`;
+      const header = document.createElement('div');
+      header.className = 'card-header';
+      header.innerHTML =
+        `<div class="title">${meta.flag || ''} ${meta.label} <span class="category">${meta.category || ''}</span></div>
+         <div class="percent" id="pct-${key}">N/A</div>`;
+      root.appendChild(header);
 
-        let pct = null, cls = '', ver = null;
-
-        try {
-          const res = await fetch(statsPath, { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (typeof data.pct_1d === 'number') {
-              pct = data.pct_1d;
-              cls = pct >= 0 ? 'positive' : 'negative';
-            }
-            ver = data.updated_at || null;
-          }
-        } catch (e) {
-          console.warn(`${chart.id}: stats fetch failed`, e);
-        }
-
-        const imgSrc = `${baseImg}?v=${encodeURIComponent(ver || Date.now())}`;
-
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="card-header">
-            <div class="title">${chart.flag} ${chart.name} <span class="category">${chart.category}</span></div>
-            <div class="percent ${cls}">${pct === null ? 'N/A' : fmtPct(pct)}</div>
-          </div>
-          <div class="chart">
-            <img src="${imgSrc}" alt="${chart.name} chart" loading="eager" />
-          </div>
-        `;
-        container.appendChild(card);
+      if (meta.description) {
+        const desc = document.createElement('div');
+        desc.className = 'desc';
+        desc.textContent = meta.description;
+        root.appendChild(desc);
       }
+
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'chart';
+      const img = document.createElement('img');
+      img.alt = `${meta.label} chart`;
+      imgWrap.appendChild(img);
+      root.appendChild(imgWrap);
+
+      const tabsWrap = document.createElement('div');
+      tabsWrap.className = 'tabs';
+      root.appendChild(tabsWrap);
+
+      const state = { active: 'intraday' };
+
+      const setActive = async (id) => {
+        state.active = id;
+        [...tabsWrap.children].forEach(b => b.classList.toggle('active', b.dataset.id === id));
+        const t = tabs.find(x => x.id === id);
+        const url = `${base}/${t.file}`;
+        if (await imgExists(url)) {
+          img.src = `${url}?t=${Date.now()}`;
+          img.style.display = 'block';
+        } else {
+          img.style.display = 'none';
+        }
+      };
+
+      (async () => {
+        // タブ描画
+        for (const t of tabs) {
+          const b = document.createElement('button');
+          b.className = 'tab';
+          b.textContent = t.label;
+          b.dataset.id = t.id;
+          b.onclick = () => setActive(t.id);
+          tabsWrap.appendChild(b);
+        }
+        // 初期表示: Intraday→7d→1m→1y→AM の順に存在チェック
+        const order = ['intraday','7d','1m','1y','am'];
+        for (const id of order) {
+          const tf = tabs.find(x => x.id === id);
+          if (tf && await imgExists(`${base}/${tf.file}`)) { await setActive(id); break; }
+        }
+        // % 表示（任意）
+        const pct = await fetchPct(key);
+        const el = document.getElementById(`pct-${key}`);
+        if (el) {
+          el.textContent = fmtPct(pct);
+          if (pct !== null) el.classList.add(pct >= 0 ? 'positive' : 'negative');
+        }
+      })();
+
+      return root;
     }
 
-    loadData();
+    (async () => {
+      // 同期時刻
+      const syncInfo  = document.getElementById('sync-info');
+      syncInfo.textContent =
+        `同期完了: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', hour12:false })} / データ: charts/*`;
+
+      // メタ読み込み
+      const res = await fetch(INDEX_JSON, { cache:'no-store' });
+      const list = await res.json();
+
+      // 1) 日本株 前場スナップ
+      const amWrap = document.getElementById('am-grid');
+      let amCount = 0;
+      for (const m of list.filter(x => x.market === 'JP')) {
+        const amUrl = `charts/${encodeURIComponent(m.key)}/intraday_am.png`;
+        if (await imgExists(amUrl)) {
+          const box = document.createElement('div');
+          box.className = 'card';
+          box.innerHTML = `
+            <div class="title" style="margin-bottom:8px;">${m.flag || ''} ${m.label}
+              <span class="category">${m.category || ''}</span>
+            </div>
+            <div class="chart"><img src="${amUrl}?t=${Date.now()}" alt="${m.label} AM snapshot"/></div>
+            <div class="desc" style="font-size:.8rem;">前場スナップ（11:35 JST）</div>
+          `;
+          amWrap.appendChild(box);
+          amCount++;
+        }
+      }
+      if (amCount === 0) document.getElementById('am-empty').style.display = 'block';
+
+      // 2) 全指数カード
+      const grid = document.getElementById('cards-grid');
+      for (const m of list) grid.appendChild(makeCard(m));
+    })();
   </script>
 </body>
 </html>
