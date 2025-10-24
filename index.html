@@ -1,164 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌸 桜Index - 公式サイト</title>
-  <link rel="icon" href="https://emojiapi.dev/api/v1/cherry-blossom.svg" />
   <style>
     :root {
-      --bg: #0d0d0f;
-      --card: #1a1a1f;
-      --axis: #0b0c10;
-      --text: #ddd;
-      --muted: #aaa;
-      --pos: #28e07c;
-      --neg: #ff4d4d;
-      --chip: #333;
+      --bg: #0f1115;
+      --card: #171a21;
+      --muted: #9aa0aa;
+      --text: #e8eef8;
+      --accent: #84cc16;
+      --down: #ef4444;
+      --up: #10b981;
+      --warning: #f59e0b;
+      --border: #2a2f3a;
+      --chip: #222735;
     }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Inter','Noto Sans JP',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,sans-serif;
-      margin: 0;
-    }
-    header { text-align:center; padding: 20px 0; }
-    h1 { font-size: 1.8rem; margin: 0 0 8px; }
-    .info { font-size: .9rem; color: var(--muted); margin-bottom: 12px; }
-    .links { display:flex; justify-content:center; gap:10px; margin-bottom:16px; }
-    .links a { background:var(--chip); color:#fff; text-decoration:none; padding:8px 14px; border-radius:8px; font-size:.9rem; }
-    .links a:hover{ background:#444; }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(420px, 1fr));
-      gap:24px; padding: 0 28px 28px;
-      max-width:1280px; margin:0 auto 28px;
-    }
-    .card{
-      background:var(--card);
-      border-radius:16px;
-      padding:16px;
-      box-shadow:0 0 12px rgba(255,255,255,.05);
-      display:flex; flex-direction:column; gap:12px;
-    }
-    .card-header{
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .title{ display:flex; align-items:center; gap:8px; font-weight:700; }
-    .category{ font-size:.8rem; background:var(--chip); color:#ccc; padding:2px 6px; border-radius:6px; }
-    .percent{ font-weight:700; }
-    .percent.positive{ color:var(--pos); }
-    .percent.negative{ color:var(--neg); }
-
-    .chart{
-      width:100%;
-      border-radius:12px;
-      background:var(--axis);
-      overflow:hidden;
-      display:flex; justify-content:center;
-      /* 全カード同じ高さを確保（AIN-10 の背のズレ対策） */
-      min-height: 360px;
-    }
-    .chart img{ width:100%; display:block; background:var(--axis); }
-
-    footer{ text-align:center; font-size:.8rem; color:#888; margin-top:8px; padding-bottom:20px; }
-    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 1024px) { .row { grid-template-columns: 1fr; } }
+    .header { text-align: center; margin-bottom: 20px; }
+    .h-title { font-size: 28px; font-weight: 800; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--chip); border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; cursor: pointer; user-select: none; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+    .card-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap: 10px; }
+    .card-l { display:flex; align-items:center; gap:10px; min-width:0; }
+    .flag { font-size: 14px; opacity: 0.9; }
+    .name { font-size: 18px; font-weight: 700; }
+    .tag { font-size: 12px; color: var(--muted); background: var(--chip); border:1px solid var(--border); border-radius: 999px; padding: 4px 8px; }
+    .delta { font-weight: 800; letter-spacing: 0.02em; }
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+    .na { color: var(--muted); }
+    .desc { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+    .imgbox { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #0c0e12; min-height: 280px; display:flex; align-items:center; justify-content:center; }
+    .imgbox img { width: 100%; height: auto; display:block; }
+    .toolbar { display:flex; gap:10px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { background: var(--chip); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 999px; font-weight: 700; cursor:pointer; }
+    .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+    .btn.active { outline: 2px solid #3b82f6; }
+    .footer { color: var(--muted); font-size: 12px; text-align:center; margin-top: 24px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🌸 桜Index - 公式サイト</h1>
-    <div class="info" id="sync-info">同期完了: ロード中...</div>
-    <div class="links">
-      <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener noreferrer">公式X（Twitter）</a>
-      <a href="https://note.com/sakura_index" target="_blank" rel="noopener noreferrer">公式note</a>
+  <div class="wrap">
+    <div class="header">
+      <div class="h-title">🌸 桜Index - 公式サイト</div>
+      <div class="sub" id="sync-info">同期完了: ー / データ: docs/charts/*</div>
+      <div style="display:flex; gap:10px; justify-content:center; margin-top: 12px;">
+        <a class="pill" href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
+        <a class="pill" href="https://note.com" target="_blank" rel="noopener">公式note</a>
+      </div>
     </div>
-  </header>
 
-  <main class="grid" id="charts"></main>
+    <div id="grid" class="row">
+      <!-- 4 枚のカードを JS が挿入 -->
+    </div>
 
-  <footer>
-    データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br/>
-    © 2025 桜Index
-  </footer>
+    <div class="footer">
+      データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指標リポの自動生成スナップショットと同期しています。<br/>
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br/>
+      © 2025 桜Index
+    </div>
+  </div>
 
   <script>
-    // 表示する4指数（id は各リポのファイル接頭辞と一致させる）
-    const charts = [
-      { id: 'astra4',     name: 'Astra4',   category: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'rbank9',     name: 'R-BANK9',  category: '地方銀行',       flag: '🇯🇵' },
-      { id: 'ain10',      name: 'AIN-10',   category: 'AI関連10',       flag: '🇺🇸' },
-      { id: 'scoin_plus', name: 'S-COIN+',  category: '仮想通貨関連',   flag: '🇯🇵' },
+  // ===== サイト設定 =====
+  // ここをあなたのファイル構成に合わせて調整してください
+  const INDEXES = [
+    {
+      id: 'astra4',
+      flag: '🇯🇵',
+      name: 'Astra4',
+      tag: '宇宙ベンチャー',
+      // 説明（復活）
+      desc: '宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。',
+      // stats のパス
+      stats: 'docs/charts/astra4_stats.json',
+      // 画像（存在しないときは自動フォールバック）
+      imgs: {
+        intraday: 'docs/charts/astra4_intraday.png',
+        am: 'docs/charts/astra4_intraday_am.png',
+        d7: 'docs/charts/astra4_7d.png',
+        m1: 'docs/charts/astra4_1m.png',
+        y1: 'docs/charts/astra4_1y.png',
+        // 旧来 1d level のファイルを使いたい場合は intraday を差し替え可
+        level1d: 'docs/charts/astra4_1d.png'
+      }
+    },
+    {
+      id: 'rbank9',
+      flag: '🇯🇵',
+      name: 'R-BANK9',
+      tag: '地方銀行',
+      desc: '地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。',
+      stats: 'docs/charts/rbank9_stats.json', // ← R-BANK9 / R_BANK9の揺れはJSで吸収
+      imgs: {
+        intraday: 'docs/charts/rbank9_intraday.png',
+        am: 'docs/charts/rbank9_intraday_am.png',
+        d7: 'docs/charts/rbank9_7d.png',
+        m1: 'docs/charts/rbank9_1m.png',
+        y1: 'docs/charts/rbank9_1y.png',
+        level1d: 'docs/charts/rbank9_1d.png'
+      }
+    },
+    {
+      id: 'ain10',
+      flag: '🇺🇸',
+      name: 'AIN-10',
+      tag: 'AI関連10',
+      desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。',
+      stats: 'docs/charts/ain10_stats.json',
+      imgs: {
+        intraday: 'docs/charts/ain10_intraday.png',
+        am: 'docs/charts/ain10_intraday_am.png',
+        d7: 'docs/charts/ain10_7d.png',
+        m1: 'docs/charts/ain10_1m.png',
+        y1: 'docs/charts/ain10_1y.png',
+        level1d: 'docs/charts/ain10_1d.png'
+      }
+    },
+    {
+      id: 'scoinp',
+      flag: '₿',
+      name: 'S-COIN+',
+      tag: '仮想資産関連',
+      desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。',
+      stats: 'docs/charts/scoinp_stats.json',
+      imgs: {
+        intraday: 'docs/charts/scoinp_intraday.png',
+        am: 'docs/charts/scoinp_intraday_am.png',
+        d7: 'docs/charts/scoinp_7d.png',
+        m1: 'docs/charts/scoinp_1m.png',
+        y1: 'docs/charts/scoinp_1y.png',
+        level1d: 'docs/charts/scoinp_1d.png'
+      }
+    }
+  ];
+
+  // レンジボタン
+  const RANGES = [
+    { key: 'intraday', label: 'Intraday' },
+    { key: 'am',       label: '前場(AM)' },
+    { key: 'd7',       label: '7日' },
+    { key: 'm1',       label: '1ヶ月' },
+    { key: 'y1',       label: '1年' },
+  ];
+
+  // ===== DOM 生成 =====
+  const grid = document.getElementById('grid');
+  INDEXES.forEach(ix => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = `card-${ix.id}`;
+    card.innerHTML = `
+      <div class="card-hd">
+        <div class="card-l">
+          <div class="flag">${ix.flag}</div>
+          <div class="name">${ix.name}</div>
+          <div class="tag">${ix.tag}</div>
+        </div>
+        <div class="delta na" id="delta-${ix.id}">N/A</div>
+      </div>
+      <div class="desc" id="desc-${ix.id}">${ix.desc}</div>
+      <div class="imgbox"><img id="img-${ix.id}" alt="${ix.name} chart" loading="lazy" decoding="async"/></div>
+      <div class="toolbar" id="tb-${ix.id}"></div>
+    `;
+    grid.appendChild(card);
+
+    const tb = card.querySelector(`#tb-${ix.id}`);
+    RANGES.forEach((r, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn' + (i===0?' active':'');
+      // クリック無効化の原因だった pointer-events を使わない／オーバーレイなし
+      btn.textContent = r.label;
+      btn.dataset.range = r.key;
+      btn.addEventListener('click', () => {
+        [...tb.querySelectorAll('.btn')].forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setImage(ix.id, r.key);
+      });
+      tb.appendChild(btn);
+    });
+  });
+
+  // ===== 画像切替 & フォールバック =====
+  function setImage(id, range) {
+    const ix = INDEXES.find(x => x.id === id);
+    const img = document.getElementById(`img-${id}`);
+    const src = (ix.imgs && ix.imgs[range]) ? ix.imgs[range] : (ix.imgs.level1d || '');
+    // ロード失敗時に level1d → intraday → 何れか へ自動フォールバック
+    let tried = new Set();
+    function tryLoad(pathList) {
+      if (!pathList.length) {
+        img.alt = `${ix.name} chart (no image)`;
+        img.removeAttribute('src');
+        return;
+      }
+      const next = pathList.shift();
+      if (!next || tried.has(next)) return tryLoad(pathList);
+      tried.add(next);
+      img.onerror = () => tryLoad(pathList);
+      img.src = next;
+    }
+    tryLoad([
+      src,
+      ix.imgs?.level1d, ix.imgs?.intraday, ix.imgs?.am, ix.imgs?.d7, ix.imgs?.m1, ix.imgs?.y1
+    ].filter(Boolean));
+  }
+
+  // 初期画像
+  INDEXES.forEach(ix => setImage(ix.id, 'intraday'));
+
+  // ===== 騰落率の取得（stats JSON を自動判別） =====
+  async function fetchJSON(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  // 値の取り出し（柔軟に対応）
+  function pickPercent(stats, pref='intraday') {
+    if (!stats || typeof stats !== 'object') return null;
+
+    // よくあるキー名の候補
+    const tryKeys = [
+      `${pref}_change_percent`,
+      `${pref}_pct`,
+      `${pref}_percent`,
+      'change_percent','pct','percent',
+      'am_change_percent',
+      'delta_percent','intraday_pct',
     ];
 
-    // 数値フォーマット
-    const fmtPct = (v) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+    for (const k of tryKeys) {
+      if (k in stats && isFinite(stats[k])) return Number(stats[k]);
+    }
 
-    // ％候補から最も妥当なフィールドを選ぶ
-    function pickPercentField(stats){
-      const keys = ['intraday_pct','pct_intraday','today_pct','pct_1d','day_pct','pct'];
-      for(const k of keys){
-        if (typeof stats[k] === 'number') return stats[k];
+    // オブジェクト下層 { intraday: { change_percent: x } } など
+    const child = stats[pref];
+    if (child && typeof child === 'object') {
+      for (const kk of ['change_percent','pct','percent']) {
+        if (kk in child && isFinite(child[kk])) return Number(child[kk]);
       }
-      return null;
     }
 
-    // ％スケールの自動補正（0.24 ↔ 24.0 の混在対策）
-    function normalizePct(v){
-      if (v === null || v === undefined || isNaN(v)) return null;
-      const av = Math.abs(v);
-      if (av < 1) return v * 100;    // 0.24 → 24.0
-      if (av > 50) return v / 100;   // 2400 → 24.0 など
-      return v;                      // すでに 24.0 や 0.8 〜 数％レンジ
+    // last/open から逆算
+    const last = stats.last ?? stats.last_value ?? child?.last;
+    const open = stats.open ?? stats.session_open ?? child?.open;
+    if (isFinite(last) && isFinite(open) && Number(open) !== 0) {
+      return ((Number(last) / Number(open)) - 1) * 100;
     }
 
-    async function loadData(){
-      const container = document.getElementById('charts');
-      const syncInfo  = document.getElementById('sync-info');
-      const time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
+    return null;
+  }
 
-      for (const c of charts){
-        const statsPath = `docs/charts/${c.id}_stats.json`;
-        const imgPath   = `docs/charts/${c.id}_1d.png`; // intraday系スナップショット（％/レベルは画像内に描画済み）
-        let pct = null, ver = null, cls = '';
+  function fmtPercent(v) {
+    if (v === null || !isFinite(v)) return { text: 'N/A', cls: 'na' };
+    const r = Math.round(v * 100) / 100; // 2桁
+    if (r > 0) return { text: `+${r.toFixed(2)}%`, cls: 'up' };
+    if (r < 0) return { text: `${r.toFixed(2)}%`, cls: 'down' };
+    return { text: `${r.toFixed(2)}%`, cls: 'na' };
+  }
 
-        try{
-          const res = await fetch(statsPath, { cache: 'no-store' });
-          if (res.ok){
-            const stats = await res.json();
-            const raw = pickPercentField(stats);
-            const norm = normalizePct(raw);
-            if (typeof norm === 'number' && isFinite(norm)){
-              pct = norm;
-              cls = pct >= 0 ? 'positive' : 'negative';
-            }
-            ver = stats.updated_at || stats.last_updated || null;
-          }
-        }catch(e){
-          console.warn(`${c.id}: stats fetch failed`, e);
+  // R-BANK9 名揺れ対策（stats中の label 等）
+  function normalizeLabel(s) {
+    if (!s) return '';
+    return String(s).replace(/[_\s]/g,'-').toUpperCase();
+  }
+
+  async function loadAllStats() {
+    const now = new Date();
+    const jst = new Date(now.getTime() + (9 - now.getTimezoneOffset()/60) * 3600 * 1000);
+    document.getElementById('sync-info').textContent =
+      `同期完了: ${jst.toLocaleString('ja-JP')} / データ: docs/charts/*`;
+
+    await Promise.all(INDEXES.map(async (ix) => {
+      const el = document.getElementById(`delta-${ix.id}`);
+      try {
+        const stats = await fetchJSON(ix.stats);
+        // ラベルの揺れ吸収（R-BANK9）
+        const labelInStats = normalizeLabel(stats?.label || stats?.name || '');
+        const expected = normalizeLabel(ix.name);
+        if (labelInStats && labelInStats !== expected) {
+          // ラベルが違う＝他指数のファイルを指してる恐れ → ログだけ出す
+          console.warn(`[warn] stats label mismatch: expected=${expected}, got=${labelInStats}`, ix.stats);
         }
 
-        const card = document.createElement('div');
-        card.className = 'card';
-        const imgSrc = `${imgPath}?v=${encodeURIComponent(ver || Date.now())}`;
+        // どの％を見せるか：Intraday を基本、AM スナップ中なら AM を優先（画像レンジがAMならAM）
+        const activeRange = (document.getElementById(`tb-${ix.id}`)?.querySelector('.btn.active')?.dataset?.range) || 'intraday';
+        const pref = (activeRange === 'am') ? 'am' : 'intraday';
+        let pct = pickPercent(stats, pref);
 
-        card.innerHTML = `
-          <div class="card-header">
-            <div class="title">${c.flag} ${c.name} <span class="category">${c.category}</span></div>
-            <div class="percent ${cls}">${pct === null ? 'N/A' : fmtPct(pct)}</div>
-          </div>
-          <div class="chart">
-            <img src="${imgSrc}" alt="${c.name} chart" loading="eager" />
-          </div>
-        `;
-        container.appendChild(card);
+        // 取れなければ intraday→am の順でリトライ
+        if (pct === null) pct = pickPercent(stats, 'intraday');
+        if (pct === null) pct = pickPercent(stats, 'am');
+
+        const { text, cls } = fmtPercent(pct);
+        el.textContent = text;
+        el.className = `delta ${cls}`;
+      } catch (e) {
+        console.error(`[error] load stats for ${ix.id}:`, e);
+        el.textContent = 'N/A';
+        el.className = 'delta na';
       }
-    }
+    }));
+  }
 
-    loadData();
+  // 初回ロード & レンジ切替時も再算出
+  loadAllStats();
+  INDEXES.forEach(ix => {
+    const tb = document.getElementById(`tb-${ix.id}`);
+    tb.addEventListener('click', (ev) => {
+      if (ev.target && ev.target.matches('button.btn')) {
+        // 画像切替は setImage 内ですでに実施済み、ここで％も合わせて再評価
+        loadAllStats();
+      }
+    });
+  });
+
   </script>
 </body>
 </html>
