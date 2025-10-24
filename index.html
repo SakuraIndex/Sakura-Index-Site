@@ -9,100 +9,51 @@
     :root {
       --bg: #0d0d0f;
       --card: #1a1a1f;
-      --axis: #0f1014;
-      --text: #e6e6e6;
-      --muted: #aab;
+      --axis: #0b0c10;
+      --text: #ddd;
+      --muted: #aaa;
       --pos: #28e07c;
-      --neg: #ff5e5e;
-      --chip: #2a2b31;
-      --chip-active: #3b3d46;
-      --ring: #2f3340;
+      --neg: #ff4d4d;
+      --chip: #333;
+      --chipActive: #4a4a4f;
+      --shadow: 0 0 12px rgba(255,255,255,0.05);
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: radial-gradient(1200px 800px at 80% -10%, #14151b 0%, #0d0d0f 40%) fixed,
-                  radial-gradient(1000px 800px at 10% -20%, #14151b 0%, #0d0d0f 50%) fixed,
-                  var(--bg);
-      color: var(--text);
-      font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
-    }
-    header { text-align: center; padding: 24px 12px 4px; }
-    h1 { font-size: 2rem; margin: 0 0 6px; }
+    html, body { background: var(--bg); color: var(--text); margin: 0; font-family: Inter, "Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; }
+    header { text-align: center; padding: 20px 0 8px; }
+    h1 { font-size: 1.9rem; margin: 0 0 8px; }
     .info { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
     .links { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
-    .links a {
-      background: var(--chip); color: #fff; text-decoration: none;
-      padding: 8px 14px; border-radius: 10px; font-size: 0.92rem; border: 1px solid #2a2c32;
-    }
-    .links a:hover { background: var(--chip-active); }
+    .links a { background: var(--chip); color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.9rem; transition: background .2s; }
+    .links a:hover { background: var(--chipActive); }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(360px, 1fr));
-      gap: 28px;
-      padding: 0 28px 34px;
-      max-width: 1380px;
-      margin: 0 auto;
-    }
-    .card {
-      background: linear-gradient(0deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.02) 100%), var(--card);
-      border: 1px solid var(--ring);
-      border-radius: 18px;
-      padding: 16px 16px 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .card-header {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; flex-wrap: wrap;
-    }
-    .title { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .2px;}
-    .category {
-      font-size: 0.8rem; background: var(--chip); color: #c9ccdf;
-      padding: 2px 6px; border-radius: 6px; border: 1px solid #2d313b;
-    }
-    .percent { font-weight: 800; min-width: 72px; text-align: right; }
+    main { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(420px, 1fr)); gap: 24px; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .category { font-size: .8rem; background: var(--chip); color: #ccc; padding: 2px 6px; border-radius: 6px; }
+    .percent { font-weight: 800; letter-spacing: .2px; }
     .percent.positive { color: var(--pos); }
     .percent.negative { color: var(--neg); }
 
-    /* 統一チャート枠：16:9 / 余白も含めきれいに収まる */
-    .chart {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: 12px;
-      background: var(--axis);
-      overflow: hidden;
-      border: 1px solid #22252d;
-    }
-    .chart img {
-      width: 100%; height: 100%;
-      object-fit: contain; display: block; background: var(--axis);
-    }
+    .chart { width: 100%; border-radius: 12px; background: var(--axis); overflow: hidden; display: flex; justify-content: center; min-height: 220px; }
+    .chart img { width: 100%; display: block; background: var(--axis); }
 
-    /* レンジ切り替え */
-    .range-row {
-      display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap;
+    .tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+    .tabs button {
+      background: var(--chip); color: #fff; border: none; border-radius: 999px; padding: 8px 14px;
+      font-size: .9rem; cursor: pointer; transition: background .2s, transform .02s;
     }
-    .range-btn {
-      appearance: none; border: 1px solid #2c2f38; color: #dde;
-      background: var(--chip); border-radius: 999px; padding: 8px 14px; font-weight: 600;
-      cursor: pointer; user-select: none; position: relative; z-index: 1;
-    }
-    .range-btn:hover { background: var(--chip-active); }
-    .range-btn.active {
-      background: #2f3440; border-color: #3b4050;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
-    }
+    .tabs button:active { transform: translateY(1px); }
+    .tabs button.active { background: var(--chipActive); }
 
-    footer {
-      text-align: center; font-size: 0.86rem; color: #98a1b3;
-      margin-top: 6px; padding: 24px 12px 28px;
-    }
+    footer { text-align: center; font-size: .8rem; color: #888; margin-top: 8px; padding: 8px 0 20px; }
 
-    @media (max-width: 1080px) {
-      .grid { grid-template-columns: 1fr; }
-    }
+    /* 小さなトースト（必要時のみ表示） */
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #eee; padding: 8px 12px; border-radius: 8px; font-size: .85rem; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -115,7 +66,9 @@
     </div>
   </header>
 
-  <main class="grid" id="cards"></main>
+  <main>
+    <div class="grid" id="cards"></div>
+  </main>
 
   <footer>
     データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
@@ -123,165 +76,143 @@
     © 2025 桜Index
   </footer>
 
+  <div class="toast" id="toast"></div>
+
   <script>
-    // === 表示する指数とID（ファイル名の接頭辞） ===
+    // ====== 設定（ID は docs/charts/<id>_* に一致）======
     const INDICES = [
-      { id: 'astra4',   name: 'ASTRA4',  category: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'rbank9',   name: 'R-BANK9', category: '地方銀行',       flag: '🇯🇵' },
-      { id: 'ain10',    name: 'AIN-10',  category: 'AI関連10',       flag: '🇺🇸' },
-      { id: 'scoin_plus', name: 'S-COIN+', category: '仮想通貨関連', flag: '🇯🇵' },
+      { id: 'astra4',     name: 'Astra4',    cat: '宇宙ベンチャー', flag: '🇯🇵' },
+      { id: 'rbank9',     name: 'R-BANK9',   cat: '地方銀行',       flag: '🇯🇵' },
+      { id: 'ain10',      name: 'AIN-10',    cat: 'AI関連10',       flag: '🇺🇸' },
+      { id: 'scoin_plus', name: 'S-COIN+',   cat: '仮想通貨関連',   flag: '🇯🇵' },
     ];
 
-    // レンジ→画像ファイル名の対応
-    const RANGE_TO_FILE = {
-      intraday: (id) => `docs/charts/${id}_intraday.png`,
-      am      : (id) => `docs/charts/${id}_am.png`,
-      '7d'    : (id) => `docs/charts/${id}_7d.png`,
-      '1m'    : (id) => `docs/charts/${id}_1m.png`,
-      '1y'    : (id) => `docs/charts/${id}_1y.png`,
-    };
+    // 表示できるレンジ（存在しない画像は onerror で 1d にフォールバック）
+    const RANGES = [
+      { key: '1d', label: 'Intraday'    },    // docs/charts/<id>_1d.png
+      { key: 'am', label: '前場(AM)'     },    // docs/charts/<id>_am.png
+      { key: '7d', label: '7日'          },    // docs/charts/<id>_7d.png
+      { key: '1m', label: '1ヶ月'        },    // docs/charts/<id>_1m.png
+      { key: '1y', label: '1年'          },    // docs/charts/<id>_1y.png
+    ];
 
-    // レンジ→％を逆算するときの基準キー候補
-    const RANGE_TO_ANCHOR_KEYS = {
-      intraday: ['prev_close', 'yesterday_close', 'anchor_1d'],
-      am      : ['am_prev_close', 'prev_close'], // 無ければ通常前日終値
-      '7d'    : ['anchor_7d', 'week_anchor'],
-      '1m'    : ['anchor_1m', 'month_anchor'],
-      '1y'    : ['anchor_1y', 'year_anchor'],
-    };
+    // ====== ％のスケール揺れ補正 ======
+    // 0.30(=+0.30=+30%) と 30.0(=+30%) のどちらでも正しい％に直す
+    function normalizePct(raw) {
+      if (raw === null || raw === undefined || isNaN(raw)) return null;
+      const n = Number(raw);
+      // 絶対値が 10 を超えている場合 → パーセント表記扱いで 100 で割る
+      return Math.abs(n) > 10 ? n / 100 : n;
+    }
+    function fmtPctSmall(v) {
+      if (v === null) return 'N/A';
+      return (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%';
+    }
 
-    // レンジ→statsの生％候補キー
-    const RANGE_TO_PCT_KEYS = {
-      intraday: ['pct_intraday', 'pct_1d', 'pct'], // よくある名前を順に
-      am      : ['pct_am', 'am_pct'],
-      '7d'    : ['pct_7d'],
-      '1m'    : ['pct_1m'],
-      '1y'    : ['pct_1y'],
-    };
+    // ====== 同期ステータス ======
+    function setSyncStamp() {
+      const sync = document.getElementById('sync-info');
+      const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      sync.textContent = `同期完了: ${now} / データ: charts/*`;
+    }
 
-    // 便利関数：配列のキーを順に見て最初の数値を返す
-    function firstNumber(obj, keys) {
-      if (!obj) return null;
-      for (const k of keys) {
-        const v = obj[k];
-        if (typeof v === 'number' && Number.isFinite(v)) return v;
+    // ====== 軽いトースト ======
+    let toastTimer = null;
+    function showToast(msg, ms = 1800) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+    }
+
+    // ====== stats 読み込み（％を正規化）======
+    async function loadStats(id) {
+      try {
+        const res = await fetch(`docs/charts/${id}_stats.json`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const j = await res.json();
+        // 期待キー：pct_1d（小数 or %）、updated_at（任意）
+        const pctRaw = (typeof j.pct_1d === 'number') ? j.pct_1d
+                      : (typeof j.pct === 'number')   ? j.pct
+                      : null;
+        return { pct: normalizePct(pctRaw), updated_at: j.updated_at || null };
+      } catch (e) {
+        console.warn(`[stats] ${id} failed:`, e);
+        return { pct: null, updated_at: null };
       }
-      return null;
     }
 
-    // 便利関数：レンジ毎の％を stats から取得（無ければ last/anchor で逆算）
-    function getPercentForRange(stats, range) {
-      if (!stats || typeof stats !== 'object') return null;
+    // ====== 1カード描画 ======
+    function renderCard(meta, stats) {
+      const cards = document.getElementById('cards');
+      const ver = stats.updated_at || Date.now();
 
-      // 1) 生の％が入っていればそれを採用
-      const direct = firstNumber(stats, RANGE_TO_PCT_KEYS[range] || []);
-      if (direct !== null) return direct;
-
-      // 2) last と anchor から逆算
-      const last = firstNumber(stats, ['last', 'last_value', 'close']);
-      if (last === null) return null;
-
-      const anchor = firstNumber(stats, RANGE_TO_ANCHOR_KEYS[range] || []);
-      if (anchor === null || anchor === 0) return null;
-
-      const pct = ((last / anchor) - 1) * 100;
-      // 異常値ガード（±100%超過は欠損扱い）
-      if (!Number.isFinite(pct) || Math.abs(pct) > 100) return null;
-      return pct;
-    }
-
-    function fmtPct(v) {
-      if (v === null || v === undefined || isNaN(v)) return 'N/A';
-      const s = (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
-      return s;
-    }
-
-    function nowJST() {
-      return new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-    }
-
-    // 1カードを構築
-    function createCard(idx) {
       const card = document.createElement('div');
       card.className = 'card';
-      card.id = `card-${idx.id}`;
+      card.dataset.indexId = meta.id;
+
+      const pctCls = stats.pct == null ? '' : (stats.pct >= 0 ? 'positive' : 'negative');
 
       card.innerHTML = `
         <div class="card-header">
-          <div class="title">${idx.flag} ${idx.name} <span class="category">${idx.category}</span></div>
-          <div class="percent" id="${idx.id}-percent">N/A</div>
+          <div class="title">${meta.flag} ${meta.name} <span class="category">${meta.cat}</span></div>
+          <div class="percent ${pctCls}" data-role="pct">${fmtPctSmall(stats.pct)}</div>
         </div>
+
         <div class="chart">
-          <img id="${idx.id}-img" alt="${idx.name} chart" loading="eager" />
+          <img data-role="img" alt="${meta.name} chart" />
         </div>
-        <div class="range-row" role="tablist" aria-label="${idx.name} ranges">
-          <button class="range-btn active" data-range="intraday" id="${idx.id}-btn-intraday">Intraday</button>
-          <button class="range-btn" data-range="am"       id="${idx.id}-btn-am">前場(AM)</button>
-          <button class="range-btn" data-range="7d"       id="${idx.id}-btn-7d">7日</button>
-          <button class="range-btn" data-range="1m"       id="${idx.id}-btn-1m">1ヶ月</button>
-          <button class="range-btn" data-range="1y"       id="${idx.id}-btn-1y">1年</button>
-        </div>
+
+        <div class="tabs" data-role="tabs"></div>
       `;
-      return card;
-    }
 
-    // レンジ切替処理（画像と％の更新）
-    function applyRange(id, range, stats) {
-      const img = document.getElementById(`${id}-img`);
-      const pctEl = document.getElementById(`${id}-percent`);
-      if (!img || !pctEl) return;
+      // 画像初期表示（1d）
+      const img = card.querySelector('[data-role="img"]');
+      const setSrc = (rangeKey) => {
+        img.dataset.range = rangeKey;
+        img.src = `docs/charts/${meta.id}_${rangeKey}.png?v=${encodeURIComponent(ver)}`;
+      };
 
-      const ver = (stats && (stats.updated_at || stats.version)) ? encodeURIComponent(stats.updated_at || stats.version) : Date.now();
-      img.src = `${RANGE_TO_FILE[range](id)}?v=${ver}`;
+      // フォールバック：指定レンジの画像が無ければ 1d に戻す
+      img.onerror = () => {
+        if (img.dataset.range !== '1d') {
+          setSrc('1d');
+          showToast(`${meta.name}：選択レンジの画像が無かったため 1d に表示を戻しました`);
+        }
+      };
 
-      const pct = getPercentForRange(stats, range);
-      pctEl.textContent = fmtPct(pct);
-      pctEl.classList.toggle('positive', pct !== null && pct >= 0);
-      pctEl.classList.toggle('negative', pct !== null && pct < 0);
+      setSrc('1d');
 
-      // ボタンの active 切替
-      const card = document.getElementById(`card-${id}`);
-      const btns = card.querySelectorAll('.range-btn');
-      btns.forEach(b => b.classList.toggle('active', b.dataset.range === range));
-    }
-
-    async function loadAll() {
-      const container = document.getElementById('cards');
-      const syncInfo  = document.getElementById('sync-info');
-      syncInfo.textContent = `同期完了: ${nowJST()} / データ: charts/*`;
-
-      for (const idx of INDICES) {
-        const card = createCard(idx);
-        container.appendChild(card);
-
-        // まずは stats を取得
-        const statsPath = `docs/charts/${idx.id}_stats.json`;
-        let stats = null;
-        try {
-          const res = await fetch(statsPath, { cache: 'no-store' });
-          if (res.ok) { stats = await res.json(); }
-        } catch (e) { /* noop */ }
-
-        // 既定は intraday（RBANK9 の “no data 1d” を避ける）
-        applyRange(idx.id, 'intraday', stats);
-
-        // クリックで切替
-        const cardEl = document.getElementById(`card-${idx.id}`);
-        cardEl.querySelectorAll('.range-btn').forEach(btn => {
-          btn.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            const range = btn.dataset.range;
-            applyRange(idx.id, range, stats);
-          }, { passive: true });
-          // レイヤが重なってクリック不能になるのを防止
-          btn.style.pointerEvents = 'auto';
-          btn.style.zIndex = '2';
+      // タブ作成（クリック可能・装飾のみ、URL遷移なし）
+      const tabs = card.querySelector('[data-role="tabs"]');
+      RANGES.forEach(r => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = r.label;
+        btn.dataset.range = r.key;
+        btn.className = r.key === '1d' ? 'active' : '';
+        btn.addEventListener('click', () => {
+          // active 切り替え
+          tabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+          setSrc(r.key);
         });
+        tabs.appendChild(btn);
+      });
+
+      cards.appendChild(card);
+    }
+
+    // ====== 全ロード ======
+    async function init() {
+      setSyncStamp();
+      for (const m of INDICES) {
+        const stats = await loadStats(m.id);
+        renderCard(m, stats);
       }
     }
 
-    loadAll();
+    init();
   </script>
 </body>
 </html>
