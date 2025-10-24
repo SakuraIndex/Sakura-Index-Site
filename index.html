@@ -6,34 +6,64 @@
   <title>🌸 桜Index - 公式サイト</title>
   <link rel="icon" href="https://emojiapi.dev/api/v1/cherry-blossom.svg" />
   <style>
-    :root{
-      --bg:#0d0d0f;--card:#1a1a1f;--axis:#0b0c10;--text:#ddd;--muted:#aaa;
-      --pos:#28e07c;--neg:#ff4d4d;--chip:#333;--ring:#2c2f36;
+    :root {
+      --bg: #0d0d0f;
+      --card: #1a1a1f;
+      --axis: #0b0c10;
+      --text: #ddd;
+      --muted: #aaa;
+      --pos: #28e07c;
+      --neg: #ff4d4d;
+      --chip: #333;
     }
-    *{box-sizing:border-box}
-    body{background:var(--bg);color:var(--text);
-      font-family:'Inter','Noto Sans JP',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,sans-serif;margin:0}
-    header{text-align:center;padding:20px 12px}
-    h1{font-size:clamp(1.4rem,2.2vw,2.2rem);margin:0 0 8px}
-    .info{font-size:.9rem;color:var(--muted);margin-bottom:12px}
-    .links{display:flex;justify-content:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-    .links a{background:var(--chip);color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-size:.9rem}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(420px,1fr));gap:24px;padding:0 28px 28px;max-width:1280px;margin:0 auto 28px}
-    .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 0 12px rgba(255,255,255,.05);display:flex;flex-direction:column;gap:12px}
-    .card-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .title{display:flex;align-items:center;gap:8px;font-weight:700}
-    .category{font-size:.8rem;background:var(--chip);color:#ccc;padding:2px 6px;border-radius:6px}
-    .percent{font-weight:700}
-    .percent.positive{color:var(--pos)} .percent.negative{color:var(--neg)}
-    /* 統一されたチャート領域（16:9） */
-    .chart{width:100%;background:var(--axis);border-radius:12px;overflow:hidden;position:relative}
-    .chart::after{content:"";display:block;padding-top:56.25%} /* 16:9 比率 */
-    .chart>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:auto;background:var(--axis)}
-    .modes{display:flex;gap:10px;flex-wrap:wrap}
-    .mode{border:none;background:var(--chip);color:#fff;border-radius:999px;padding:8px 14px;cursor:pointer}
-    .mode.active{outline:2px solid var(--ring);background:#40424a}
-    footer{text-align:center;font-size:.8rem;color:#888;margin-top:8px;padding-bottom:20px}
-    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter','Noto Sans JP',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,sans-serif;
+      margin: 0;
+    }
+    header { text-align:center; padding: 20px 0; }
+    h1 { font-size: 1.8rem; margin: 0 0 8px; }
+    .info { font-size: .9rem; color: var(--muted); margin-bottom: 12px; }
+    .links { display:flex; justify-content:center; gap:10px; margin-bottom:16px; }
+    .links a { background:var(--chip); color:#fff; text-decoration:none; padding:8px 14px; border-radius:8px; font-size:.9rem; }
+    .links a:hover{ background:#444; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap:24px; padding: 0 28px 28px;
+      max-width:1280px; margin:0 auto 28px;
+    }
+    .card{
+      background:var(--card);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 0 12px rgba(255,255,255,.05);
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .card-header{
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .title{ display:flex; align-items:center; gap:8px; font-weight:700; }
+    .category{ font-size:.8rem; background:var(--chip); color:#ccc; padding:2px 6px; border-radius:6px; }
+    .percent{ font-weight:700; }
+    .percent.positive{ color:var(--pos); }
+    .percent.negative{ color:var(--neg); }
+
+    .chart{
+      width:100%;
+      border-radius:12px;
+      background:var(--axis);
+      overflow:hidden;
+      display:flex; justify-content:center;
+      /* 全カード同じ高さを確保（AIN-10 の背のズレ対策） */
+      min-height: 360px;
+    }
+    .chart img{ width:100%; display:block; background:var(--axis); }
+
+    footer{ text-align:center; font-size:.8rem; color:#888; margin-top:8px; padding-bottom:20px; }
+    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -46,7 +76,7 @@
     </div>
   </header>
 
-  <main class="grid" id="grid"></main>
+  <main class="grid" id="charts"></main>
 
   <footer>
     データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
@@ -55,154 +85,80 @@
   </footer>
 
   <script>
-  // ====== 設定 ======
-  const INDEXES = [
-    { id:'astra4',     name:'Astra4',  flag:'🇯🇵', category:'宇宙ベンチャー' },
-    { id:'rbank9',     name:'R-BANK9', flag:'🇯🇵', category:'地方銀行' },
-    { id:'ain10',      name:'AIN-10',  flag:'🇺🇸', category:'AI関連10' },
-    { id:'scoin_plus', name:'S-COIN+', flag:'🇯🇵', category:'仮想通貨関連' },
-  ];
+    // 表示する4指数（id は各リポのファイル接頭辞と一致させる）
+    const charts = [
+      { id: 'astra4',     name: 'Astra4',   category: '宇宙ベンチャー', flag: '🇯🇵' },
+      { id: 'rbank9',     name: 'R-BANK9',  category: '地方銀行',       flag: '🇯🇵' },
+      { id: 'ain10',      name: 'AIN-10',   category: 'AI関連10',       flag: '🇺🇸' },
+      { id: 'scoin_plus', name: 'S-COIN+',  category: '仮想通貨関連',   flag: '🇯🇵' },
+    ];
 
-  // 画像ファイル名の規約
-  const MODE_SUFFIX = {
-    intraday:     '_intraday.png',
-    am:           '_intraday_am.png',
-    '7d':         '_7d.png',
-    '1m':         '_1m.png',
-    '1y':         '_1y.png'
-  };
-  // 旧来の長期画像（無い場合があるので最後のフォールバックに使う）
-  const FALLBACK_LONG = '_1d.png';
+    // 数値フォーマット
+    const fmtPct = (v) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
 
-  // stats.json のキー候補（順に優先）
-  const PCT_KEYS_BY_MODE = {
-    intraday: ['pct_intraday','pct_1d','pct','pct_today'],
-    am:       ['pct_am','pct_intraday','pct_1d','pct'],
-    '7d':     ['pct_7d','pct_week'],
-    '1m':     ['pct_1m','pct_month'],
-    '1y':     ['pct_1y','pct_year']
-  };
-
-  const gridEl = document.getElementById('grid');
-  const syncInfo = document.getElementById('sync-info');
-
-  function fmtPctAuto(v){
-    if (v==null || isNaN(v)) return 'N/A';
-    // v が -1〜1 のときは比率 ⇒ ％ に変換（0.3 → 30%）
-    const asNumber = Number(v);
-    const pct = (Math.abs(asNumber) <= 1 ? asNumber*100 : asNumber);
-    const s = (pct>=0?'+':'') + pct.toFixed(2) + '%';
-    return s;
-  }
-  function pctClass(v){
-    const n = Number(v);
-    if (isNaN(n)) return '';
-    return n>=0 ? 'positive' : 'negative';
-  }
-
-  function nowJST(){
-    return new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'});
-  }
-
-  // 各カードを描画
-  INDEXES.forEach(ix => {
-    const card = document.createElement('section');
-    card.className = 'card';
-    card.dataset.id = ix.id;
-
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="title">${ix.flag} ${ix.name} <span class="category">${ix.category}</span></div>
-        <div class="percent" data-pct>—</div>
-      </div>
-      <div class="chart"><img data-img alt="${ix.name} chart" loading="eager" /></div>
-      <div class="modes" role="tablist" aria-label="${ix.name} chart modes">
-        <button class="mode active" data-mode="intraday">Intraday</button>
-        <button class="mode" data-mode="am">前場(AM)</button>
-        <button class="mode" data-mode="7d">7日</button>
-        <button class="mode" data-mode="1m">1ヶ月</button>
-        <button class="mode" data-mode="1y">1年</button>
-      </div>
-    `;
-    gridEl.appendChild(card);
-  });
-
-  syncInfo.textContent = `同期完了: ${nowJST()} / データ: charts/*`;
-
-  // 初期ロード（全て intraday で開始）
-  document.querySelectorAll('.card').forEach(card=>{
-    const id = card.dataset.id;
-    setMode(card,id,'intraday'); // ここで “No data” 化を防ぐ（常に intraday から）
-  });
-
-  // モード切り替え
-  gridEl.addEventListener('click', (e)=>{
-    const btn = e.target.closest('.mode');
-    if(!btn) return;
-    const card = btn.closest('.card');
-    const id = card.dataset.id;
-    card.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active', b===btn));
-    setMode(card,id, btn.dataset.mode);
-  });
-
-  async function setMode(card,id,mode){
-    const imgEl = card.querySelector('[data-img]');
-    const pctEl = card.querySelector('[data-pct]');
-
-    // 画像パスを決定（AM は無ければ intraday にフォールバック / 長期は1dを最後の砦に）
-    let suffix = MODE_SUFFIX[mode] ?? MODE_SUFFIX.intraday;
-    let srcPrimary = `docs/charts/${id}${suffix}`;
-    let srcFallback = null;
-
-    if (mode==='am'){
-      srcFallback = `docs/charts/${id}${MODE_SUFFIX.intraday}`;
-    }else if (mode==='7d' || mode==='1m' || mode==='1y'){
-      srcFallback = `docs/charts/${id}${FALLBACK_LONG}`;
+    // ％候補から最も妥当なフィールドを選ぶ
+    function pickPercentField(stats){
+      const keys = ['intraday_pct','pct_intraday','today_pct','pct_1d','day_pct','pct'];
+      for(const k of keys){
+        if (typeof stats[k] === 'number') return stats[k];
+      }
+      return null;
     }
 
-    // stats 読み込み
-    const statsUrl = `docs/charts/${id}_stats.json`;
-    let stats = {};
-    try{
-      const res = await fetch(statsUrl,{cache:'no-store'});
-      if(res.ok) stats = await res.json();
-    }catch(_){/* noop */}
-
-    // 更新時刻（キャッシュバスター）
-    const ver = encodeURIComponent(stats.updated_at || Date.now());
-
-    // 画像ソースを決定（フォールバックも付与）
-    let imgSrc = `${srcPrimary}?v=${ver}`;
-    // 「一度 404 を踏む → 置き換え」にするとチラつくので、事前に在るかどうか HEAD で軽く確認
-    const ok = await quickExists(imgSrc);
-    if(!ok && srcFallback){
-      imgSrc = `${srcFallback}?v=${ver}`;
+    // ％スケールの自動補正（0.24 ↔ 24.0 の混在対策）
+    function normalizePct(v){
+      if (v === null || v === undefined || isNaN(v)) return null;
+      const av = Math.abs(v);
+      if (av < 1) return v * 100;    // 0.24 → 24.0
+      if (av > 50) return v / 100;   // 2400 → 24.0 など
+      return v;                      // すでに 24.0 や 0.8 〜 数％レンジ
     }
-    imgEl.src = imgSrc;
 
-    // 騰落率のキー候補を順に探索
-    const keys = PCT_KEYS_BY_MODE[mode] || PCT_KEYS_BY_MODE.intraday;
-    let val = null;
-    for(const k of keys){
-      if (k in stats){ val = stats[k]; break; }
-    }
-    // 最後の保険：intraday用キーを総当たり
-    if(val==null){
-      for(const k of PCT_KEYS_BY_MODE.intraday){
-        if (k in stats){ val = stats[k]; break; }
+    async function loadData(){
+      const container = document.getElementById('charts');
+      const syncInfo  = document.getElementById('sync-info');
+      const time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      syncInfo.textContent = `同期完了: ${time} / データ: docs/charts/*`;
+
+      for (const c of charts){
+        const statsPath = `docs/charts/${c.id}_stats.json`;
+        const imgPath   = `docs/charts/${c.id}_1d.png`; // intraday系スナップショット（％/レベルは画像内に描画済み）
+        let pct = null, ver = null, cls = '';
+
+        try{
+          const res = await fetch(statsPath, { cache: 'no-store' });
+          if (res.ok){
+            const stats = await res.json();
+            const raw = pickPercentField(stats);
+            const norm = normalizePct(raw);
+            if (typeof norm === 'number' && isFinite(norm)){
+              pct = norm;
+              cls = pct >= 0 ? 'positive' : 'negative';
+            }
+            ver = stats.updated_at || stats.last_updated || null;
+          }
+        }catch(e){
+          console.warn(`${c.id}: stats fetch failed`, e);
+        }
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        const imgSrc = `${imgPath}?v=${encodeURIComponent(ver || Date.now())}`;
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="title">${c.flag} ${c.name} <span class="category">${c.category}</span></div>
+            <div class="percent ${cls}">${pct === null ? 'N/A' : fmtPct(pct)}</div>
+          </div>
+          <div class="chart">
+            <img src="${imgSrc}" alt="${c.name} chart" loading="eager" />
+          </div>
+        `;
+        container.appendChild(card);
       }
     }
-    pctEl.textContent = fmtPctAuto(val);
-    pctEl.className = `percent ${pctClass(val)}`;
-  }
 
-  // 軽量存在チェック（CORS/HEAD 許容前提。失敗は false 扱い）
-  async function quickExists(url){
-    try{
-      const r = await fetch(url,{method:'HEAD',cache:'no-store'});
-      return r.ok;
-    }catch(_){ return false; }
-  }
+    loadData();
   </script>
 </body>
 </html>
