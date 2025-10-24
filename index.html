@@ -15,204 +15,293 @@
       --pos: #28e07c;
       --neg: #ff4d4d;
       --chip: #333;
-      --chipActive: #4a4a4f;
-      --shadow: 0 0 12px rgba(255,255,255,0.05);
+      --ring: #3a3a3f;
     }
-    html, body { background: var(--bg); color: var(--text); margin: 0; font-family: Inter, "Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; }
-    header { text-align: center; padding: 20px 0 8px; }
-    h1 { font-size: 1.9rem; margin: 0 0 8px; }
-    .info { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+    * { box-sizing: border-box; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter','Noto Sans JP',system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol',sans-serif;
+      margin: 0;
+    }
+    header { text-align: center; padding: 20px 0 10px; }
+    h1 { font-size: 1.9rem; margin: 0 0 6px; }
+    .info { font-size: 0.9rem; color: var(--muted); margin-bottom: 10px; }
     .links { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
-    .links a { background: var(--chip); color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-size: 0.9rem; transition: background .2s; }
-    .links a:hover { background: var(--chipActive); }
-
-    main { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(420px, 1fr)); gap: 24px; }
-    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
-
-    .card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
-    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .links a {
+      background: var(--chip); color: #fff; text-decoration: none;
+      padding: 8px 14px; border-radius: 10px; font-size: 0.9rem;
+      border: 1px solid var(--ring);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap: 24px;
+      padding: 0 28px 28px;
+      max-width: 1280px;
+      margin: 0 auto 28px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 0 12px rgba(255,255,255,0.05);
+      display: flex; flex-direction: column; gap: 12px;
+      border: 1px solid var(--ring);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
-    .category { font-size: .8rem; background: var(--chip); color: #ccc; padding: 2px 6px; border-radius: 6px; }
-    .percent { font-weight: 800; letter-spacing: .2px; }
+    .category {
+      font-size: 0.8rem; background: var(--chip); color: #ccc;
+      padding: 2px 6px; border-radius: 6px;
+    }
+    .percent { font-weight: 700; }
     .percent.positive { color: var(--pos); }
     .percent.negative { color: var(--neg); }
-
-    .chart { width: 100%; border-radius: 12px; background: var(--axis); overflow: hidden; display: flex; justify-content: center; min-height: 220px; }
-    .chart img { width: 100%; display: block; background: var(--axis); }
-
-    .tabs { display: flex; gap: 10px; flex-wrap: wrap; }
-    .tabs button {
-      background: var(--chip); color: #fff; border: none; border-radius: 999px; padding: 8px 14px;
-      font-size: .9rem; cursor: pointer; transition: background .2s, transform .02s;
+    .chart {
+      width: 100%;
+      border-radius: 12px;
+      background: var(--axis);
+      overflow: hidden;
+      border: 1px solid var(--ring);
+      position: relative;
     }
-    .tabs button:active { transform: translateY(1px); }
-    .tabs button.active { background: var(--chipActive); }
-
-    footer { text-align: center; font-size: .8rem; color: #888; margin-top: 8px; padding: 8px 0 20px; }
-
-    /* 小さなトースト（必要時のみ表示） */
-    .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #eee; padding: 8px 12px; border-radius: 8px; font-size: .85rem; opacity: 0; pointer-events: none; transition: opacity .2s; }
-    .toast.show { opacity: 1; }
+    /* 画像の比率と収まりを統一（サイズ崩れ対策） */
+    .chart img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      background: var(--axis);
+    }
+    .tabs {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .tab {
+      background: var(--chip);
+      color: #fff;
+      border: 1px solid var(--ring);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tab.active {
+      background: #4a4a50;
+      border-color: #75757d;
+    }
+    .badge {
+      background: var(--chip);
+      color: #ccc;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      border: 1px solid var(--ring);
+    }
+    footer {
+      text-align: center; font-size: 0.8rem; color: #888;
+      margin-top: 8px; padding-bottom: 20px;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🌸 桜Index - 公式サイト</h1>
-    <div class="info" id="sync-info">同期完了: ロード中...</div>
-    <div class="links">
-      <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener noreferrer">公式X（Twitter）</a>
-      <a href="https://note.com/sakura_index" target="_blank" rel="noopener noreferrer">公式note</a>
+<header>
+  <h1>🌸 桜Index - 公式サイト</h1>
+  <div class="info" id="sync-info">同期完了: ロード中...</div>
+  <div class="links">
+    <a href="https://x.com/Sakura_Index" target="_blank" rel="noopener noreferrer">公式X（Twitter）</a>
+    <a href="https://note.com/sakura_index" target="_blank" rel="noopener noreferrer">公式note</a>
+  </div>
+</header>
+
+<main class="grid" id="charts"></main>
+
+<footer>
+  データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
+  ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br/>
+  © 2025 桜Index
+</footer>
+
+<script>
+/**
+ * 4指数の定義（prefixは charts 配下のファイル接頭辞）
+ * - 画像は ${prefix}_intraday.png / ${prefix}_intraday_am.png / ${prefix}_7d.png / ${prefix}_1m.png / ${prefix}_1y.png
+ *   が基本。無ければ候補を順にフォールバックする。
+ * - 騰落率は ${prefix}_stats.json の pct_1d を表示。異常値は自動正規化。
+ */
+const INDEXES = [
+  { id: 'astra4',   name: 'Astra4',   category: '宇宙ベンチャー', flag: '🇯🇵', prefix: 'astra4' },
+  { id: 'rbank9',   name: 'R-BANK9',  category: '地方銀行',       flag: '🇯🇵', prefix: 'rbank9' },
+  { id: 'ain10',    name: 'AIN-10',   category: 'AI関連10',       flag: '🇺🇸', prefix: 'ain10' },
+  { id: 'scoin_plus', name: 'S-COIN+', category: '仮想通貨関連',   flag: '🇯🇵', prefix: 'scoin_plus' },
+];
+
+// 画面に出すタブ（キーは loadImage の range）
+const TABS = [
+  { key: 'intraday',  label: 'Intraday' },
+  { key: 'am',        label: '前場(AM)' },
+  { key: '7d',        label: '7日' },
+  { key: '1m',        label: '1ヶ月' },
+  { key: '1y',        label: '1年' },
+];
+
+function fmtPct(v) {
+  if (v === null || v === undefined || isNaN(v)) return 'N/A';
+  const s = (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+  return s;
+}
+
+// pct_1d の異常を自動修正（15%以上は「すでに％単位」とみなして÷100）
+function normalizePctMaybe(p) {
+  if (p == null || isNaN(p)) return null;
+  let v = Number(p);
+  if (Math.abs(v) > 15) v = v / 100;
+  return v;
+}
+
+// ファイル存在チェック（HEAD が遮られる場合があるため GET で確認／no-store）
+async function fileExists(url) {
+  try {
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 画像URLを範囲別に決定し、存在しなければフォールバック
+async function pickImage(prefix, range) {
+  const base = `docs/charts/${prefix}`;
+  const candidates = [];
+
+  if (range === 'intraday') {
+    candidates.push(`${base}_intraday.png`);
+    // level系の1dがあれば最後の手段で
+    candidates.push(`${base}_1d.png`);
+  } else if (range === 'am') {
+    candidates.push(`${base}_intraday_am.png`);
+    candidates.push(`${base}_intraday.png`);
+  } else if (range === '7d') {
+    candidates.push(`${base}_7d.png`, `${base}_1w.png`, `${base}_1d.png`, `${base}_intraday.png`);
+  } else if (range === '1m') {
+    candidates.push(`${base}_1m.png`, `${base}_30d.png`, `${base}_1d.png`, `${base}_intraday.png`);
+  } else if (range === '1y') {
+    candidates.push(`${base}_1y.png`, `${base}_12m.png`, `${base}_1d.png`, `${base}_intraday.png`);
+  } else {
+    candidates.push(`${base}_intraday.png`, `${base}_1d.png`);
+  }
+
+  for (const url of candidates) {
+    if (await fileExists(url)) return url;
+  }
+  return null;
+}
+
+// stats.json を読む（prefix_stats.json 想定）
+async function loadStats(prefix) {
+  const path = `docs/charts/${prefix}_stats.json`;
+  try {
+    const res = await fetch(path, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j || null;
+  } catch {
+    return null;
+  }
+}
+
+function buildCardHTML(idx) {
+  return `
+    <div class="card" data-id="${idx.id}" data-range="intraday">
+      <div class="card-header">
+        <div class="title">${idx.flag} ${idx.name} <span class="category">${idx.category}</span></div>
+        <div class="percent" id="${idx.id}__pct">N/A</div>
+      </div>
+      <div class="chart"><img id="${idx.id}__img" alt="${idx.name} chart" loading="eager" /></div>
+      <div class="tabs" id="${idx.id}__tabs">
+        ${TABS.map(t => `<div class="tab ${t.key==='intraday'?'active':''}" data-range="${t.key}">${t.label}</div>`).join('')}
+      </div>
     </div>
-  </header>
+  `;
+}
 
-  <main>
-    <div class="grid" id="cards"></div>
-  </main>
+async function updateImageFor(indexId, prefix, range) {
+  const img = document.getElementById(`${indexId}__img`);
+  const url = await pickImage(prefix, range);
+  if (url) {
+    img.src = `${url}?v=${Date.now()}`;
+    img.alt = `${indexId} ${range} chart`;
+  } else {
+    // 画像が全滅なら「No data」画像を合成（最低限のUX）
+    const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'><rect width='100%' height='100%' fill='#0b0c10'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#888' font-size='32'>No data</text></svg>`);
+    img.src = `data:image/svg+xml,${svg}`;
+    img.alt = `${indexId} no data`;
+  }
+}
 
-  <footer>
-    データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指数リポの自動生成スナップショットを同期しています。<br/>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br/>
-    © 2025 桜Index
-  </footer>
+async function updatePctFor(indexId, prefix) {
+  const el = document.getElementById(`${indexId}__pct`);
+  const stats = await loadStats(prefix);
 
-  <div class="toast" id="toast"></div>
+  if (!stats || stats.pct_1d == null || isNaN(stats.pct_1d)) {
+    el.textContent = 'N/A';
+    el.classList.remove('positive','negative');
+    return;
+  }
+  const n = normalizePctMaybe(stats.pct_1d);
+  if (n == null || isNaN(n)) {
+    el.textContent = 'N/A';
+    el.classList.remove('positive','negative');
+    return;
+  }
+  el.textContent = fmtPct(n);
+  el.classList.toggle('positive', n >= 0);
+  el.classList.toggle('negative', n < 0);
+}
 
-  <script>
-    // ====== 設定（ID は docs/charts/<id>_* に一致）======
-    const INDICES = [
-      { id: 'astra4',     name: 'Astra4',    cat: '宇宙ベンチャー', flag: '🇯🇵' },
-      { id: 'rbank9',     name: 'R-BANK9',   cat: '地方銀行',       flag: '🇯🇵' },
-      { id: 'ain10',      name: 'AIN-10',    cat: 'AI関連10',       flag: '🇺🇸' },
-      { id: 'scoin_plus', name: 'S-COIN+',   cat: '仮想通貨関連',   flag: '🇯🇵' },
-    ];
+function wireTabs(indexId, prefix) {
+  const wrap = document.getElementById(`${indexId}__tabs`);
+  wrap.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.tab');
+    if (!btn) return;
+    // active切替
+    wrap.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const range = btn.getAttribute('data-range');
+    const card = document.querySelector(`.card[data-id="${indexId}"]`);
+    card?.setAttribute('data-range', range);
+    await updateImageFor(indexId, prefix, range);
+  });
+}
 
-    // 表示できるレンジ（存在しない画像は onerror で 1d にフォールバック）
-    const RANGES = [
-      { key: '1d', label: 'Intraday'    },    // docs/charts/<id>_1d.png
-      { key: 'am', label: '前場(AM)'     },    // docs/charts/<id>_am.png
-      { key: '7d', label: '7日'          },    // docs/charts/<id>_7d.png
-      { key: '1m', label: '1ヶ月'        },    // docs/charts/<id>_1m.png
-      { key: '1y', label: '1年'          },    // docs/charts/<id>_1y.png
-    ];
+async function loadAll() {
+  const container = document.getElementById('charts');
+  const syncInfo  = document.getElementById('sync-info');
+  const time = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  syncInfo.textContent = `同期完了: ${time} / データ: charts/*`;
 
-    // ====== ％のスケール揺れ補正 ======
-    // 0.30(=+0.30=+30%) と 30.0(=+30%) のどちらでも正しい％に直す
-    function normalizePct(raw) {
-      if (raw === null || raw === undefined || isNaN(raw)) return null;
-      const n = Number(raw);
-      // 絶対値が 10 を超えている場合 → パーセント表記扱いで 100 で割る
-      return Math.abs(n) > 10 ? n / 100 : n;
-    }
-    function fmtPctSmall(v) {
-      if (v === null) return 'N/A';
-      return (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%';
-    }
+  // カード描画
+  container.innerHTML = INDEXES.map(buildCardHTML).join('');
 
-    // ====== 同期ステータス ======
-    function setSyncStamp() {
-      const sync = document.getElementById('sync-info');
-      const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-      sync.textContent = `同期完了: ${now} / データ: charts/*`;
-    }
+  // 画像・pctの初期読み込み＋タブ配線
+  for (const idx of INDEXES) {
+    wireTabs(idx.id, idx.prefix);
+    await updateImageFor(idx.id, idx.prefix, 'intraday');
+    // 騰落率（異常値は normalizePctMaybe が調整）
+    await updatePctFor(idx.id, idx.prefix);
+  }
+}
 
-    // ====== 軽いトースト ======
-    let toastTimer = null;
-    function showToast(msg, ms = 1800) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove('show'), ms);
-    }
-
-    // ====== stats 読み込み（％を正規化）======
-    async function loadStats(id) {
-      try {
-        const res = await fetch(`docs/charts/${id}_stats.json`, { cache: 'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const j = await res.json();
-        // 期待キー：pct_1d（小数 or %）、updated_at（任意）
-        const pctRaw = (typeof j.pct_1d === 'number') ? j.pct_1d
-                      : (typeof j.pct === 'number')   ? j.pct
-                      : null;
-        return { pct: normalizePct(pctRaw), updated_at: j.updated_at || null };
-      } catch (e) {
-        console.warn(`[stats] ${id} failed:`, e);
-        return { pct: null, updated_at: null };
-      }
-    }
-
-    // ====== 1カード描画 ======
-    function renderCard(meta, stats) {
-      const cards = document.getElementById('cards');
-      const ver = stats.updated_at || Date.now();
-
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.dataset.indexId = meta.id;
-
-      const pctCls = stats.pct == null ? '' : (stats.pct >= 0 ? 'positive' : 'negative');
-
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="title">${meta.flag} ${meta.name} <span class="category">${meta.cat}</span></div>
-          <div class="percent ${pctCls}" data-role="pct">${fmtPctSmall(stats.pct)}</div>
-        </div>
-
-        <div class="chart">
-          <img data-role="img" alt="${meta.name} chart" />
-        </div>
-
-        <div class="tabs" data-role="tabs"></div>
-      `;
-
-      // 画像初期表示（1d）
-      const img = card.querySelector('[data-role="img"]');
-      const setSrc = (rangeKey) => {
-        img.dataset.range = rangeKey;
-        img.src = `docs/charts/${meta.id}_${rangeKey}.png?v=${encodeURIComponent(ver)}`;
-      };
-
-      // フォールバック：指定レンジの画像が無ければ 1d に戻す
-      img.onerror = () => {
-        if (img.dataset.range !== '1d') {
-          setSrc('1d');
-          showToast(`${meta.name}：選択レンジの画像が無かったため 1d に表示を戻しました`);
-        }
-      };
-
-      setSrc('1d');
-
-      // タブ作成（クリック可能・装飾のみ、URL遷移なし）
-      const tabs = card.querySelector('[data-role="tabs"]');
-      RANGES.forEach(r => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = r.label;
-        btn.dataset.range = r.key;
-        btn.className = r.key === '1d' ? 'active' : '';
-        btn.addEventListener('click', () => {
-          // active 切り替え
-          tabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-          setSrc(r.key);
-        });
-        tabs.appendChild(btn);
-      });
-
-      cards.appendChild(card);
-    }
-
-    // ====== 全ロード ======
-    async function init() {
-      setSyncStamp();
-      for (const m of INDICES) {
-        const stats = await loadStats(m.id);
-        renderCard(m, stats);
-      }
-    }
-
-    init();
-  </script>
+loadAll();
+</script>
 </body>
 </html>
