@@ -4,18 +4,12 @@
     <div class="si-card__left">
       <span class="si-flag">
         {%- assign _id = include.id | upcase -%}
-        {%- if _id == "AIN-10" -%}🇺🇸
-        {%- else -%}🇯🇵
-        {%- endif -%}
+        {%- if _id == "AIN-10" -%}🇺🇸{%- else -%}🇯🇵{%- endif -%}
       </span>
       <span class="si-title">{{ include.title }}</span>
-      {%- if include.badge -%}
-      <span class="si-badge">{{ include.badge }}</span>
-      {%- endif -%}
+      {%- if include.badge -%}<span class="si-badge">{{ include.badge }}</span>{%- endif -%}
     </div>
-    <div class="si-card__right">
-      <span class="si-delta" data-delta="N/A">N/A</span>
-    </div>
+    <div class="si-card__right"><span class="si-delta" data-delta="N/A">N/A</span></div>
   </div>
 
   <p class="si-desc">{{ include.description }}</p>
@@ -24,16 +18,22 @@
     <img
       class="si-chart__img"
       alt="{{ include.id }} chart"
-      src="{{ include.intraday_png | default: include.am_png }}"
+      src=""
       data-src-intraday="{{ include.intraday_png }}"
       data-src-am="{{ include.am_png }}"
+      data-src-7d="{{ include.seven_png }}"
+      data-src-1m="{{ include.one_month_png }}"
+      data-src-1y="{{ include.one_year_png }}"
       onerror="this.dataset.error='1'; this.alt='chart (no image)';"
     />
   </div>
 
   <div class="si-toolbar">
-    <button class="si-btn is-active" data-view="intraday">Intraday</button>
+    <button class="si-btn" data-view="intraday">Intraday</button>
     <button class="si-btn" data-view="am">前場(AM)</button>
+    <button class="si-btn" data-view="7d">7日</button>
+    <button class="si-btn" data-view="1m">1ヶ月</button>
+    <button class="si-btn" data-view="1y">1年</button>
   </div>
 </div>
 
@@ -41,85 +41,106 @@
 (() => {
   const root = document.currentScript.closest('.si-card');
   if (!root) return;
+  const baseurl = "{{ site.baseurl | default: '' }}"; // リポジトリ配信時は '/リポ名'
+
+  // ---- URL 解決（先頭 / なら baseurl を挿す） ----
+  const resolve = (p) => {
+    if (!p) return "";
+    try {
+      if (p.startsWith("/")) return (baseurl + p).replace(/\/{2,}/g, "/");
+      return p;
+    } catch(e){ return p; }
+  };
 
   const img = root.querySelector('.si-chart__img');
   const deltaEl = root.querySelector('.si-delta');
-  const buttons = root.querySelectorAll('.si-btn');
-  const jsonPath = "{{ include.json_path | escape }}";
+  const buttons = Array.from(root.querySelectorAll('.si-btn'));
+  const jsonPath = resolve("{{ include.json_path | escape }}");
 
-  // --- ボタンで画像切替（PNGが無い場合は自動でフォールバックしない仕様） ---
+  // 画像候補を取得（未指定なら intraday から 7d/1m/1y を推測して試す）
+  const srcs = {
+    intraday: resolve(img.dataset.srcIntraday || ""),
+    am:       resolve(img.dataset.srcAm || ""),
+    d7:       resolve(img.dataset.src7d || ""),
+    m1:       resolve(img.dataset.src1m || ""),
+    y1:       resolve(img.dataset.src1y || ""),
+  };
+  if (!srcs.d7 || !srcs.m1 || !srcs.y1) {
+    const seed = srcs.intraday || srcs.am || "";
+    if (seed) {
+      const guess = (r, v) => seed.replace(/(intraday(_am)?)(\.png)$/i, v);
+      if (!srcs.d7) srcs.d7 = resolve(guess("$1","7d.png"));
+      if (!srcs.m1) srcs.m1 = resolve(guess("$1","1m.png"));
+      if (!srcs.y1) srcs.y1 = resolve(guess("$1","1y.png"));
+    }
+  }
+
+  // 実体化
+  img.dataset.srcIntraday = srcs.intraday;
+  img.dataset.srcAm = srcs.am;
+  img.dataset.src7d = srcs.d7;
+  img.dataset.src1m = srcs.m1;
+  img.dataset.src1y = srcs.y1;
+
+  // ---- ボタン活性化（URLが空なら隠す） ----
+  const labelMap = {intraday: "srcIntraday", am:"srcAm", "7d":"src7d", "1m":"src1m", "1y":"src1y"};
+  let firstView = null;
+  buttons.forEach(b => {
+    const key = labelMap[b.dataset.view];
+    const has = !!img.dataset[key];
+    b.style.display = has ? "" : "none";
+    if (has && !firstView) firstView = b.dataset.view;
+  });
+  if (!firstView) { // 何も無い場合は visible だけ確保
+    buttons.forEach(b => b.style.display = "none");
+  }
+
+  // ---- 画像切替 ----
   function setView(view){
     buttons.forEach(b => b.classList.toggle('is-active', b.dataset.view === view));
-    const src = view === 'am' ? img.dataset.srcAm : img.dataset.srcIntraday;
+    const k = labelMap[view];
+    const src = k ? img.dataset[k] : "";
     if (src) img.src = src;
   }
-  buttons.forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
-  setView('intraday');
+  if (firstView) setView(firstView);
 
-  // --- 騰落率の表示ロジック（stats.jsonの差異を吸収） ---
-  // 取りうる形：
-  // - { "pct_intraday": 0.0123, ... }
-  // - { "pct_id": 0.0123, ... }
-  // - { "delta_level": 0.0123, "scale": "percent" } または "value_type": "percent"
-  // 既知の異常：巨大値（+100超など）。想定しない値は安全に "N/A" 表示。
+  // クリック
+  buttons.forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+  // ---- 騰落率（stats.json） ----
   function formatPct(x) {
     if (typeof x !== 'number' || !isFinite(x)) return null;
-    // [-100, +100] % 以内だけ許可（安全側）
-    if (Math.abs(x) > 100) return null;
-    const s = (x >= 0 ? '+' : '') + x.toFixed(2) + '%';
-    return s;
+    if (Math.abs(x) > 100) return null;            // 安全側にクリップ
+    return (x >= 0 ? '+' : '') + x.toFixed(2) + '%';
   }
-
   function computeDisplay(obj) {
     try {
       if (!obj || typeof obj !== 'object') return null;
-
-      // 1) 率そのもの
-      if (typeof obj.pct_intraday === 'number') {
-        return obj.pct_intraday * 100;
-      }
-      if (typeof obj.pct_id === 'number') {
-        return obj.pct_id * 100;
-      }
-
-      // 2) レベル差 + スケール
+      if (typeof obj.pct_intraday === 'number') return obj.pct_intraday * 100;
+      if (typeof obj.pct_id === 'number')       return obj.pct_id       * 100;
       if (typeof obj.delta_level === 'number') {
         const vt = (obj.value_type || obj.scale || '').toString().toLowerCase();
-        // "percent" のとき：delta_level が 0.0123 なら 1.23% 表示に
         if (vt.includes('percent')) {
           const v = Math.abs(obj.delta_level) < 10 ? obj.delta_level * 100 : obj.delta_level;
           return v;
         }
-        // それ以外は比率とみなす
         return obj.delta_level * 100;
       }
-
       return null;
-    } catch(e) { return null; }
+    } catch(e){ return null; }
   }
-
   function paintDelta(vPct) {
     const text = formatPct(vPct);
-    if (text === null) {
-      deltaEl.textContent = 'N/A';
-      deltaEl.dataset.delta = 'N/A';
-      deltaEl.classList.remove('is-up','is-down');
-      return;
-    }
-    deltaEl.textContent = text;
-    deltaEl.dataset.delta = text;
-    deltaEl.classList.toggle('is-up',  vPct >  0.0001);
-    deltaEl.classList.toggle('is-down',vPct < -0.0001);
+    deltaEl.textContent = text ?? 'N/A';
+    deltaEl.dataset.delta = text ?? 'N/A';
+    deltaEl.classList.toggle('is-up',  (text && vPct >  0.0001));
+    deltaEl.classList.toggle('is-down',(text && vPct < -0.0001));
   }
 
-  // フェッチして delta を描画
   if (jsonPath) {
     fetch(jsonPath, { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
-      .then(j => {
-        const vPct = computeDisplay(j);
-        paintDelta(vPct);
-      })
+      .then(j => paintDelta(computeDisplay(j)))
       .catch(() => paintDelta(null));
   } else {
     paintDelta(null);
@@ -131,17 +152,17 @@
 .si-card{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin:18px 0;background:rgba(255,255,255,.02)}
 .si-card__head{display:flex;align-items:center;justify-content:space-between}
 .si-card__left{display:flex;align-items:center;gap:.5rem}
-.si-flag{font-size:1.1rem}
+.si-flag{font-size:1.05rem}
 .si-title{font-weight:700}
 .si-badge{font-size:.8rem;padding:.1rem .5rem;border:1px solid rgba(255,255,255,.12);border-radius:999px}
 .si-card__right{font-variant-numeric:tabular-nums}
 .si-delta{font-weight:700}
 .si-delta.is-up{color:#32d296}
 .si-delta.is-down{color:#ff6b6b}
-.si-desc{opacity:.8;margin:.35rem 0 .6rem}
+.si-desc{opacity:.85;margin:.35rem 0 .6rem}
 .si-chart{text-align:center;background:rgba(255,255,255,.03);border-radius:10px;padding:6px}
 .si-chart__img{max-width:100%;height:auto;border-radius:6px}
-.si-toolbar{display:flex;gap:.5rem;margin-top:.5rem}
+.si-toolbar{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
 .si-btn{padding:.25rem .65rem;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer}
 .si-btn.is-active{background:rgba(255,255,255,.09)}
 </style>
