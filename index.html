@@ -1,99 +1,100 @@
 ---
 layout: null
-title: 桜Index - 公式サイト
-description: charts/*
 ---
 
 <!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ page.title }}</title>
-  <style>
-    :root {
-      --bg:#0f1720;
-      --panel:#121b27;
-      --border:#1e2b3a;
-      --text:#e6eef7;
-      --muted:#9fb3c8;
-      --accent:#7ee7f2;
-      --up:#28d07f;
-      --down:#ff6b6b;
-    }
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif;}
-    a{color:var(--accent);text-decoration:none}
-    .wrap{max-width:1200px;margin:0 auto;padding:20px 16px}
-    header{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
-    .title{font-size:22px;font-weight:800}
-    .ts{color:var(--muted);font-size:12px;flex:1 1 auto;}
-    .btn-link{background:var(--panel);border:1px solid var(--border);padding:8px 12px;border-radius:10px;color:var(--text);font-size:13px;}
-    .grid{display:grid;gap:16px;grid-template-columns:1fr;}
-    @media(min-width:900px){.grid{grid-template-columns:1fr 1fr;}}
-    .sx-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);}
-    .sx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
-    .sx-head-left{display:flex;align-items:center;gap:8px;}
-    .sx-flag{font-size:16px;}
-    .sx-name{font-weight:700;font-size:16px;}
-    .sx-badge{font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:2px 8px;}
-    .sx-delta{font-weight:700;font-size:15px;color:var(--up);}
-    .sx-desc{font-size:12px;color:var(--muted);margin-bottom:8px;}
-    .sx-chart{background:#0b1118;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-    .sx-chart img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;}
-    .sx-tabs{display:flex;gap:8px;margin-top:10px;}
-    .sx-tab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:999px;font-size:12px;}
-    .sx-tab.is-active{background:rgba(255,255,255,.1);color:var(--text);border-color:var(--accent);}
-    footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6;}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="title">🌸 桜Index - 公式サイト</div>
-      <div class="ts">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
-      <a class="btn-link" href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a class="btn-link" href="https://note.com/" target="_blank" rel="noopener">公式note</a>
-    </header>
+<meta charset="utf-8">
+<title>🌸 桜Index - 公式サイト</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <main class="grid">
-      {%- include components/index-card.html
-         id="ASTRA4" flag="🇯🇵" title="Astra4" badge="宇宙ベンチャー"
-         description="宇宙関連銘柄の等ウェイト指数。日中は%。長期はレベル推移を表示。"
-         json_path="charts/ASTRA4/stats.json"
-         intraday_png="charts/ASTRA4/intraday.png"
-         am_png="charts/ASTRA4/intraday_am.png"
-      -%}
+<style>
+  body{background:#0b1119;color:#dfe7ff;font-family:-apple-system,system-ui,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;line-height:1.6}
+  .container{max-width:1180px;margin:32px auto;padding:0 16px}
+  .sitehead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .sitename{font-weight:800;font-size:22px}
+  .sub{color:#8ea3c9;font-size:12px}
+  .actions{display:flex;gap:8px}
+  .btn{
+    font-size:12px;color:#c6d1ee;background:#0f1520;border:1px solid #25314a;
+    padding:.45rem .7rem;border-radius:10px;text-decoration:none
+  }
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+  .foot{color:#98a8c9;font-size:12px;text-align:center;margin:24px 0 16px}
+</style>
 
-      {%- include components/index-card.html
-         id="R-BANK9" flag="🇯🇵" title="R-BANK9" badge="地方銀行"
-         description="地方銀行9銘柄の等ウェイト指数。日中は%。長期はレベル推移を表示。"
-         json_path="charts/R-BANK9/stats.json"
-         intraday_png="charts/R-BANK9/intraday.png"
-         am_png="charts/R-BANK9/intraday_am.png"
-      -%}
-
-      {%- include components/index-card.html
-         id="AIN-10" flag="🇺🇸" title="AIN-10" badge="AI関連10"
-         description="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-         json_path="charts/AIN-10/stats.json"
-         intraday_png="charts/AIN-10/intraday.png"
-         am_png="charts/AIN-10/intraday_am.png"
-      -%}
-
-      {%- include components/index-card.html
-         id="S-COIN+" flag="🇯🇵" title="S-COIN+" badge="仮想資産関連"
-         description="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-         json_path="charts/S-COIN+/stats.json"
-         intraday_png="charts/S-COIN+/intraday.png"
-         am_png="charts/S-COIN+/intraday_am.png"
-      -%}
-    </main>
-
-    <footer>
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-      © {{ site.time | date: "%Y" }} 桜Index
-    </footer>
+<div class="container">
+  <div class="sitehead">
+    <div>
+      <div class="sitename">🌸 桜Index - 公式サイト</div>
+      <div class="sub">同期完了： {{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a class="btn" href="https://note.com/" target="_blank" rel="noopener">公式note</a>
+    </div>
   </div>
-</body>
-</html>
+
+  {%- comment -%}
+    ここで stats.json を個別に取り込み（リテラルパス必須）
+    取り込んだ文字列を各カードに stats_json として渡す
+  {%- endcomment -%}
+  {% capture ASTRA4_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
+  {% capture RBANK9_stats %}{% include_relative charts/R-BANK9/stats.json %}{% endcapture %}
+  {% capture AIN10_stats %}{% include_relative charts/AIN-10/stats.json %}{% endcapture %}
+  {% capture SCOIN_stats %}{% include_relative charts/S-COIN+/stats.json %}{% endcapture %}
+
+  <div class="grid">
+
+    {%- include components/index-card.html
+      id="ASTRA4"
+      flag="🇯🇵"
+      title="Astra4"
+      badge="宇宙ベンチャー"
+      desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      stats_json=ASTRA4_stats
+      intraday_png="/charts/ASTRA4/intraday.png"
+      am_png="/charts/ASTRA4/intraday_am.png"
+    -%}
+
+    {%- include components/index-card.html
+      id="R-BANK9"
+      flag="🇯🇵"
+      title="R-BANK9"
+      badge="地方銀行"
+      desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      stats_json=RBANK9_stats
+      intraday_png="/charts/R-BANK9/intraday.png"
+      am_png="/charts/R-BANK9/intraday_am.png"
+    -%}
+
+    {%- include components/index-card.html
+      id="AIN-10"
+      flag="🇺🇸"
+      title="AIN-10"
+      badge="AI関連10"
+      desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+      stats_json=AIN10_stats
+      intraday_png="/charts/AIN-10/intraday.png"
+      am_png="/charts/AIN-10/intraday_am.png"
+    -%}
+
+    {%- include components/index-card.html
+      id="S-COIN+"
+      flag="🇯🇵"
+      title="S-COIN+"
+      badge="仮想資産関連"
+      desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+      stats_json=SCOIN_stats
+      intraday_png="/charts/S-COIN+/intraday.png"
+      am_png="/charts/S-COIN+/intraday_am.png"
+    -%}
+
+  </div>
+
+  <div class="foot">
+    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
+    © {{ site.time | date: "%Y" }} 桜Index
+  </div>
+</div>
