@@ -1,13 +1,13 @@
 {%- comment -%}
-汎用インデックスカード（完全版・JSが stats_json をfetchして騰落率を更新）
-引数:
-  id, title, flag, badge, desc
-  stats_json   : /charts/*/stats.json のパス
-  intraday_png : /charts/*/intraday.png
-  am_png       : /charts/*/intraday_am.png  （今は未使用。将来の切替に備えて保持）
+カード部品（完全版）
+props:
+  id, title, flag, badge, desc, stats_json, intraday_png
 {%- endcomment -%}
 
-<div class="idx-card" data-stats="{{ stats_json | relative_url }}">
+{% assign stats_attr = stats_json | uri_escape | relative_url %}
+{% assign img_src   = intraday_png | uri_escape | relative_url %}
+
+<div class="idx-card" data-stats="{{ stats_attr }}">
   <div class="idx-head">
     <div class="idx-title">
       <span>{{ flag }}</span>
@@ -20,13 +20,8 @@
   <p class="idx-desc">{{ desc }}</p>
 
   <div class="chart-wrap">
-    <img
-      class="chart-img"
-      alt="{{ id }} chart"
-      src="{{ intraday_png | relative_url }}"
-      loading="lazy"
-      decoding="async"
-    />
+    <img class="chart-img" alt="{{ id }} chart" src="{{ img_src }}" loading="lazy" decoding="async"
+      onerror="this.style.display='none'; this.closest('.chart-wrap').insertAdjacentHTML('beforeend','<div class=&quot;img-fallback&quot;>画像が見つかりません</div>')">
   </div>
 
   <div class="idx-tabs">
