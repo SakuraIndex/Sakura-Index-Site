@@ -5,124 +5,142 @@ layout: null
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>🌸 桜Index - 公式サイト</title>
-  <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+  <style>
+    body{margin:0;background:#0b1220;color:#e2e8f0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+    .wrap{max-width:1180px;margin:32px auto;padding:0 16px}
+    .site-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+    .site-title{font-size:22px;font-weight:800}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;text-decoration:none}
+    .index-grid{display:grid;grid-template-columns:1fr;gap:18px}
+    @media(min-width:980px){.index-grid{grid-template-columns:1fr 1fr}}
+  </style>
 </head>
 <body>
-  <header class="site-head">
-    <div class="site-title">🌸 桜Index - 公式サイト</div>
-    <div class="top-actions">
-      <a class="btn" href="https://x.com/your_account" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a class="btn" href="https://note.com/your_account" target="_blank" rel="noopener">公式note</a>
-    </div>
-  </header>
+<header class="site-head">
+  <div class="site-title">🌸 桜Index - 公式サイト</div>
+  <div class="top-actions" style="display:flex;gap:10px">
+    <a class="btn" href="https://x.com/your_account" target="_blank" rel="noopener">公式X（Twitter）</a>
+    <a class="btn" href="https://note.com/your_account" target="_blank" rel="noopener">公式note</a>
+  </div>
+</header>
 
-  <main class="wrap">
-    <div class="index-grid">
-      {% include components/index-card.html
-         id="ASTRA4"
-         title="Astra4" flag="🇯🇵" badge="宇宙ベンチャー"
-         desc="宇宙関連銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
+<main class="wrap">
+  <div class="index-grid">
+    {% include components/index-card.html
+       id="ASTRA4"
+       title="Astra4" flag="🇯🇵" badge="宇宙ベンチャー"
+       desc="宇宙関連銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
 
-      {% include components/index-card.html
-         id="R-BANK9"
-         title="R-BANK9" flag="🇯🇵" badge="地方銀行"
-         desc="地方銀行9銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
+    {% include components/index-card.html
+       id="R-BANK9"
+       title="R-BANK9" flag="🇯🇵" badge="地方銀行"
+       desc="地方銀行9銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
 
-      {% include components/index-card.html
-         id="AIN-10"
-         title="AIN-10" flag="🇺🇸" badge="AI関連10"
-         desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。" %}
+    {% include components/index-card.html
+       id="AIN-10"
+       title="AIN-10" flag="🇺🇸" badge="AI関連10"
+       desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。" %}
 
-      {% include components/index-card.html
-         id="S-COIN+"
-         title="S-COIN+" flag="🇯🇵" badge="仮想資産関連"
-         desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
-    </div>
+    {% include components/index-card.html
+       id="S-COIN+"
+       title="S-COIN+" flag="🇯🇵" badge="仮想資産関連"
+       desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。" %}
+  </div>
 
-    <p style="color:#94a3b8; text-align:center; margin:26px 0 8px;">
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-      © {{ 'now' | date: '%Y' }} 桜Index
-    </p>
-  </main>
+  <p style="color:#94a3b8;text-align:center;margin:26px 0 8px;">
+    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
+    © {{ 'now' | date: '%Y' }} 桜Index
+  </p>
+</main>
 
-  <script>
-  (function(){
-    const base = "{{ site.baseurl | default: '' }}";    // 例: "/Sakura-Index-Site"
-    const tryPaths = (id, fileList) => {
-      const enc = encodeURIComponent(id);
-      const cand = [];
-      for (const f of fileList) {
-        cand.push(`${base}/charts/${enc}/${f}`);
-        cand.push(`${base}/docs/charts/${enc}/${f}`);   // docs/ に公開しているケースも吸収
-        cand.push(`${base}/charts/${id}/${f}`);         // 念のため（未エンコード）
-        cand.push(`${base}/docs/charts/${id}/${f}`);
-      }
-      // 重複除去
-      return [...new Set(cand)];
-    };
+<script>
+/* ========= 超堅牢パス解決 & デバッグログ =========
+   1) 相対: charts/, docs/charts/
+   2) baseurl付: {{site.baseurl}}/charts, {{site.baseurl}}/docs/charts
+   3) encodeURIComponent(id) と 生 id の両方を試行
+*/
+(function(){
+  const base = "{{ site.baseurl | default: '' }}";      // 例: "/Sakura-Index-Site" or ""
+  const withBase = p => (base ? base + (p.startsWith('/')? p : '/'+p) : (p.startsWith('/')? p : '/'+p));
+  const uniq = arr => [...new Set(arr)];
 
-    // 画像を順に試す
-    function resolveImage(imgEl, fallbackEl, id){
-      const paths = tryPaths(id, ['intraday_am.png','intraday.png']);
-      let i = 0;
-      const tryOne = () => {
-        if (i >= paths.length){ imgEl.style.display='none'; fallbackEl.style.display='block'; return; }
-        const url = paths[i++];
-        const test = new Image();
-        test.onload = ()=>{ imgEl.src = url; imgEl.style.display='block'; fallbackEl.style.display='none'; };
-        test.onerror= ()=>{ tryOne(); };
-        test.src = url;
-      };
-      tryOne();
+  function buildCandidates(id, files){
+    const enc = encodeURIComponent(id);
+    const list = [];
+    for(const f of files){
+      // 相対
+      list.push(`charts/${enc}/${f}`, `docs/charts/${enc}/${f}`, `charts/${id}/${f}`, `docs/charts/${id}/${f}`);
+      // base付き
+      list.push(withBase(`charts/${enc}/${f}`), withBase(`docs/charts/${enc}/${f}`));
+      list.push(withBase(`charts/${id}/${f}`),  withBase(`docs/charts/${id}/${f}`));
+    }
+    return uniq(list);
+  }
+
+  function tryLoadImage(card, id){
+    const img = card.querySelector('.chart-img');
+    const fb  = card.querySelector('.img-fallback');
+    const paths = buildCandidates(id, ['intraday_am.png','intraday.png']);
+    let i = 0;
+    function next(){
+      if(i >= paths.length){ img.style.display='none'; fb.style.display='block'; return; }
+      const url = paths[i++];
+      const probe = new Image();
+      probe.onload = ()=>{ img.src = url; img.style.display='block'; fb.style.display='none'; console.log(`[chart OK] ${id} -> ${url}`); };
+      probe.onerror= ()=>{ console.log(`[chart 404] ${id} × ${url}`); next(); };
+      probe.src = url + `?v=${Date.now()}`; // キャッシュ回避
+    }
+    console.log(`[chart try] ${id}`, paths);
+    next();
+  }
+
+  function tryLoadStats(card, id){
+    const pct = card.querySelector('.idx-pct');
+    const paths = buildCandidates(id, ['stats.json']);
+    const keys  = ['pct_intraday','pct','intraday_pct','am_pct','delta','delta_level','change'];
+
+    function asPct(v){
+      if(v===null || v===undefined || v==='') return null;
+      let x = typeof v==='string' ? parseFloat(v) : v;
+      if(!isFinite(x)) return null;
+      if(Math.abs(x) > 1.0) x = x/100.0; // 123 → 1.23%
+      const p = x*100.0;
+      return { text:(p>0?'+':'')+p.toFixed(2)+'%', cls:(p>0?'up':(p<0?'down':'na')) };
     }
 
-    // JSONを順に試す → 騰落率表示
-    function resolveStats(pctEl, id){
-      const jsonPaths = tryPaths(id, ['stats.json']);
-      const keys = ['pct_intraday','pct','delta','delta_level','am_pct','intraday_pct','change'];
-
-      function asPctText(v){
-        if (v === null || v === undefined || v === '' || Number.isNaN(+v)) return null;
-        let x = typeof v === 'string' ? parseFloat(v) : v;
-        if (Math.abs(x) > 1.0) x = x/100.0;   // 1.23 → 0.0123 に自動補正
-        const p = x*100.0;
-        return { text: (p>0?'+':'') + p.toFixed(2) + '%', cls: (p>0?'up':(p<0?'down':'na')) };
-      }
-
-      let idx = 0;
-      const tryFetch = ()=>{
-        if (idx >= jsonPaths.length){ pctEl.textContent = 'N/A'; pctEl.classList.add('na'); return; }
-        const url = jsonPaths[idx++];
-        fetch(url, {cache:'no-cache'}).then(r=>{
-          if(!r.ok) throw 0; return r.json();
-        }).then(j=>{
-          let val = null;
-          for (const k of keys){ if (j && j[k] !== undefined){ val=j[k]; break; } }
-          const res = asPctText(val);
-          if (!res) throw 0;
-          pctEl.textContent = res.text;
-          pctEl.classList.remove('up','down','na');
-          pctEl.classList.add(res.cls);
-        }).catch(tryFetch);
-      };
-      tryFetch();
+    let i = 0;
+    function next(){
+      if(i >= paths.length){ pct.textContent='N/A'; pct.className='idx-pct na'; return; }
+      const url = paths[i++];
+      fetch(url, {cache:'no-cache'})
+        .then(r=>{ if(!r.ok) throw 0; return r.json(); })
+        .then(j=>{
+          console.log(`[stats OK] ${id} -> ${url}`, j);
+          let v=null; for(const k of keys){ if(j && j[k]!==undefined){ v=j[k]; break; } }
+          const res = asPct(v);
+          if(!res) throw 0;
+          pct.textContent = res.text;
+          pct.className = 'idx-pct '+res.cls;
+          pct.style.color = (res.cls==='up') ? '#22c55e' : (res.cls==='down' ? '#ef4444' : '#94a3b8');
+        })
+        .catch(()=>{ console.log(`[stats 404] ${id} × ${url}`); next(); });
     }
+    console.log(`[stats try] ${id}`, paths);
+    next();
+  }
 
-    document.addEventListener('DOMContentLoaded', ()=>{
-      document.querySelectorAll('.idx-card').forEach(card=>{
-        const id = card.getAttribute('data-id');
-        const img = card.querySelector('.chart-img');
-        const fb  = card.querySelector('.img-fallback');
-        const pct = card.querySelector('.idx-pct');
-        resolveImage(img, fb, id);
-        resolveStats(pct, id);
-      });
+  document.addEventListener('DOMContentLoaded', ()=>{
+    document.querySelectorAll('.idx-card').forEach(card=>{
+      const id = card.dataset.id;
+      tryLoadImage(card, id);
+      tryLoadStats(card, id);
     });
-  })();
-  </script>
+  });
+})();
+</script>
 </body>
 </html>
