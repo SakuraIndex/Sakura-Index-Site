@@ -1,103 +1,100 @@
 {%- comment -%}
-  共通カード（シンプル＆堅牢抽出）
-  受取: id, flag, title, badge, desc, stats_json, intraday_png, am_png
-  対応キー（優先順）: pct_intraday, pct_id, pct, delta_intraday, delta_level
+共通インデックスカード（stats.json に対応）
+引数:
+  id, title, flag, badge, desc,
+  stats_json, intraday_png, am_png (省略可)
 {%- endcomment -%}
 
-<style>
-  .card{background:#0e1522;border:1px solid #1f2a40;border-radius:18px;padding:14px 16px}
-  .card__head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-  .left{display:flex;align-items:center;gap:8px}
-  .flag{font-size:16px}
-  .title{font-weight:700}
-  .chip{font-size:11px;background:#0f1726;border:1px solid #1f2a40;color:#9fb5e4;border-radius:999px;padding:.2rem .5rem}
-  .right{font-weight:800}
-  .pct{color:#36d399}
-  .pct.neg{color:#ff6b6b}
-  .desc{color:#93a4c8;font-size:13px;margin-top:2px;margin-bottom:10px}
-  .imgwrap{background:#0b1119;border:1px solid #1f2a40;border-radius:12px;padding:8px}
-  .imgwrap img{display:block;width:100%;height:auto;border-radius:6px}
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .tab{font-size:12px;color:#cdddff;background:#0f1726;border:1px solid #1f2a40;padding:.35rem .6rem;border-radius:999px}
-  .tab.active{outline:2px solid #233252}
-</style>
+{%- assign _stats_raw = '' -%}
+{%- capture _stats_raw -%}{% include_relative {{ include.stats_json }} %}{%- endcapture -%}
 
-{%- assign raw = include.stats_json | replace: ' ', '' | replace: '\n', '' -%}
-
-{%- comment -%}
-  値をシンプルに抽出:
-  1) "key": の直後から取り出し
-  2) 区切りは , か } のどちらでもOK
-{%- endcomment -%}
-{%- assign val = '' -%}
-{%- assign keys = 'pct_intraday|pct_id|pct|delta_intraday|delta_level' | split:'|' -%}
-{%- for k in keys -%}
-  {%- if val == '' -%}
-    {%- assign marker = '"' | append:k | append:'":' -%}
-    {%- if raw contains marker -%}
-      {%- assign tail = raw | split: marker | last -%}
-      {%- assign first = tail | split: ',' | first -%}
-      {%- assign first = first | split: '}' | first -%}
-      {%- assign first = first | replace:'"','' | replace:'%','' | strip -%}
-      {%- assign val = first -%}
-    {%- endif -%}
-  {%- endif -%}
-{%- endfor -%}
-
-{%- comment -%} scale を抽出（"percent"ならそのまま扱い、無指定は <1 のときだけ ×100） {%- endcomment -%}
-{%- assign scale_val = '' -%}
-{%- assign marker_scale = '"scale":' -%}
-{%- if raw contains marker_scale -%}
-  {%- assign tail_s = raw | split: marker_scale | last -%}
-  {%- assign s = tail_s | split: ',' | first | split: '}' | first | replace:'"','' | strip -%}
-  {%- assign scale_val = s -%}
+{%- assign stats = nil -%}
+{%- if _stats_raw and _stats_raw != '' and _stats_raw != '---' -%}
+  {%- assign stats = _stats_raw | strip_newlines | replace: ' ', '' | jsonify | parse_json -%}
 {%- endif -%}
 
-{%- assign display = 'N/A' -%}
-{%- assign n = 0.0 -%}
-{%- if val != '' -%}
-  {%- assign n = val | plus: 0 -%}
-  {%- if scale_val == 'percent' -%}
-    {%- assign n = n -%} {# 既に % 指定 #}
-  {%- else -%}
-    {%- if n < 1 and n > -1 -%}{%- assign n = n | times: 100 -%}{%- endif -%}
+{%- comment -%} 騰落率の抽出ロジック {%- endcomment -%}
+{%- assign pct_source = 0 -%}
+{%- assign scale = 'percent' -%}
+{%- if stats -%}
+  {%- if stats.pct_intraday != nil -%}
+    {%- assign pct_source = stats.pct_intraday -%}
+  {%- elsif stats.delta_level != nil -%}
+    {%- assign pct_source = stats.delta_level -%}
   {%- endif -%}
-  {%- if n > -200 and n < 200 -%}
-    {%- assign s = n | round: 2 -%}
-    {%- if s > 0 -%}{%- assign display = '+' | append: s | append: '%' -%}
-    {%- elsif s < 0 -%}{%- assign display = s | append: '%' -%}
-    {%- else -%}{%- assign display = '+0.00%' -%}{%- endif -%}
+  {%- if stats.scale != nil and stats.scale != '' -%}
+    {%- assign scale = stats.scale | downcase -%}
   {%- endif -%}
+{%- endif -%}
+
+{%- assign pct_num = pct_source | plus: 0 -%}
+{%- if scale == 'ratio' or scale == 'fraction' -%}
+  {%- assign pct_num = pct_num | times: 100 -%}
+{%- endif -%}
+
+{%- assign pct_text = 'N/A' -%}
+{%- if pct_source != nil -%}
+  {%- assign sgn = '' -%}
+  {%- if pct_num > 0 -%}{%- assign sgn = '+' -%}{%- endif -%}
+  {%- assign pct_text = sgn | append: (pct_num | round: 2) | append: '%' -%}
+{%- endif -%}
+
+{%- comment -%} ステータス色 {%- endcomment -%}
+{%- assign pill_cls = 'text-slate-300' -%}
+{%- if pct_source != nil -%}
+  {%- if pct_num > 0 -%}{%- assign pill_cls = 'text-emerald-400' -%}
+  {%- elsif pct_num < 0 -%}{%- assign pill_cls = 'text-rose-400' -%}{%- endif -%}
 {%- endif -%}
 
 <div class="card">
   <div class="card__head">
-    <div class="left">
-      <span class="flag">{{ include.flag }}</span>
-      <span class="title">{{ include.title }}</span>
-      <span class="chip">{{ include.badge }}</span>
+    <div class="card__title">
+      <span class="mr-2">{{ include.flag }}</span>
+      <span class="font-semibold">{{ include.title }}</span>
+      {%- if include.badge and include.badge != '' -%}
+        <span class="badge">{{ include.badge }}</span>
+      {%- endif -%}
     </div>
-    <div class="right">
-      <span class="pct{% if display != 'N/A' and n < 0 %} neg{% endif %}">{{ display }}</span>
-    </div>
+    <div class="card__pct {{ pill_cls }}">{{ pct_text }}</div>
   </div>
 
-  <div class="desc">{{ include.desc }}</div>
+  <p class="card__desc">{{ include.desc }}</p>
 
-  <div class="imgwrap">
-    <img
-      src="{{ include.intraday_png | relative_url }}"
-      alt="{{ include.id }} chart"
-      loading="lazy"
-      decoding="async"
-      onerror="this.onerror=null;this.src='{{ include.am_png | relative_url }}';">
+  <div class="chartbox">
+    {%- if include.intraday_png and include.intraday_png != '' -%}
+      <img loading="lazy" src="{{ include.intraday_png }}" alt="{{ include.id }} chart">
+    {%- else -%}
+      <div class="chartbox__empty">chart (no image)</div>
+    {%- endif -%}
   </div>
 
-  <div class="tabs" aria-hidden="true">
-    <span class="tab active">Intraday</span>
-    <span class="tab">前場(AM)</span>
-    <span class="tab">7日</span>
-    <span class="tab">1ヶ月</span>
-    <span class="tab">1年</span>
+  <div class="card__btns">
+    <button class="btn btn--on">Intraday</button>
+    {%- if include.am_png and include.am_png != '' -%}
+      <a class="btn" href="{{ include.am_png }}">前場(AM)</a>
+    {%- else -%}
+      <span class="btn btn--ghost">前場(AM)</span>
+    {%- endif -%}
+    <span class="btn">7日</span><span class="btn">1ヶ月</span><span class="btn">1年</span>
   </div>
 </div>
+
+<style>
+/* ---- Card layout (同ファイル内で完結) ---- */
+.card{display:flex;flex-direction:column;gap:.6rem;border:1px solid rgba(148,163,184,.15);background:rgba(2,6,23,.6);border-radius:14px;padding:14px}
+.card__head{display:flex;justify-content:space-between;align-items:center}
+.card__title{display:flex;align-items:center;gap:.5rem}
+.badge{font-size:.72rem;padding:.12rem .5rem;border-radius:9999px;background:rgba(148,163,184,.15);color:#cbd5e1}
+.card__pct{font-weight:700}
+.card__desc{font-size:.86rem;color:#cbd5e1;line-height:1.4;margin:.1rem 0 .3rem}
+.chartbox{position:relative; width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:rgba(148,163,184,.08)}
+.chartbox > img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.chartbox__empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#94a3b8;font-size:.9rem}
+.card__btns{display:flex;gap:.5rem;margin-top:.2rem}
+.btn{font-size:.78rem;padding:.25rem .7rem;border:1px solid rgba(148,163,184,.25);border-radius:9999px;color:#cbd5e1}
+.btn--on{border-color:rgba(148,163,184,.5);background:rgba(148,163,184,.12)}
+.btn--ghost{opacity:.45;border-style:dashed}
+.text-emerald-400{color:#34d399}
+.text-rose-400{color:#fb7185}
+.text-slate-300{color:#cbd5e1}
+</style>
