@@ -1,107 +1,150 @@
 ---
-title: "桜Index - 公式サイト"
-description: "docs/charts/* のスナップショットを用いた簡易ダッシュボード"
+title: 桜Index - 公式サイト
 layout: null
+indices:
+  - id: ASTRA4
+    title: Astra4
+    badge: 宇宙ベンチャー
+    desc: 宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。
+    json_path: /charts/ASTRA4/stats.json
+    intraday_png: /charts/ASTRA4/intraday.png
+    am_png: /charts/ASTRA4/intraday_am.png
+  - id: R-BANK9
+    title: R-BANK9
+    badge: 地方銀行
+    desc: 地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。
+    json_path: /charts/R-BANK9/stats.json
+    intraday_png: /charts/R-BANK9/intraday.png
+    am_png: /charts/R-BANK9/intraday_am.png
+  - id: AIN-10
+    title: AIN-10
+    badge: AI関連10
+    desc: 米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。
+    json_path: /charts/AIN-10/stats.json
+    intraday_png: /charts/AIN-10/intraday.png
+    am_png: /charts/AIN-10/intraday_am.png
+  - id: S-COIN+
+    title: S-COIN+
+    badge: 仮想資産関連
+    desc: 暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。
+    json_path: /charts/S-COIN+/stats.json
+    intraday_png: /charts/S-COIN+/intraday.png
+    am_png: /charts/S-COIN+/intraday_am.png
 ---
 
 <!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{{ page.title }}</title>
-  <meta name="description" content="{{ page.description }}" />
   <style>
-    /* 最低限のレイアウト（元デザインを邪魔しない程度） */
     :root { color-scheme: dark; }
-    body { margin: 0 auto; max-width: 1280px; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", Meiryo, "Noto Sans JP", sans-serif; line-height: 1.6; }
-    h1 { font-size: 20px; margin: 0 0 8px; }
-    .header { display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom: 16px; }
+    body { margin:0 auto; max-width:1280px; padding:24px 16px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",Arial,sans-serif; line-height:1.6; }
+    .header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
     .btns a { display:inline-block; padding:8px 12px; border-radius:8px; text-decoration:none; background:#1f2937; border:1px solid #374151; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-    footer { margin-top: 28px; font-size: 12px; opacity: .9; text-align:center; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    @media (max-width: 900px){ .grid{ grid-template-columns:1fr; } }
+    .card { padding:16px; border:1px solid #374151; border-radius:12px; background:#0b1220; }
+    .card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+    .badge { font-size:12px; padding:2px 8px; border-radius:9999px; border:1px solid #334155; }
+    .delta { font-weight:700; }
+    .delta.pos{ color:#22c55e; } .delta.neg{ color:#ef4444; }
+    .imgwrap { border:1px solid #1f2937; border-radius:8px; overflow:hidden; background:#0f172a; }
+    .imgwrap img { display:block; width:100%; height:auto; }
+    .tabs { display:flex; gap:8px; margin-top:10px; }
+    .tabs button { padding:8px 12px; border-radius:9999px; border:1px solid #334155; background:#0b1220; color:#e5e7eb; cursor:pointer; }
+    .tabs button.active { background:#1f2937; }
+    footer{ margin-top:28px; font-size:12px; opacity:.9; text-align:center; }
   </style>
 </head>
 <body>
-
   <div class="header">
-    <h1>🌸 桜Index - 公式サイト</h1>
+    <h1>🌸 {{ page.title }}</h1>
     <div class="btns">
       <a href="https://x.com/your_official" target="_blank" rel="noopener">公式X（Twitter）</a>
       <a href="https://note.com/your_official" target="_blank" rel="noopener">公式note</a>
     </div>
   </div>
 
-  <p style="margin: 0 0 16px; font-size: 12px;">
+  <p style="margin:0 0 16px; font-size:12px;">
     同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: docs/charts/*
   </p>
 
-  {%- comment -%}
-    各カードの定義（必要に応じて編集）
-    - json_path は charts 下の stats.json へのパス
-    - intraday_png は intraday.png（存在しない場合は include 内で自動フォールバック）
-    - am_png は 前場スナップ（存在しなければ未使用）
-  {%- endcomment -%}
-  {%- assign indices = 
-    [
-      {
-        "id":"ASTRA4",
-        "title":"Astra4",
-        "badge":"宇宙ベンチャー",
-        "desc":"宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。",
-        "json_path":"/charts/ASTRA4/stats.json",
-        "intraday_png":"/charts/ASTRA4/intraday.png",
-        "am_png":"/charts/ASTRA4/intraday_am.png"
-      },
-      {
-        "id":"R-BANK9",
-        "title":"R-BANK9",
-        "badge":"地方銀行",
-        "desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。",
-        "json_path":"/charts/R-BANK9/stats.json",
-        "intraday_png":"/charts/R-BANK9/intraday.png",
-        "am_png":"/charts/R-BANK9/intraday_am.png"
-      },
-      {
-        "id":"AIN-10",
-        "title":"AIN-10",
-        "badge":"AI関連10",
-        "desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。",
-        "json_path":"/charts/AIN-10/stats.json",
-        "intraday_png":"/charts/AIN-10/intraday.png",
-        "am_png":"/charts/AIN-10/intraday_am.png"
-      },
-      {
-        "id":"S-COIN+",
-        "title":"S-COIN+",
-        "badge":"仮想資産関連",
-        "desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。",
-        "json_path":"/charts/S-COIN+/stats.json",
-        "intraday_png":"/charts/S-COIN+/intraday.png",
-        "am_png":"/charts/S-COIN+/intraday_am.png"
-      }
-    ] 
-  -%}
-
   <div class="grid">
-    {%- for idx in indices -%}
-      {%- include components/index-card.html
-          id=idx.id
-          title=idx.title
-          badge=idx.badge
-          description=idx.desc
-          json_path=idx.json_path
-          intraday_png=idx.intraday_png
-          am_png=idx.am_png
-      -%}
-    {%- endfor -%}
+    {% for idx in page.indices %}
+      {% include components/index-card.html
+        id=idx.id title=idx.title badge=idx.badge description=idx.desc
+        json_path=idx.json_path intraday_png=idx.intraday_png am_png=idx.am_png %}
+    {% endfor %}
   </div>
 
   <footer>
-    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br />
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br />
+    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
     © {{ "now" | date: "%Y" }} 桜Index
   </footer>
+
+  <!-- 1ファイルだけで動くようにJSはここへ -->
+  <script>
+    function pctText(ratio){
+      if (ratio == null || isNaN(ratio)) return "N/A";
+      const v = Math.abs(ratio) >= 0.01 ? (ratio*100).toFixed(2) : (ratio*100).toFixed(3);
+      return (ratio>=0?"+":"") + v + "%";
+    }
+    async function fetchJSON(url){
+      try{
+        const r = await fetch(url, { cache:"no-store" });
+        if(!r.ok) throw new Error(r.status);
+        return await r.json();
+      }catch(e){ return null; }
+    }
+    async function hydrate(){
+      const cards = document.querySelectorAll(".card[data-json]");
+      await Promise.all(Array.from(cards).map(async $c=>{
+        const url = $c.dataset.json;
+        const json = await fetchJSON(url);
+        const $delta = $c.querySelector(".delta");
+        let ratio = null;
+
+        if(json){
+          // 1) 通常（ASTRA4 / R-BANK9 / S-COIN+）
+          if(typeof json.pct_intraday === "number"){
+            ratio = json.pct_intraday;           // 0.0123 → +1.23%
+          }
+          // 2) AIN-10 用：delta_level + scale
+          else if(typeof json.delta_level === "number"){
+            ratio = json.delta_level;            // 例: 0.035 → +3.5%
+            if(json.scale === "percent" && Math.abs(ratio) > 1) ratio = ratio/100;
+          }
+          // 3) 旧フォーマット（pct_id など）も一応ケア
+          else if(typeof json.pct_id === "number"){
+            ratio = json.pct_id;
+            if(Math.abs(ratio) > 2) ratio = ratio/100; // 100超え対策
+          }
+        }
+
+        $delta.textContent = pctText(ratio);
+        $delta.classList.toggle("pos", ratio != null && ratio >= 0);
+        $delta.classList.toggle("neg", ratio != null && ratio < 0);
+
+        // タブ切替
+        const $img = $c.querySelector("img");
+        const intraday = $c.dataset.intradayPng;
+        const am = $c.dataset.amPng || intraday;
+        const cacheBust = () => `?v=${Date.now()}`;
+
+        $c.querySelectorAll(".tabs button").forEach($btn=>{
+          $btn.addEventListener("click", ()=>{
+            $c.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+            $btn.classList.add("active");
+            const kind = $btn.dataset.kind;
+            $img.src = (kind === "am" ? am : intraday) + cacheBust();
+          });
+        });
+      }));
+    }
+    hydrate();
+  </script>
 </body>
 </html>
