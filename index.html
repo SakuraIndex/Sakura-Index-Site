@@ -94,6 +94,12 @@
   const EXTERNAL_ORIGINS = {
     // 'S-COIN+':'https://sakuraindex.github.io/S-COIN-PLUS'
   };
+    // ％表示にする前の「読み出し値」に対して個別調整
+// '÷100' : 与えられた値が 20.31（%値）だった → 0.2031 に直す（あとで×100して 20.31% 表示）
+// '×100' : 与えられた値が 0.2031（小数）だった → 20.31 に直す（あとでそのまま 20.31% 表示）
+const PCT_TWEAK = {
+  'R-BANK9': '÷100',  // ←まずはこれで様子見。必要に応じて '×100' に変える
+};
   /* フォルダ名の食い違いを明示的に上書き */
   const OVERRIDE_FOLDER = {
     // 'S-COIN+':'S_COIN_PLUS'
@@ -207,16 +213,35 @@
       // 画像
       await loadFirstImage(img, buildChartUrls(idx));
       // 騰落率
-      const pctEl=document.getElementById(`pct-${idx.id}`);
-      const stats=await fetchFirstJson(buildStatsUrls(idx));
-      let v=null;
-      if(stats){
-        if(typeof stats.pct_intraday !== 'undefined') v=Number(stats.pct_intraday);
-        else if(typeof stats.delta_level !== 'undefined') v=Number(stats.delta_level);
-        else if(typeof stats.change_pct  !== 'undefined') v=Number(stats.change_pct);
-      }
-      const {text,cls}=fmtPct(v);
-      pctEl.textContent=text;pctEl.className=`pct ${cls}`;
+    const stats = await fetchFirstJson(buildStatsUrls(idx));
+let raw = null;
+
+// 1) まず“最も意味の近い”フィールドを拾う（pct_intraday 優先）
+if (stats) {
+  if (typeof stats.pct_intraday !== 'undefined') {
+    raw = Number(stats.pct_intraday);
+  } else if (typeof stats.delta_level !== 'undefined') {
+    raw = Number(stats.delta_level);
+  } else if (typeof stats.change_pct !== 'undefined') {
+    raw = Number(stats.change_pct);
+  }
+}
+
+// 2) 個別補正（R-BANK9 など）
+if (raw != null) {
+  const tweak = PCT_TWEAK[idx.id];
+  if (tweak === '÷100') raw = raw / 100;
+  if (tweak === '×100') raw = raw * 100;
+}
+
+// 3) ％に正規化して表示
+//   - ここでは raw が "小数(0.2031)" なら ×100、すでに "％値(20.31)" ならそのまま
+let v = null;
+if (raw != null) v = (Math.abs(raw) > 0 && Math.abs(raw) < 1) ? raw * 100 : raw;
+
+const { text, cls } = fmtPct(v);  // fmtPct は“％値”を前提に整形する関数
+pctEl.textContent = text;
+pctEl.className = `pct ${cls}`;
     })();
 
     return card;
