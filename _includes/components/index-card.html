@@ -4,13 +4,13 @@ props:
   id, title, flag, badge, desc, stats_json, intraday_png
 {%- endcomment -%}
 
-{% assign stats_attr = stats_json | uri_escape | relative_url %}
+{% assign stats_attr = stats_json  | uri_escape | relative_url %}
 {% assign img_src   = intraday_png | uri_escape | relative_url %}
 
 <div class="idx-card" data-stats="{{ stats_attr }}">
   <div class="idx-head">
     <div class="idx-title">
-      <span>{{ flag }}</span>
+      <span class="idx-flag">{{ flag }}</span>
       <span>{{ title }}</span>
       <span class="idx-badge">{{ badge }}</span>
     </div>
