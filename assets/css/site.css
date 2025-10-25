@@ -1,0 +1,94 @@
+/* ====== Global ====== */
+:root{
+  --bg:#0b1220;
+  --card:#0f172a;
+  --border:#1e293b;
+  --muted:#9fb5d1;
+  --text:#e2e8f0;
+  --accent:#2dd4bf;
+  --up:#22c55e;
+  --down:#ef4444;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Apple Color Emoji","Segoe UI Emoji";
+  line-height:1.6;
+}
+
+/* ====== Top actions ====== */
+.top-actions{
+  display:flex; gap:12px; justify-content:flex-end; margin:10px 0 22px;
+}
+.top-actions .btn{
+  padding:10px 16px;               /* ほんの少し拡大 */
+  font-size:14px; font-weight:600;
+  border-radius:10px;
+  background:#0f172a;
+  border:1px solid var(--border);
+  color:#c7d2fe;
+  text-decoration:none;
+}
+.top-actions .btn:hover{ border-color:#475569; }
+
+/* ====== Grid ====== */
+.index-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:16px;
+}
+@media (max-width:1024px){ .index-grid{ grid-template-columns:1fr; } }
+
+/* ====== Card ====== */
+.idx-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+.idx-head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.idx-title{
+  display:flex; align-items:center; gap:8px;
+  font-weight:700; font-size:18px;
+}
+.idx-badge{
+  font-size:12px; padding:2px 8px; border-radius:9999px;
+  background:#0b1220; border:1px solid #1f2a40; color:var(--muted);
+}
+.idx-pct{ font-weight:800; font-size:16px; }
+.idx-pct.up{ color:var(--up); }
+.idx-pct.down{ color:var(--down); }
+.idx-pct.na{ color:#94a3b8; }
+
+/* 説明文 */
+.idx-desc{ color:var(--muted); margin:6px 0 12px; }
+
+/* ====== Chart image bounds ====== */
+.chart-wrap{
+  width:100%;
+  height:260px;                    /* ここで高さを固定（必要なら240〜300で調整） */
+  background:#0b1220;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;                 /* はみ出し防止 */
+  display:flex; align-items:center; justify-content:center;
+}
+.chart-img{
+  max-width:100%;
+  height:100%;
+  object-fit:contain;              /* 比率維持・枠内に収める */
+  display:block;
+  image-rendering:-webkit-optimize-contrast;
+}
+
+/* ====== Tabs ====== */
+.idx-tabs{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.idx-tab{
+  font-size:12px; padding:6px 10px; border-radius:9999px;
+  background:#0b1220; border:1px solid #253046; color:#c7d2fe; cursor:pointer;
+}
+.idx-tab.active{ background:#0f172a; border-color:#475569; }
