@@ -1,136 +1,156 @@
 ---
-layout: null
 title: 桜Index - 公式サイト
+layout: null
 ---
 
 <!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>桜Index - 公式サイト</title>
-<style>
-  :root{
-    --bg:#0b1220;
-    --panel:#111a2b;
-    --panel2:#0f172a;
-    --line:#1c2a44;
-    --text:#e2e8f0;
-    --muted:#9aa7b5;
-    --teal:#14b8a6;
-    --green:#22c55e;
-    --red:#ef4444;
-  }
-  html,body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue","Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
-    line-height:1.6;
-  }
-  .wrap{max-width:1180px;margin:28px auto 80px;padding:0 16px;}
-  .header{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
-  .brand{font-size:24px;font-weight:800;letter-spacing:.5px;}
-  .sync{font-size:12px;color:var(--muted);}
-  .links{margin-left:auto;display:flex;gap:8px;}
-  .links a{
-    display:inline-block;border:1px solid #223045;background:var(--panel2);color:#cbd5e1;
-    border-radius:999px;padding:8px 12px;font-size:13px;text-decoration:none;
-  }
-  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;
-        box-shadow:0 6px 18px rgba(0,0,0,.25) inset, 0 1px 0 rgba(255,255,255,.02);}
-  .card-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
-  .title{display:flex;align-items:center;gap:10px;}
-  .flag{font-size:18px;}
-  .name{font-size:20px;font-weight:800;letter-spacing:.2px;}
-  .badge{font-size:12px;color:#aab8c5;background:#0c1527;border:1px solid #1e2a3f;padding:2px 8px;border-radius:999px;}
-  .pct{font-weight:800;font-size:16px;letter-spacing:.2px;}
-  .pct-up{color:var(--green);} .pct-down{color:var(--red);} .pct-zero{color:#93c5fd;} .pct-na{color:#94a3b8;}
-  .desc{margin:8px 0 10px;color:#c8d1dc;font-size:13px;}
-  .chart-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px;}
-  .chart{width:100%;height:auto;display:block;border-radius:6px;}
-  .btns{display:flex;gap:8px;margin-top:12px;}
-  .btn{font-size:12px;color:#cbd5e1;border:1px solid #223045;background:#0c1527;padding:6px 10px;border-radius:999px;}
-  .btn-active{background:#0e1a31;color:#e2e8f0;border-color:#2b3b57;}
-  .note{margin:30px 0 8px;padding-top:4px;color:#aab3bf;font-size:12px;text-align:center;}
-  .copy{color:#8fa2b8;font-size:12px;text-align:center;}
-  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
-</style>
-</head>
-<body>
-<div class="wrap">
 
-  <div class="header">
-    <div class="brand">🌸 桜Index - 公式サイト</div>
-    <div class="sync">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
-    <div class="links">
-      <a href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a href="https://note.com" target="_blank" rel="noopener">公式note</a>
+<style>
+:root{
+  --bg:#0b1118;
+  --fg:#dce8f5;
+  --sub:#9bb4ca;
+  --card:#0e1621;
+  --accent:#2fd26e;
+}
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji"; }
+.wrap{ max-width:1100px; margin:28px auto 60px; padding:0 16px; }
+.hdr{ display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; }
+.logo{ font-size:28px; font-weight:800; letter-spacing:.02em; display:flex; gap:10px; align-items:center; }
+.logo .flower{ filter:saturate(1.2); }
+.sync{ color:var(--sub); font-size:12px; }
+
+.top-buttons{ display:flex; gap:10px; }
+.top-buttons a{
+  padding:10px 14px; font-size:13px; border:1px solid #2a3a4c; border-radius:12px;
+  color:#c7d6e5; text-decoration:none; background:#0f1a25;
+}
+.top-buttons a:hover{ background:#112233; }
+
+.grid{
+  display:grid; gap:18px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+}
+@media (max-width:960px){
+  .grid{ grid-template-columns: 1fr; }
+}
+.note{ color:var(--sub); font-size:12px; text-align:center; margin-top:28px; line-height:1.7; }
+.copy{ color:var(--sub); font-size:12px; text-align:center; margin-top:6px; }
+.sep { height:8px; }
+</style>
+
+<div class="wrap">
+  <div class="hdr">
+    <div>
+      <div class="logo"><span class="flower">🌸</span>桜Index - 公式サイト</div>
+      <div class="sync">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
+    </div>
+    <div class="top-buttons">
+      <a href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a href="https://note.com/" target="_blank" rel="noopener">公式note</a>
     </div>
   </div>
 
-  {%- comment -%} stats.json を文字列で取り込み {%- endcomment -%}
-  {% capture ASTRA_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
-  {% capture RBANK_stats %}{% include_relative charts/R-BANK9/stats.json %}{% endcapture %}
-  {% capture AIN10_stats %}{% include_relative charts/AIN-10/stats.json %}{% endcapture %}
-  {% capture SCOIN_stats %}{% include_relative charts/S-COIN+/stats.json %}{% endcapture %}
-
   <div class="grid">
-
     {%- comment -%}
-      重要: 画像パスには site.baseurl を付ける
-      重要: 騰落率が比率(0.0131)の指数は scale_hint="ratio" を明示
+      1) ASTRA4
+         - charts/ASTRA4/stats.json から "pct_intraday" を split で抽出
+         - 画像は baseurl を先頭につける
     {%- endcomment -%}
+    {%- capture A4_RAW -%}{% include_relative charts/ASTRA4/stats.json %}{%- endcapture -%}
+    {%- assign A4_TMP = A4_RAW | split:'"pct_intraday":' | last -%}
+    {%- assign A4_NUM = A4_TMP | split:',' | first | plus: 0 -%}
+    {%- assign A4_PCT100 = A4_NUM | times: 100.0 -%}
+    {%- assign A4_SIGN = '' -%}{% if A4_PCT100 > 0 %}{% assign A4_SIGN = '+' %}{% endif %}
+    {%- assign A4_PCT_TEXT = A4_SIGN | append: (A4_PCT100 | round: 2) | append:'%' -%}
+    {%- assign A4_PCT_CLASS = 'flat' -%}
+    {%- if A4_PCT100 > 0 -%}{% assign A4_PCT_CLASS = 'up' %}{%- elsif A4_PCT100 < 0 -%}{% assign A4_PCT_CLASS = 'down' %}{%- endif -%}
 
-    {% include components/index-card.html
+    {% include index-card.html
       id="ASTRA4"
       title="Astra4"
       badge="宇宙ベンチャー"
-      desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-      stats_json=ASTRA_stats
-      intraday_png="{{ site.baseurl }}/charts/ASTRA4/intraday.png"
-      am_png="{{ site.baseurl }}/charts/ASTRA4/intraday_am.png"
       flag="🇯🇵"
-      scale_hint="ratio"
+      desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      img=site.baseurl | append:'/charts/ASTRA4/intraday.png'
+      pct_class=A4_PCT_CLASS
+      pct_text=A4_PCT_TEXT
     %}
 
-    {% include components/index-card.html
+    {%- comment -%}
+      2) R-BANK9
+    {%- endcomment -%}
+    {%- capture RB_RAW -%}{% include_relative charts/R-BANK9/stats.json %}{%- endcapture -%}
+    {%- assign RB_TMP = RB_RAW | split:'"pct_intraday":' | last -%}
+    {%- assign RB_NUM = RB_TMP | split:',' | first | plus: 0 -%}
+    {%- assign RB_PCT100 = RB_NUM | times: 100.0 -%}
+    {%- assign RB_SIGN = '' -%}{% if RB_PCT100 > 0 %}{% assign RB_SIGN = '+' %}{% endif %}
+    {%- assign RB_PCT_TEXT = RB_SIGN | append: (RB_PCT100 | round: 2) | append:'%' -%}
+    {%- assign RB_PCT_CLASS = 'flat' -%}
+    {%- if RB_PCT100 > 0 -%}{% assign RB_PCT_CLASS = 'up' %}{%- elsif RB_PCT100 < 0 -%}{% assign RB_PCT_CLASS = 'down' %}{%- endif -%}
+
+    {% include index-card.html
       id="R-BANK9"
       title="R-BANK9"
       badge="地方銀行"
-      desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-      stats_json=RBANK_stats
-      intraday_png="{{ site.baseurl }}/charts/R-BANK9/intraday.png"
-      am_png="{{ site.baseurl }}/charts/R-BANK9/intraday_am.png"
       flag="🇯🇵"
-      scale_hint="ratio"
+      desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      img=site.baseurl | append:'/charts/R-BANK9/intraday.png'
+      pct_class=RB_PCT_CLASS
+      pct_text=RB_PCT_TEXT
     %}
 
-    {% include components/index-card.html
+    {%- comment -%}
+      3) AIN-10
+    {%- endcomment -%}
+    {%- capture AI_RAW -%}{% include_relative charts/AIN-10/stats.json %}{%- endcapture -%}
+    {%- assign AI_TMP = AI_RAW | split:'"pct_intraday":' | last -%}
+    {%- assign AI_NUM = AI_TMP | split:',' | first | plus: 0 -%}
+    {%- assign AI_PCT100 = AI_NUM | times: 100.0 -%}
+    {%- assign AI_SIGN = '' -%}{% if AI_PCT100 > 0 %}{% assign AI_SIGN = '+' %}{% endif %}
+    {%- assign AI_PCT_TEXT = AI_SIGN | append: (AI_PCT100 | round: 2) | append:'%' -%}
+    {%- assign AI_PCT_CLASS = 'flat' -%}
+    {%- if AI_PCT100 > 0 -%}{% assign AI_PCT_CLASS = 'up' %}{%- elsif AI_PCT100 < 0 -%}{% assign AI_PCT_CLASS = 'down' %}{%- endif -%}
+
+    {% include index-card.html
       id="AIN-10"
       title="AIN-10"
       badge="AI関連10"
-      desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-      stats_json=AIN10_stats
-      intraday_png="{{ site.baseurl }}/charts/AIN-10/intraday.png"
-      am_png="{{ site.baseurl }}/charts/AIN-10/intraday_am.png"
       flag="🇺🇸"
-      scale_hint="ratio"
+      desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+      img=site.baseurl | append:'/charts/AIN-10/intraday.png'
+      pct_class=AI_PCT_CLASS
+      pct_text=AI_PCT_TEXT
     %}
 
-    {% include components/index-card.html
+    {%- comment -%}
+      4) S-COIN+
+    {%- endcomment -%}
+    {%- capture SC_RAW -%}{% include_relative charts/S-COIN+/stats.json %}{%- endcapture -%}
+    {%- assign SC_TMP = SC_RAW | split:'"pct_intraday":' | last -%}
+    {%- assign SC_NUM = SC_TMP | split:',' | first | plus: 0 -%}
+    {%- assign SC_PCT100 = SC_NUM | times: 100.0 -%}
+    {%- assign SC_SIGN = '' -%}{% if SC_PCT100 > 0 %}{% assign SC_SIGN = '+' %}{% endif %}
+    {%- assign SC_PCT_TEXT = SC_SIGN | append: (SC_PCT100 | round: 2) | append:'%' -%}
+    {%- assign SC_PCT_CLASS = 'flat' -%}
+    {%- if SC_PCT100 > 0 -%}{% assign SC_PCT_CLASS = 'up' %}{%- elsif SC_PCT100 < 0 -%}{% assign SC_PCT_CLASS = 'down' %}{%- endif -%}
+
+    {% include index-card.html
       id="S-COIN+"
       title="S-COIN+"
       badge="仮想資産関連"
-      desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-      stats_json=SCOIN_stats
-      intraday_png="{{ site.baseurl }}/charts/S-COIN+/intraday.png"
-      am_png="{{ site.baseurl }}/charts/S-COIN+/intraday_am.png"
       flag="🇯🇵"
-      scale_hint="ratio"
+      desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+      img=site.baseurl | append:'/charts/S-COIN+/intraday.png'
+      pct_class=SC_PCT_CLASS
+      pct_text=SC_PCT_TEXT
     %}
-
   </div>
+
+  <div class="sep"></div>
 
   <div class="note">
     データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
@@ -138,5 +158,3 @@ title: 桜Index - 公式サイト
   </div>
   <div class="copy">© {{ site.time | date: "%Y" }} 桜Index</div>
 </div>
-</body>
-</html>
