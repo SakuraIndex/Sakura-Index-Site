@@ -1,68 +1,86 @@
 ---
-layout: default
-title: 桜Index - 公式サイト
+# GitHub Pages (Jekyll) front-matter
+title: "桜Index - 公式サイト"
 ---
 
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-  <header class="mb-6">
-    <h1 class="text-2xl font-bold">🌸 桜Index - 公式サイト</h1>
-    <p class="text-sm text-slate-400">
-      同期完了: {{ site.time | date: "%Y/%m/%d %H:%M:%S" }} / データ: charts/*
-    </p>
-    <div class="flex gap-2 mt-2">
-      <a href="https://x.com/sakuraindex" class="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">公式X（Twitter）</a>
-      <a href="https://note.com/sakuraindex" class="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">公式note</a>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page.title }}</title>
+  <meta name="description" content="桜Index 公式サイト。各指数のインタラデイ・前場スナップや足別チャートをまとめて閲覧できます。" />
+  <!-- ここは既存CSS/JSの読み込みをそのまま維持してOK。なければ空で問題ありません -->
+</head>
+<body>
+
+  <!-- ヘッダ -->
+  <header style="padding: 12px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size: 20px; font-weight: 700;">🌸 桜Index - 公式サイト</span>
+        <small style="opacity:.7;">
+          同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: docs/charts/*
+        </small>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a href="https://x.com" target="_blank" rel="noopener" style="padding:8px 12px;border:1px solid rgba(255,255,255,.2);border-radius:9999px;text-decoration:none;">公式X（Twitter）</a>
+        <a href="https://note.com" target="_blank" rel="noopener" style="padding:8px 12px;border:1px solid rgba(255,255,255,.2);border-radius:9999px;text-decoration:none;">公式note</a>
+      </div>
     </div>
   </header>
 
-  <div class="grid md:grid-cols-2 gap-6">
+  <main style="max-width:1200px;margin:0 auto;padding: 8px 16px 24px;">
 
-    {% include components/index-card.html
-      key="astra4"
-      title="Astra4"
-      badge="宇宙ベンチャー"
-      description="宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"
-      intraday_png="/charts/astra4_intraday.png"
-      am_png="/charts/am/astra4_intraday.png"
-      json_path="/charts/astra4/latest.json"
-    %}
+    {%- comment -%}
+    =============================
+    表示する指数の定義（ここだけ編集）
+    =============================
+    - id: charts フォルダ名（ASTRA4 / R-BANK9 / AIN-10 / S-COIN+）
+    - title: 見出し
+    - badge: ラベル
+    - desc: 説明文
+    {%- endcomment -%}
+    {%- assign indices = 
+      [
+        {"id":"ASTRA4","title":"Astra4","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"},
+        {"id":"R-BANK9","title":"R-BANK9","badge":"地方銀行","desc":"地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。"},
+        {"id":"AIN-10","title":"AIN-10","badge":"AI関連10","desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"},
+        {"id":"S-COIN+","title":"S-COIN+","badge":"仮想資産関連","desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"}
+      ]
+    -%}
 
-    {% include components/index-card.html
-      key="r_bank9"
-      title="R-BANK9"
-      badge="地方銀行"
-      description="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-      intraday_png="/charts/r_bank9_intraday.png"
-      am_png="/charts/am/r_bank9_intraday.png"
-      json_path="/charts/r_bank9/latest.json"
-    %}
+    {%- comment -%}
+    2列グリッド（元デザイン風）：カードを順に描画
+    {%- endcomment -%}
+    <section style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
 
-    {% include components/index-card.html
-      key="ain10"
-      title="AIN-10"
-      badge="AI関連10"
-      description="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-      intraday_png="/charts/ain10_intraday.png"
-      am_png="/charts/am/ain10_intraday.png"
-      json_path="/charts/ain10/latest.json"
-    %}
+      {%- for idx in indices -%}
+        {%- capture intraday_png -%}/charts/{{ idx.id }}/intraday.png{%- endcapture -%}
+        {%- capture am_png -%}/charts/{{ idx.id }}/intraday_am.png{%- endcapture -%}
+        {%- capture json_path -%}/charts/{{ idx.id }}/stats.json{%- endcapture -%}
 
-    {% include components/index-card.html
-      key="s_coin_plus"
-      title="S-COIN+"
-      badge="仮想資産関連"
-      description="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-      intraday_png="/charts/s_coin_plus_intraday.png"
-      am_png="/charts/am/s_coin_plus_intraday.png"
-      json_path="/charts/s_coin_plus/latest.json"
-    %}
+        {%- include components/index-card.html
+          title=idx.title
+          badge=idx.badge
+          description=idx.desc
+          intraday_png=intraday_png
+          am_png=am_png
+          json_path=json_path
+        -%}
+      {%- endfor -%}
 
-  </div>
+    </section>
 
-  <footer class="mt-8 text-center text-xs text-slate-400">
-    データ：各指数は等加重指数（仕様は各リポジトリ参照）／
-    画像は各指数リポジトリの自動生成スナップショットを同期しています。<br />
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br />
-    © 2025 桜Index
-  </footer>
-</div>
+    <!-- 免責・注記 -->
+    <section style="margin-top:32px;">
+      <p style="opacity:.8;">
+        データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br />
+        ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br />
+        © {{ "now" | date: "%Y" }} 桜Index
+      </p>
+    </section>
+
+  </main>
+</body>
+</html>
