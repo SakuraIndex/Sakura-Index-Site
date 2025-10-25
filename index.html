@@ -6,103 +6,109 @@ layout: null
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🌸桜Index - 公式サイト</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🌸 桜Index - 公式サイト</title>
   <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
 </head>
 <body>
 
-  <div class="top-actions">
-    <a class="btn" href="https://x.com/your_account" target="_blank" rel="noopener">公式X（Twitter）</a>
-    <a class="btn" href="https://note.com/your_account" target="_blank" rel="noopener">公式note</a>
-  </div>
+  <!-- ヘッダ（サイト名＋ボタン） -->
+  <header class="site-head">
+    <div class="site-title">🌸 桜Index - 公式サイト</div>
+    <div class="top-actions">
+      <a class="btn" href="https://x.com/your_account" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a class="btn" href="https://note.com/your_account" target="_blank" rel="noopener">公式note</a>
+    </div>
+  </header>
 
-  <div class="index-grid">
+  <main class="wrap">
+    <div class="index-grid">
 
-    {% include components/index-card.html
-       id="ASTRA4"
-       title="Astra4"
-       flag="🇯🇵"
-       badge="宇宙ベンチャー"
-       desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-       stats_json="/charts/ASTRA4/stats.json"
-       intraday_png="/charts/ASTRA4/intraday.png"
-       am_png="/charts/ASTRA4/intraday_am.png"
-    %}
+      {% include components/index-card.html
+         id="ASTRA4"
+         title="Astra4"
+         flag="🇯🇵"
+         badge="宇宙ベンチャー"
+         desc="宇宙関連銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+         stats_json="/charts/ASTRA4/stats.json"
+         intraday_png="/charts/ASTRA4/intraday.png"
+      %}
 
-    {% include components/index-card.html
-       id="R-BANK9"
-       title="R-BANK9"
-       flag="🇯🇵"
-       badge="地方銀行"
-       desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-       stats_json="/charts/R-BANK9/stats.json"
-       intraday_png="/charts/R-BANK9/intraday.png"
-       am_png="/charts/R-BANK9/intraday_am.png"
-    %}
+      {% include components/index-card.html
+         id="R-BANK9"
+         title="R-BANK9"
+         flag="🇯🇵"
+         badge="地方銀行"
+         desc="地方銀行9銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+         stats_json="/charts/R-BANK9/stats.json"
+         intraday_png="/charts/R-BANK9/intraday.png"
+      %}
 
-    {% include components/index-card.html
-       id="AIN-10"
-       title="AIN-10"
-       flag="🇺🇸"
-       badge="AI関連10"
-       desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-       stats_json="/charts/AIN-10/stats.json"
-       intraday_png="/charts/AIN-10/intraday.png"
-       am_png="/charts/AIN-10/intraday_am.png"
-    %}
+      {% include components/index-card.html
+         id="AIN-10"
+         title="AIN-10"
+         flag="🇺🇸"
+         badge="AI関連10"
+         desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+         stats_json="/charts/AIN-10/stats.json"
+         intraday_png="/charts/AIN-10/intraday.png"
+      %}
 
-    {% include components/index-card.html
-       id="S-COIN+"
-       title="S-COIN+"
-       flag="🇯🇵"
-       badge="仮想資産関連"
-       desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-       stats_json="/charts/S-COIN+/stats.json"
-       intraday_png="/charts/S-COIN+/intraday.png"
-       am_png="/charts/S-COIN+/intraday_am.png"
-    %}
+      {% include components/index-card.html
+         id="S-COIN+"
+         title="S-COIN+"
+         flag="🇯🇵"
+         badge="仮想資産関連"
+         desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+         stats_json="/charts/S-COIN+/stats.json"
+         intraday_png="/charts/S-COIN+/intraday.png"
+      %}
 
-  </div>
+    </div>
 
-  <p style="color:#94a3b8; text-align:center; margin:28px 0 8px;">
-    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-    © {{ 'now' | date: '%Y' }} 桜Index
-  </p>
+    <p style="color:#94a3b8; text-align:center; margin:26px 0 8px;">
+      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
+      © {{ 'now' | date: '%Y' }} 桜Index
+    </p>
+  </main>
 
-  <!-- 騰落率のクライアント更新スクリプト -->
+  <!-- 騰落率の自動更新（stats.json を fetch） -->
   <script>
   (function () {
-    function setPct(el, val) {
-      const cls = ['up','down','na'];
-      el.classList.remove(...cls);
-      if (!isFinite(val)) {
-        el.textContent = 'N/A';
-        el.classList.add('na');
-        return;
-      }
-      const pct = val * 100;
+    function setPct(el, raw) {
+      const classes = ['up','down','na']; el.classList.remove(...classes);
+      if (raw === null || raw === undefined || raw === '' || Number.isNaN(+raw)) {
+        el.textContent = 'N/A'; el.classList.add('na'); return;
+        }
+      let v = typeof raw === 'string' ? parseFloat(raw) : raw;   // 0.0123（=1.23%）を想定
+      // 値が 1.23 など既に%の可能性を自動補正（> 1なら%とみなす）
+      if (Math.abs(v) > 1.0) v = v / 100.0;
+      const pct = v * 100.0;
       const txt = (pct > 0 ? '+' : (pct < 0 ? '' : '')) + pct.toFixed(2) + '%';
       el.textContent = txt;
       el.classList.add(pct > 0 ? 'up' : (pct < 0 ? 'down' : 'na'));
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.idx-card').forEach(card => {
-        const statsUrl = card.getAttribute('data-stats');
-        const pctEl = card.querySelector('.idx-pct');
-        if (!statsUrl || !pctEl) return;
+    function pickValue(json){
+      // よくあるキー名を優先順に試す
+      const keys = ['pct_intraday','pct','pct_id','delta','delta_level','change'];
+      for (const k of keys){
+        if (json && json[k] !== undefined) return json[k];
+      }
+      return null;
+    }
 
-        fetch(statsUrl, { cache: 'no-cache' })
-          .then(r => r.json())
-          .then(j => {
-            // 代表値を優先順で拾う（どれかが存在すればOK）
-            let v = j.pct_intraday ?? j.pct_id ?? j.delta ?? j.delta_level ?? null;
-            if (typeof v === 'string') v = parseFloat(v);
-            setPct(pctEl, v);
-          })
-          .catch(() => setPct(pctEl, NaN));
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.querySelectorAll('.idx-card').forEach(card=>{
+        const url = card.getAttribute('data-stats');
+        const pctEl = card.querySelector('.idx-pct');
+        if (!url || !pctEl) return;
+
+        fetch(url, { cache: 'no-cache' })
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(j => setPct(pctEl, pickValue(j)))
+          .catch(()=> setPct(pctEl, null));
       });
     });
   })();
