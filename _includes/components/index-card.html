@@ -1,78 +1,103 @@
 {%- comment -%}
-  汎用インデックスカード（完全版）
-  - 引数:
-    id         : フォルダ名（例 "ASTRA4", "R-BANK9", "AIN-10", "S-COIN+"）
-    title      : 表示名
-    desc       : 説明文
-    flag       : 絵文字国旗
-    badge      : 小バッジ
+共通インデックスカード（stats.json対応版）
+受け取る引数:
+- id, flag, title, badge, desc
+- json_path : /charts/.../stats.json
+- intraday_png, am_png : 画像パス
 {%- endcomment -%}
 
-{%- assign base = site.baseurl | default: '' -%}
-{%- assign folder = include.id | uri_escape -%}
+{%- assign _id = include.id -%}
+{%- assign _flag = include.flag | default: "" -%}
+{%- assign _title = include.title | default: _id -%}
+{%- assign _badge = include.badge | default: "" -%}
+{%- assign _desc = include.desc | default: "" -%}
 
-{%- comment -%} charts/*/stats.json を読む {%- endcomment -%}
-{%- capture _stats_json -%}
-  { "missing": true }
-{%- endcapture -%}
-{%- capture _path -%}{{ base }}/charts/{{ folder }}/stats.json{%- endcapture -%}
-{%- capture stats_raw -%}{% include_relative {{ _path | remove_first: base | remove_first: '/' }} %}{%- endcapture -%}
-{%- if stats_raw and stats_raw != '' and stats_raw contains '{' -%}
-  {%- assign stats = stats_raw | strip_newlines | replace: ',,', ',' | jsonify | parse_json -%}
+{%- assign _json_rel = include.json_path | relative_url -%}
+{%- assign _png_intraday = include.intraday_png  | relative_url -%}
+{%- assign _png_am       = include.am_png        | relative_url -%}
+
+{%- capture _raw -%}{% include_relative {{ include.json_path }} %}{%- endcapture -%}
+{%- assign _raw = _raw | strip_newlines -%}
+
+{%- assign pct = "" -%}
+{%- assign scale = "" -%}
+{%- assign delta = "" -%}
+
+{%- comment -%}
+1) pct_intraday を抜く
+{%- endcomment -%}
+{%- if _raw contains '"pct_intraday":' -%}
+  {%- assign tmp = _raw | split:'"pct_intraday":' | last -%}
+  {%- assign pct = tmp  | split:',' | first | strip -%}
+{%- endif -%}
+
+{%- comment -%}
+2) scale を抜く
+{%- if _raw contains '"scale":' %}{% endcomment -%}
+{%- if _raw contains '"scale":' -%}
+  {%- assign tmp = _raw | split:'"scale":' | last -%}
+  {%- assign scale = tmp | split:',' | first | strip | replace:'"','' -%}
+{%- endif -%}
+
+{%- comment -%}
+3) delta_level（補助）を抜く
+{%- endcomment -%}
+{%- if _raw contains '"delta_level":' -%}
+  {%- assign tmp = _raw | split:'"delta_level":' | last -%}
+  {%- assign delta = tmp | split:',' | first | strip -%}
+{%- endif -%}
+
+{%- assign pct_num = pct | plus: 0 -%}
+{%- assign delta_num = delta | plus: 0 -%}
+
+{%- comment -%}
+4) 表示用%の決定ロジック
+- pct_intraday があればそれをベース
+- なければ delta_level を代用
+- scale=="percent" のときは "そのまま % 表示"
+- ratio あるいは scale 不明のときは ×100（0.0〜3.0 などを 0%〜300% に整形）
+{%- endcomment -%}
+
+{%- assign use = pct_num -%}
+{%- if use == 0 and delta != "" -%}
+  {%- assign use = delta_num -%}
+{%- endif -%}
+
+{%- assign percent = use -%}
+{%- if scale == "percent" -%}
+  {%- assign percent = use -%}
 {%- else -%}
-  {%- assign stats = nil -%}
+  {%- assign percent = use | times: 100 -%}
 {%- endif -%}
 
-{%- comment -%} 騰落率ロジック（ASTRA4/R-BANK9/S-COIN+ は pct_intraday、AIN-10 は delta_level×scale） {%- endcomment -%}
-{%- assign delta_txt = 'N/A' -%}
-{%- assign delta_cls = 'na' -%}
-{%- if stats and stats.pct_intraday != nil -%}
-  {%- assign v = stats.pct_intraday | times:100.0 -%}
-  {%- assign s = v | round: 2 -%}
-  {%- if s > 0 -%}{%- assign delta_cls = 'up' -%}{%- elsif s < 0 -%}{%- assign delta_cls = 'down' -%}{%- endif -%}
-  {%- assign sign = s > 0 | default: false -%}
-  {%- assign delta_txt = s | abs | append:'%' -%}
-  {%- if s > 0 -%}{%- assign delta_txt = '+' | append: delta_txt -%}{%- endif -%}
-{%- elsif stats and stats.delta_level != nil -%}
-  {%- assign s = stats.delta_level -%}
-  {%- if stats.scale == 'percent' -%}{%- assign s = s | times: 100.0 -%}{%- endif -%}
-  {%- assign s = s | round: 2 -%}
-  {%- if s > 0 -%}{%- assign delta_cls = 'up' -%}{%- elsif s < 0 -%}{%- assign delta_cls = 'down' -%}{%- endif -%}
-  {%- assign delta_txt = s | abs | append:'%' -%}
-  {%- if s > 0 -%}{%- assign delta_txt = '+' | append: delta_txt -%}{%- endif -%}
-{%- endif -%}
+{%- assign sign = "+" -%}
+{%- if percent < 0 -%}{%- assign sign = "" -%}{%- endif -%}
+{%- assign abs = percent | abs -%}
+{%- assign pretty = abs | round: 2 -%}
+{%- capture display -%}{{ sign }}{{ pretty }}%{%- endcapture -%}
 
-{%- comment -%} 画像パス（intraday / intraday_am まで。残りは必要あれば追加） {%- endcomment -%}
-{%- assign src_intraday   = base | append: '/charts/' | append: folder | append: '/intraday.png' -%}
-{%- assign src_am         = base | append: '/charts/' | append: folder | append: '/intraday_am.png' -%}
-{%- assign src_7d         = base | append: '/charts/' | append: folder | append: '/7d.png' -%}
-{%- assign src_1m         = base | append: '/charts/' | append: folder | append: '/1m.png' -%}
-{%- assign src_1y         = base | append: '/charts/' | append: folder | append: '/1y.png' -%}
+{%- assign delta_class = "good" -%}
+{%- if percent < 0 -%}{%- assign delta_class = "bad" -%}{%- endif -%}
 
-<div class="card" data-chart>
+<div class="card" data-card data-srcs='{"intraday":"{{ _png_intraday }}","am":"{{ _png_am }}"}'>
   <div class="card-head">
-    <span class="flag">{{ include.flag }}</span>
-    <span class="title">{{ include.title }}</span>
-    <span class="badge">{{ include.badge }}</span>
-    <span class="desc">{{ include.desc }}</span>
-    <span class="delta {{ delta_cls }}">{{ delta_txt }}</span>
+    <span class="flag">{{ _flag }}</span>
+    <span class="title">{{ _title }}</span>
+    {% if _badge %}<span class="badge">{{ _badge }}</span>{% endif %}
+    <span class="desc">{{ _desc }}</span>
+    <span class="delta {{ delta_class }}">{{ display }}</span>
   </div>
 
-  <div class="chart-wrap">
-    <img
-      class="chart"
-      alt="{{ include.title }} chart"
-      loading="lazy"
-      src="{{ src_intraday }}"
-      data-fallback="{{ src_am }}"
-    />
+  <div class="chart-box">
+    <img data-chart loading="lazy" alt="{{ _id }} chart"
+         src="{{ _png_intraday }}" />
   </div>
 
-  <div class="card-foot">
-    <button class="btn active" data-src="{{ src_intraday }}">Intraday</button>
-    <button class="btn" data-src="{{ src_am }}">前場(AM)</button>
-    <button class="btn" data-src="{{ src_7d }}">7日</button>
-    <button class="btn" data-src="{{ src_1m }}">1ヶ月</button>
-    <button class="btn" data-src="{{ src_1y }}">1年</button>
+  <div class="tabrow">
+    <button type="button" class="chipbtn active" data-tab="intraday">Intraday</button>
+    <button type="button" class="chipbtn" data-tab="am">前場(AM)</button>
+    <button type="button" class="chipbtn" title="準備中" disabled>7日</button>
+    <button type="button" class="chipbtn" title="準備中" disabled>1ヶ月</button>
+    <button type="button" class="chipbtn" title="準備中" disabled>1年</button>
   </div>
 </div>
