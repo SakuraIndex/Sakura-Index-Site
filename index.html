@@ -1,330 +1,297 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🌸 桜Index - 公式サイト</title>
-  <style>
-    :root {
-      --bg: #0f1115;
-      --card: #171a21;
-      --muted: #9aa0aa;
-      --text: #e8eef8;
-      --accent: #84cc16;
-      --down: #ef4444;
-      --up: #10b981;
-      --warning: #f59e0b;
-      --border: #2a2f3a;
-      --chip: #222735;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
-    a { color: inherit; text-decoration: none; }
-    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 1024px) { .row { grid-template-columns: 1fr; } }
-    .header { text-align: center; margin-bottom: 20px; }
-    .h-title { font-size: 28px; font-weight: 800; letter-spacing: 0.02em; }
-    .sub { color: var(--muted); font-size: 12px; margin-top: 6px; }
-    .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--chip); border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; cursor: pointer; user-select: none; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
-    .card-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap: 10px; }
-    .card-l { display:flex; align-items:center; gap:10px; min-width:0; }
-    .flag { font-size: 14px; opacity: 0.9; }
-    .name { font-size: 18px; font-weight: 700; }
-    .tag { font-size: 12px; color: var(--muted); background: var(--chip); border:1px solid var(--border); border-radius: 999px; padding: 4px 8px; }
-    .delta { font-weight: 800; letter-spacing: 0.02em; }
-    .up { color: var(--up); }
-    .down { color: var(--down); }
-    .na { color: var(--muted); }
-    .desc { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
-    .imgbox { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #0c0e12; min-height: 280px; display:flex; align-items:center; justify-content:center; }
-    .imgbox img { width: 100%; height: auto; display:block; }
-    .toolbar { display:flex; gap:10px; margin-top: 12px; flex-wrap: wrap; }
-    .btn { background: var(--chip); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 999px; font-weight: 700; cursor:pointer; }
-    .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-    .btn.active { outline: 2px solid #3b82f6; }
-    .footer { color: var(--muted); font-size: 12px; text-align:center; margin-top: 24px; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="header">
-      <div class="h-title">🌸 桜Index - 公式サイト</div>
-      <div class="sub" id="sync-info">同期完了: ー / データ: docs/charts/*</div>
-      <div style="display:flex; gap:10px; justify-content:center; margin-top: 12px;">
-        <a class="pill" href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
-        <a class="pill" href="https://note.com" target="_blank" rel="noopener">公式note</a>
+<!-- ① カードの HTML（既存のカードをこれに置き換え or data-key だけ追記） -->
+<section class="sx-grid">
+  <!-- Astra4 -->
+  <article class="sx-card" data-key="astra4" data-title="Astra4" data-badge="宇宙ベンチャー"
+           data-desc="宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。">
+    <header class="sx-hd">
+      <div class="sx-title">
+        <span class="sx-flag">🇯🇵</span><h3>Astra4</h3>
+        <span class="sx-badge">宇宙ベンチャー</span>
       </div>
+      <div class="sx-delta" data-delta> N/A </div>
+    </header>
+    <p class="sx-desc">宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。</p>
+    <div class="sx-chart">
+      <img data-img alt="Astra4 chart" />
+      <div class="sx-noimg" data-noimg hidden>画像が見つかりません</div>
     </div>
+    <nav class="sx-tabs" role="tablist">
+      <button class="active" data-variant="intraday">Intraday</button>
+      <button data-variant="am">前場(AM)</button>
+      <button data-variant="7d">7日</button>
+      <button data-variant="1m">1ヶ月</button>
+      <button data-variant="1y">1年</button>
+    </nav>
+  </article>
 
-    <div id="grid" class="row">
-      <!-- 4 枚のカードを JS が挿入 -->
-    </div>
-
-    <div class="footer">
-      データ：等加重指数（仕様は各リポジトリ参照） / 画像は各指標リポの自動生成スナップショットと同期しています。<br/>
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br/>
-      © 2025 桜Index
-    </div>
-  </div>
-
-  <script>
-  // ===== サイト設定 =====
-  // ここをあなたのファイル構成に合わせて調整してください
-  const INDEXES = [
-    {
-      id: 'astra4',
-      flag: '🇯🇵',
-      name: 'Astra4',
-      tag: '宇宙ベンチャー',
-      // 説明（復活）
-      desc: '宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。',
-      // stats のパス
-      stats: 'docs/charts/astra4_stats.json',
-      // 画像（存在しないときは自動フォールバック）
-      imgs: {
-        intraday: 'docs/charts/astra4_intraday.png',
-        am: 'docs/charts/astra4_intraday_am.png',
-        d7: 'docs/charts/astra4_7d.png',
-        m1: 'docs/charts/astra4_1m.png',
-        y1: 'docs/charts/astra4_1y.png',
-        // 旧来 1d level のファイルを使いたい場合は intraday を差し替え可
-        level1d: 'docs/charts/astra4_1d.png'
-      }
-    },
-    {
-      id: 'rbank9',
-      flag: '🇯🇵',
-      name: 'R-BANK9',
-      tag: '地方銀行',
-      desc: '地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。',
-      stats: 'docs/charts/rbank9_stats.json', // ← R-BANK9 / R_BANK9の揺れはJSで吸収
-      imgs: {
-        intraday: 'docs/charts/rbank9_intraday.png',
-        am: 'docs/charts/rbank9_intraday_am.png',
-        d7: 'docs/charts/rbank9_7d.png',
-        m1: 'docs/charts/rbank9_1m.png',
-        y1: 'docs/charts/rbank9_1y.png',
-        level1d: 'docs/charts/rbank9_1d.png'
-      }
-    },
-    {
-      id: 'ain10',
-      flag: '🇺🇸',
-      name: 'AIN-10',
-      tag: 'AI関連10',
-      desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。',
-      stats: 'docs/charts/ain10_stats.json',
-      imgs: {
-        intraday: 'docs/charts/ain10_intraday.png',
-        am: 'docs/charts/ain10_intraday_am.png',
-        d7: 'docs/charts/ain10_7d.png',
-        m1: 'docs/charts/ain10_1m.png',
-        y1: 'docs/charts/ain10_1y.png',
-        level1d: 'docs/charts/ain10_1d.png'
-      }
-    },
-    {
-      id: 'scoinp',
-      flag: '₿',
-      name: 'S-COIN+',
-      tag: '仮想資産関連',
-      desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。',
-      stats: 'docs/charts/scoinp_stats.json',
-      imgs: {
-        intraday: 'docs/charts/scoinp_intraday.png',
-        am: 'docs/charts/scoinp_intraday_am.png',
-        d7: 'docs/charts/scoinp_7d.png',
-        m1: 'docs/charts/scoinp_1m.png',
-        y1: 'docs/charts/scoinp_1y.png',
-        level1d: 'docs/charts/scoinp_1d.png'
-      }
-    }
-  ];
-
-  // レンジボタン
-  const RANGES = [
-    { key: 'intraday', label: 'Intraday' },
-    { key: 'am',       label: '前場(AM)' },
-    { key: 'd7',       label: '7日' },
-    { key: 'm1',       label: '1ヶ月' },
-    { key: 'y1',       label: '1年' },
-  ];
-
-  // ===== DOM 生成 =====
-  const grid = document.getElementById('grid');
-  INDEXES.forEach(ix => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.id = `card-${ix.id}`;
-    card.innerHTML = `
-      <div class="card-hd">
-        <div class="card-l">
-          <div class="flag">${ix.flag}</div>
-          <div class="name">${ix.name}</div>
-          <div class="tag">${ix.tag}</div>
-        </div>
-        <div class="delta na" id="delta-${ix.id}">N/A</div>
+  <!-- R-BANK9 -->
+  <article class="sx-card" data-key="rbank9" data-title="R-BANK9" data-badge="地方銀行"
+           data-desc="地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。">
+    <header class="sx-hd">
+      <div class="sx-title">
+        <span class="sx-flag">🇯🇵</span><h3>R-BANK9</h3>
+        <span class="sx-badge">地方銀行</span>
       </div>
-      <div class="desc" id="desc-${ix.id}">${ix.desc}</div>
-      <div class="imgbox"><img id="img-${ix.id}" alt="${ix.name} chart" loading="lazy" decoding="async"/></div>
-      <div class="toolbar" id="tb-${ix.id}"></div>
-    `;
-    grid.appendChild(card);
+      <div class="sx-delta" data-delta> N/A </div>
+    </header>
+    <p class="sx-desc">地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。</p>
+    <div class="sx-chart">
+      <img data-img alt="R-BANK9 chart" />
+      <div class="sx-noimg" data-noimg hidden>画像が見つかりません</div>
+    </div>
+    <nav class="sx-tabs" role="tablist">
+      <button class="active" data-variant="intraday">Intraday</button>
+      <button data-variant="am">前場(AM)</button>
+      <button data-variant="7d">7日</button>
+      <button data-variant="1m">1ヶ月</button>
+      <button data-variant="1y">1年</button>
+    </nav>
+  </article>
 
-    const tb = card.querySelector(`#tb-${ix.id}`);
-    RANGES.forEach((r, i) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn' + (i===0?' active':'');
-      // クリック無効化の原因だった pointer-events を使わない／オーバーレイなし
-      btn.textContent = r.label;
-      btn.dataset.range = r.key;
-      btn.addEventListener('click', () => {
-        [...tb.querySelectorAll('.btn')].forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        setImage(ix.id, r.key);
-      });
-      tb.appendChild(btn);
-    });
-  });
+  <!-- AIN-10 -->
+  <article class="sx-card" data-key="ain10" data-title="AIN-10" data-badge="AI関連10"
+           data-desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。">
+    <header class="sx-hd">
+      <div class="sx-title">
+        <span class="sx-flag">🇺🇸</span><h3>AIN-10</h3>
+        <span class="sx-badge">AI関連10</span>
+      </div>
+      <div class="sx-delta" data-delta> N/A </div>
+    </header>
+    <p class="sx-desc">米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。</p>
+    <div class="sx-chart">
+      <img data-img alt="AIN-10 chart" />
+      <div class="sx-noimg" data-noimg hidden>画像が見つかりません</div>
+    </div>
+    <nav class="sx-tabs" role="tablist">
+      <button class="active" data-variant="intraday">Intraday</button>
+      <button data-variant="am">前場(AM)</button>
+      <button data-variant="7d">7日</button>
+      <button data-variant="1m">1ヶ月</button>
+      <button data-variant="1y">1年</button>
+    </nav>
+  </article>
 
-  // ===== 画像切替 & フォールバック =====
-  function setImage(id, range) {
-    const ix = INDEXES.find(x => x.id === id);
-    const img = document.getElementById(`img-${id}`);
-    const src = (ix.imgs && ix.imgs[range]) ? ix.imgs[range] : (ix.imgs.level1d || '');
-    // ロード失敗時に level1d → intraday → 何れか へ自動フォールバック
-    let tried = new Set();
-    function tryLoad(pathList) {
-      if (!pathList.length) {
-        img.alt = `${ix.name} chart (no image)`;
-        img.removeAttribute('src');
-        return;
+  <!-- S-COIN+ -->
+  <article class="sx-card" data-key="scoin_plus" data-title="S-COIN+" data-badge="仮想資産関連"
+           data-desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。">
+    <header class="sx-hd">
+      <div class="sx-title">
+        <span class="sx-flag">🇯🇵</span><h3>S-COIN+</h3>
+        <span class="sx-badge">仮想資産関連</span>
+      </div>
+      <div class="sx-delta" data-delta> N/A </div>
+    </header>
+    <p class="sx-desc">暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。</p>
+    <div class="sx-chart">
+      <img data-img alt="S-COIN+ chart" />
+      <div class="sx-noimg" data-noimg hidden>画像が見つかりません</div>
+    </div>
+    <nav class="sx-tabs" role="tablist">
+      <button class="active" data-variant="intraday">Intraday</button>
+      <button data-variant="am">前場(AM)</button>
+      <button data-variant="7d">7日</button>
+      <button data-variant="1m">1ヶ月</button>
+      <button data-variant="1y">1年</button>
+    </nav>
+  </article>
+</section>
+
+<!-- ② スタイル（衝突回避のため最小限） -->
+<style>
+  .sx-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(460px,1fr))}
+  .sx-card{background:#11151a;border:1px solid #202831;border-radius:16px;padding:16px}
+  .sx-hd{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .sx-title{display:flex;align-items:center;gap:10px}
+  .sx-flag{font-size:20px}
+  .sx-badge{background:#1c2633;border:1px solid #2c3848;border-radius:999px;padding:2px 10px;font-size:12px}
+  .sx-delta{min-width:88px;text-align:right;font-weight:700}
+  .sx-delta.--up{color:#21d07a}.sx-delta.--down{color:#ff6b6b}.sx-delta.--na{color:#9aa4af}
+  .sx-desc{opacity:.9;margin:.25rem 0 .75rem}
+  .sx-chart{position:relative;border-radius:12px;background:#0c1116;border:1px solid #1c2430;min-height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .sx-chart img{width:100%;height:auto;display:block;object-fit:contain}
+  .sx-noimg{opacity:.75}
+  .sx-tabs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .sx-tabs button{background:#141b22;border:1px solid #243041;padding:8px 14px;border-radius:999px;cursor:pointer}
+  .sx-tabs button.active{background:#1f2a38;border-color:#3a4a60}
+  @media (max-width:540px){.sx-grid{grid-template-columns:1fr}}
+</style>
+
+<!-- ③ ロジック（全カード共通。CSV を読んで騰落率を正しく算出 & 画像/タブの自動切替） -->
+<script>
+(() => {
+  /** ▼ リポ構成に依存しない「ゆるい」パスマップ
+   *   それぞれ複数候補から存在するものを自動採用します
+   *   画像: PNG / CSV: データ
+   */
+  const MAP = {
+    astra4: {
+      png: {
+        intraday: ['docs/charts/astra4_intraday.png','charts/astra4_intraday.png','docs/outputs/astra4_intraday.png'],
+        am:       ['docs/charts/astra4_am.png','charts/astra4_am.png','docs/outputs/astra4_am.png'],
+        '7d':     ['docs/charts/astra4_7d.png','charts/astra4_7d.png'],
+        '1m':     ['docs/charts/astra4_1m.png','charts/astra4_1m.png'],
+        '1y':     ['docs/charts/astra4_1y.png','charts/astra4_1y.png'],
+      },
+      csv: {
+        // intraday は「騰落率（％）」列がある CSV を優先、それが無ければ Close/PrevClose から算出
+        intraday: ['docs/outputs/astra4_intraday.csv','docs/charts/astra4_intraday.csv','charts/astra4_intraday.csv'],
+        am:       ['docs/outputs/astra4_am.csv','docs/charts/astra4_am.csv','charts/astra4_am.csv'],
+        // 長期はレベル系列（index / level）から前日終値比を算出
+        '7d':     ['docs/outputs/astra4_7d.csv','docs/charts/astra4_7d.csv','charts/astra4_7d.csv'],
+        '1m':     ['docs/outputs/astra4_1m.csv','docs/charts/astra4_1m.csv','charts/astra4_1m.csv'],
+        '1y':     ['docs/outputs/astra4_1y.csv','docs/charts/astra4_1y.csv','charts/astra4_1y.csv'],
       }
-      const next = pathList.shift();
-      if (!next || tried.has(next)) return tryLoad(pathList);
-      tried.add(next);
-      img.onerror = () => tryLoad(pathList);
-      img.src = next;
-    }
-    tryLoad([
-      src,
-      ix.imgs?.level1d, ix.imgs?.intraday, ix.imgs?.am, ix.imgs?.d7, ix.imgs?.m1, ix.imgs?.y1
-    ].filter(Boolean));
-  }
-
-  // 初期画像
-  INDEXES.forEach(ix => setImage(ix.id, 'intraday'));
-
-  // ===== 騰落率の取得（stats JSON を自動判別） =====
-  async function fetchJSON(url) {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  }
-
-  // 値の取り出し（柔軟に対応）
-  function pickPercent(stats, pref='intraday') {
-    if (!stats || typeof stats !== 'object') return null;
-
-    // よくあるキー名の候補
-    const tryKeys = [
-      `${pref}_change_percent`,
-      `${pref}_pct`,
-      `${pref}_percent`,
-      'change_percent','pct','percent',
-      'am_change_percent',
-      'delta_percent','intraday_pct',
-    ];
-
-    for (const k of tryKeys) {
-      if (k in stats && isFinite(stats[k])) return Number(stats[k]);
-    }
-
-    // オブジェクト下層 { intraday: { change_percent: x } } など
-    const child = stats[pref];
-    if (child && typeof child === 'object') {
-      for (const kk of ['change_percent','pct','percent']) {
-        if (kk in child && isFinite(child[kk])) return Number(child[kk]);
+    },
+    rbank9: {
+      png: {
+        intraday: ['docs/charts/rbank9_intraday.png','charts/rbank9_intraday.png','docs/outputs/rbank9_intraday.png'],
+        am:       ['docs/charts/rbank9_am.png','charts/rbank9_am.png','docs/outputs/rbank9_am.png'],
+        '7d':     ['docs/charts/rbank9_7d.png','charts/rbank9_7d.png'],
+        '1m':     ['docs/charts/rbank9_1m.png','charts/rbank9_1m.png'],
+        '1y':     ['docs/charts/rbank9_1y.png','charts/rbank9_1y.png'],
+      },
+      csv: {
+        intraday: ['docs/outputs/rbank9_intraday.csv','docs/charts/rbank9_intraday.csv','charts/rbank9_intraday.csv'],
+        am:       ['docs/outputs/rbank9_am.csv','docs/charts/rbank9_am.csv','charts/rbank9_am.csv'],
+        '7d':     ['docs/outputs/rbank9_7d.csv','docs/charts/rbank9_7d.csv','charts/rbank9_7d.csv'],
+        '1m':     ['docs/outputs/rbank9_1m.csv','docs/charts/rbank9_1m.csv','charts/rbank9_1m.csv'],
+        '1y':     ['docs/outputs/rbank9_1y.csv','docs/charts/rbank9_1y.csv','charts/rbank9_1y.csv'],
       }
-    }
+    },
+    ain10: {
+      png: {
+        intraday: ['docs/charts/ain10_intraday.png','charts/ain10_intraday.png','docs/outputs/ain10_intraday.png'],
+        am:       ['docs/charts/ain10_am.png','charts/ain10_am.png','docs/outputs/ain10_am.png'],
+        '7d':     ['docs/charts/ain10_7d.png','charts/ain10_7d.png'],
+        '1m':     ['docs/charts/ain10_1m.png','charts/ain10_1m.png'],
+        '1y':     ['docs/charts/ain10_1y.png','charts/ain10_1y.png'],
+      },
+      csv: {
+        intraday: ['docs/outputs/ain10_intraday.csv','docs/charts/ain10_intraday.csv','charts/ain10_intraday.csv'],
+        am:       ['docs/outputs/ain10_am.csv','docs/charts/ain10_am.csv','charts/ain10_am.csv'],
+        '7d':     ['docs/outputs/ain10_7d.csv','docs/charts/ain10_7d.csv','charts/ain10_7d.csv'],
+        '1m':     ['docs/outputs/ain10_1m.csv','docs/charts/ain10_1m.csv','charts/ain10_1m.csv'],
+        '1y':     ['docs/outputs/ain10_1y.csv','docs/charts/ain10_1y.csv','charts/ain10_1y.csv'],
+      }
+    },
+    scoin_plus: {
+      png: {
+        intraday: ['docs/charts/scoin_plus_intraday.png','charts/scoin_plus_intraday.png','docs/outputs/s_coin_plus_intraday.png','docs/outputs/scoin_plus_intraday.png'],
+        am:       ['docs/charts/scoin_plus_am.png','charts/scoin_plus_am.png'],
+        '7d':     ['docs/charts/scoin_plus_7d.png','charts/scoin_plus_7d.png'],
+        '1m':     ['docs/charts/scoin_plus_1m.png','charts/scoin_plus_1m.png'],
+        '1y':     ['docs/charts/scoin_plus_1y.png','charts/scoin_plus_1y.png'],
+      },
+      csv: {
+        intraday: ['docs/outputs/scoin_plus_intraday.csv','docs/charts/scoin_plus_intraday.csv','charts/scoin_plus_intraday.csv','docs/outputs/s_coin_plus_intraday.csv'],
+        am:       ['docs/outputs/scoin_plus_am.csv','docs/charts/scoin_plus_am.csv','charts/scoin_plus_am.csv'],
+        '7d':     ['docs/outputs/scoin_plus_7d.csv','docs/charts/scoin_plus_7d.csv','charts/scoin_plus_7d.csv'],
+        '1m':     ['docs/outputs/scoin_plus_1m.csv','docs/charts/scoin_plus_1m.csv','charts/scoin_plus_1m.csv'],
+        '1y':     ['docs/outputs/scoin_plus_1y.csv','docs/charts/scoin_plus_1y.csv','charts/scoin_plus_1y.csv'],
+      }
+    },
+  };
 
-    // last/open から逆算
-    const last = stats.last ?? stats.last_value ?? child?.last;
-    const open = stats.open ?? stats.session_open ?? child?.open;
-    if (isFinite(last) && isFinite(open) && Number(open) !== 0) {
-      return ((Number(last) / Number(open)) - 1) * 100;
+  /** fetch できる最初のパスを返す */
+  async function resolveFirstExists(paths){
+    for(const p of paths){
+      try { const r = await fetch(p, {method:'HEAD', cache:'no-store'}); if(r.ok) return p; } catch {}
     }
-
     return null;
   }
 
-  function fmtPercent(v) {
-    if (v === null || !isFinite(v)) return { text: 'N/A', cls: 'na' };
-    const r = Math.round(v * 100) / 100; // 2桁
-    if (r > 0) return { text: `+${r.toFixed(2)}%`, cls: 'up' };
-    if (r < 0) return { text: `${r.toFixed(2)}%`, cls: 'down' };
-    return { text: `${r.toFixed(2)}%`, cls: 'na' };
-  }
+  /** CSV を読み、最終の騰落率（％）を返す。列名のゆらぎに強い */
+  async function computeDeltaPercent(csvPath){
+    if(!csvPath) return null;
+    try{
+      const text = await fetch(csvPath, {cache:'no-store'}).then(r=>r.ok?r.text():null);
+      if(!text) return null;
+      const rows = text.trim().split(/\r?\n/).map(l=>l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+      const headers = rows[0].map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
+      const data = rows.slice(1).map(r => Object.fromEntries(r.map((v,i)=>[headers[i], parseFloat(String(v).replace(/"/g,''))])));
+      if(!data.length) return null;
+      const last = data.at(-1);
 
-  // R-BANK9 名揺れ対策（stats中の label 等）
-  function normalizeLabel(s) {
-    if (!s) return '';
-    return String(s).replace(/[_\s]/g,'-').toUpperCase();
-  }
+      // 優先1: すでに % がある列
+      const pctKeys = ['change_pct','change%','change','pct','value_type_in','value_type','chg_pct'];
+      for(const k of pctKeys){ if(Number.isFinite(last[k])) return last[k]; }
 
-  async function loadAllStats() {
-    const now = new Date();
-    const jst = new Date(now.getTime() + (9 - now.getTimezoneOffset()/60) * 3600 * 1000);
-    document.getElementById('sync-info').textContent =
-      `同期完了: ${jst.toLocaleString('ja-JP')} / データ: docs/charts/*`;
+      // 優先2: Close と PrevClose
+      const closeKeys = ['close','last','price','index','level'];
+      const prevKeys  = ['prev_close','previous_close','ref','base','anchor','day_anchor','y_close','pclose'];
+      let close = null, prev = null;
+      for(const k of closeKeys){ if(Number.isFinite(last[k])) { close = last[k]; break; } }
+      // 前日値は「全行の直近にある非NaN」を探す（行内に無ければ上の行に遡る）
+      for(let i=data.length-1; i>=0 && prev===null; i--){
+        const row = data[i];
+        for(const k of prevKeys){ if(Number.isFinite(row[k])) { prev = row[k]; break; } }
+      }
+      if(Number.isFinite(close) && Number.isFinite(prev) && prev!==0){
+        return (close/prev - 1) * 100;
+      }
 
-    await Promise.all(INDEXES.map(async (ix) => {
-      const el = document.getElementById(`delta-${ix.id}`);
-      try {
-        const stats = await fetchJSON(ix.stats);
-        // ラベルの揺れ吸収（R-BANK9）
-        const labelInStats = normalizeLabel(stats?.label || stats?.name || '');
-        const expected = normalizeLabel(ix.name);
-        if (labelInStats && labelInStats !== expected) {
-          // ラベルが違う＝他指数のファイルを指してる恐れ → ログだけ出す
-          console.warn(`[warn] stats label mismatch: expected=${expected}, got=${labelInStats}`, ix.stats);
+      // 優先3: 直近2点から近似（最終点と直前点）  ※最終手段
+      const last2 = data.at(-2);
+      if(last2){
+        const a = Object.values(last).find(Number.isFinite);
+        const b = Object.values(last2).find(Number.isFinite);
+        if(Number.isFinite(a) && Number.isFinite(b) && b!==0){
+          return (a/b - 1)*100;
         }
-
-        // どの％を見せるか：Intraday を基本、AM スナップ中なら AM を優先（画像レンジがAMならAM）
-        const activeRange = (document.getElementById(`tb-${ix.id}`)?.querySelector('.btn.active')?.dataset?.range) || 'intraday';
-        const pref = (activeRange === 'am') ? 'am' : 'intraday';
-        let pct = pickPercent(stats, pref);
-
-        // 取れなければ intraday→am の順でリトライ
-        if (pct === null) pct = pickPercent(stats, 'intraday');
-        if (pct === null) pct = pickPercent(stats, 'am');
-
-        const { text, cls } = fmtPercent(pct);
-        el.textContent = text;
-        el.className = `delta ${cls}`;
-      } catch (e) {
-        console.error(`[error] load stats for ${ix.id}:`, e);
-        el.textContent = 'N/A';
-        el.className = 'delta na';
       }
-    }));
+      return null;
+    }catch{ return null; }
   }
 
-  // 初回ロード & レンジ切替時も再算出
-  loadAllStats();
-  INDEXES.forEach(ix => {
-    const tb = document.getElementById(`tb-${ix.id}`);
-    tb.addEventListener('click', (ev) => {
-      if (ev.target && ev.target.matches('button.btn')) {
-        // 画像切替は setImage 内ですでに実施済み、ここで％も合わせて再評価
-        loadAllStats();
-      }
-    });
-  });
+  /** 騰落率の描画 */
+  function paintDelta(el, v){
+    const t = el;
+    t.classList.remove('--up','--down','--na');
+    if(v==null || !Number.isFinite(v)){
+      t.textContent = 'N/A';
+      t.classList.add('--na');
+      return;
+    }
+    const s = (v>=0?'+':'') + v.toFixed(2) + '%';
+    t.textContent = s;
+    t.classList.add(v>=0?'--up':'--down');
+  }
 
-  </script>
-</body>
-</html>
+  /** バリアント切替のレンダラ */
+  async function render(card, variant){
+    const key = card.dataset.key;
+    const img = card.querySelector('[data-img]');
+    const miss= card.querySelector('[data-noimg]');
+    const deltaEl = card.querySelector('[data-delta]');
+
+    // 画像解決
+    const pngPath = await resolveFirstExists((MAP[key]?.png?.[variant])||[]);
+    if(pngPath){
+      img.src = pngPath + '?v=' + Date.now();
+      img.hidden = false;  miss.hidden = true;
+    }else{
+      img.hidden = true;   miss.hidden = false;
+    }
+
+    // 騰落率解決（Intraday/AM は % 系 CSV を優先、長期はレベル→前日比）
+    const csvPath = await resolveFirstExists((MAP[key]?.csv?.[variant])||[]);
+    const pct = await computeDeltaPercent(csvPath);
+    paintDelta(deltaEl, pct);
+  }
+
+  /** すべてのカードにイベントを付与 */
+  document.querySelectorAll('.sx-card').forEach(card=>{
+    const buttons = card.querySelectorAll('.sx-tabs button');
+    buttons.forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        buttons.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        await render(card, btn.dataset.variant);
+      });
+    });
+    // 初期表示
+    render(card, card.querySelector('.sx-tabs button.active').dataset.variant);
+  });
+})();
+</script>
