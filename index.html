@@ -1,227 +1,68 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🌸桜Index - 公式サイト</title>
-<style>
-  :root{
-    --bg:#0d1016;--panel:#141924;--text:#e8eef9;--muted:#8ea0bf;
-    --ring:#1e2a3d;--chip:#1b2333;--accent:#6ad3ff;--up:#54f7a3;--down:#ff6f6f;
-  }
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-  a{text-decoration:none;color:inherit}
-  header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:24px}
-  .wrap{max-width:1200px;margin:auto;padding:24px}
-  .title{font-size:26px;font-weight:700;display:flex;align-items:center;gap:8px}
-  .meta{font-size:12px;color:var(--muted)}
-  .btns{display:flex;gap:8px}
-  .btn{background:var(--chip);border:1px solid var(--ring);border-radius:10px;padding:6px 12px;font-size:13px}
-  .grid{display:grid;gap:18px}
-  @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-  .card{background:var(--panel);border:1px solid var(--ring);border-radius:14px;overflow:hidden}
-  .card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
-  .id-left{display:flex;align-items:center;gap:10px}
-  .flag{font-size:16px}
-  .badge{font-size:12px;background:var(--chip);padding:3px 8px;border-radius:999px;border:1px solid var(--ring);color:var(--muted)}
-  .pct{font-weight:700}
-  .pct.up{color:var(--up)}.pct.down{color:var(--down)}.pct.na{color:var(--muted)}
-  .desc{color:var(--muted);padding:0 16px 8px;font-size:13px}
-  .chart{background:#0e131b;border-radius:12px;border:1px solid var(--ring);margin:0 12px 8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:240px}
-  .chart img{max-width:100%;max-height:100%;object-fit:contain;display:block}
-  .tabs{display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px 16px}
-  .tabs button{background:var(--chip);border:1px solid var(--ring);padding:6px 12px;border-radius:999px;color:var(--muted);cursor:pointer}
-  .tabs button.active{color:var(--text);box-shadow:0 0 0 2px var(--accent) inset}
-  footer{margin-top:40px;text-align:center;font-size:12px;color:var(--muted);line-height:1.8}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="title">🌸 桜Index - 公式サイト</div>
-      <div class="meta">同期完了: <span id="syncAt">--</span> / データ: docs/charts/*</div>
-    </div>
-    <div class="btns">
-      <a href="https://x.com" target="_blank" class="btn">公式X（Twitter）</a>
-      <a href="https://note.com" target="_blank" class="btn">公式note</a>
+---
+layout: default
+title: 桜Index - 公式サイト
+---
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <header class="mb-6">
+    <h1 class="text-2xl font-bold">🌸 桜Index - 公式サイト</h1>
+    <p class="text-sm text-slate-400">
+      同期完了: {{ site.time | date: "%Y/%m/%d %H:%M:%S" }} / データ: charts/*
+    </p>
+    <div class="flex gap-2 mt-2">
+      <a href="https://x.com/sakuraindex" class="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">公式X（Twitter）</a>
+      <a href="https://note.com/sakuraindex" class="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">公式note</a>
     </div>
   </header>
 
-  <section id="grid" class="grid"></section>
+  <div class="grid md:grid-cols-2 gap-6">
 
-  <footer>
-    データ: 各指数は等加重指数（仕様は各リポジトリ参照）<br>
-    画像は各指数リポジトリの自動生成スナップショットを同期しています。<br>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
+    {% include components/index-card.html
+      key="astra4"
+      title="Astra4"
+      badge="宇宙ベンチャー"
+      description="宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"
+      intraday_png="/charts/astra4_intraday.png"
+      am_png="/charts/am/astra4_intraday.png"
+      json_path="/charts/astra4/latest.json"
+    %}
+
+    {% include components/index-card.html
+      key="r_bank9"
+      title="R-BANK9"
+      badge="地方銀行"
+      description="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      intraday_png="/charts/r_bank9_intraday.png"
+      am_png="/charts/am/r_bank9_intraday.png"
+      json_path="/charts/r_bank9/latest.json"
+    %}
+
+    {% include components/index-card.html
+      key="ain10"
+      title="AIN-10"
+      badge="AI関連10"
+      description="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+      intraday_png="/charts/ain10_intraday.png"
+      am_png="/charts/am/ain10_intraday.png"
+      json_path="/charts/ain10/latest.json"
+    %}
+
+    {% include components/index-card.html
+      key="s_coin_plus"
+      title="S-COIN+"
+      badge="仮想資産関連"
+      description="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+      intraday_png="/charts/s_coin_plus_intraday.png"
+      am_png="/charts/am/s_coin_plus_intraday.png"
+      json_path="/charts/s_coin_plus/latest.json"
+    %}
+
+  </div>
+
+  <footer class="mt-8 text-center text-xs text-slate-400">
+    データ：各指数は等加重指数（仕様は各リポジトリ参照）／
+    画像は各指数リポジトリの自動生成スナップショットを同期しています。<br />
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br />
     © 2025 桜Index
   </footer>
 </div>
-
-<script>
-/* =====================
-   設定
-===================== */
-const INDEXES = [
-  { key:"astra4",      flag:"🇯🇵", name:"Astra4",   tag:"宇宙ベンチャー", desc:"宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"},
-  { key:"rbank9",      flag:"🇯🇵", name:"R-BANK9",  tag:"地方銀行",     desc:"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"},
-  { key:"ain10",       flag:"🇺🇸", name:"AIN-10",   tag:"AI関連10",     desc:"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"},
-  { key:"scoin_plus",  flag:"🇯🇵", name:"S-COIN+",  tag:"仮想資産関連", desc:"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"},
-];
-const VARS = ["intraday","am","7d","1m","1y"];
-const BASE = "docs/charts";                 // 画像ディレクトリ
-const META_DIR = `${BASE}/meta`;            // メタJSON（無くてもOK）
-const POST_SUFFIX = "_post_intraday.txt";   // 騰落率フォールバックの候補
-
-document.getElementById("syncAt").textContent =
-  new Date().toLocaleString("ja-JP",{hour12:false});
-
-/* =====================
-   UI 構築
-===================== */
-const grid = document.getElementById("grid");
-for (const idx of INDEXES) {
-  const el = document.createElement("article");
-  el.className = "card";
-  el.innerHTML = `
-    <div class="card-hd">
-      <div class="id-left">
-        <span class="flag">${idx.flag}</span>
-        <b>${idx.name}</b>
-        <span class="badge">${idx.tag}</span>
-      </div>
-      <div class="pct na" id="${idx.key}-pct">N/A</div>
-    </div>
-    <p class="desc">${idx.desc}</p>
-    <div class="chart"><img id="${idx.key}-img" alt="${idx.name} chart"></div>
-    <div class="tabs">
-      ${VARS.map(v => `<button data-v="${v}" class="${v==="intraday"?"active":""}">${tabName(v)}</button>`).join("")}
-    </div>`;
-  grid.appendChild(el);
-}
-
-/* =====================
-   データ読込 & 表示
-===================== */
-(async () => {
-  for (const idx of INDEXES) {
-    const meta = await fetchJSON(`${META_DIR}/${idx.key}.json`);  // なくてもOK
-    await updateCard(idx, meta, "intraday");
-
-    // タブ切り替え
-    const card = document.getElementById(`${idx.key}-img`).closest(".card");
-    card.querySelectorAll(".tabs button").forEach(btn => {
-      btn.onclick = async () => {
-        card.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
-        btn.classList.add("active");
-        const v = btn.dataset.v;
-        await updateCard(idx, meta, v);
-      };
-    });
-  }
-})();
-
-/* =====================
-   関数群
-===================== */
-function tabName(v){
-  return v==="intraday"?"Intraday":v==="am"?"前場(AM)":v==="7d"?"7日":v==="1m"?"1ヶ月":"1年";
-}
-
-async function fetchJSON(url){
-  try{
-    const r = await fetch(url,{cache:"no-store"});
-    if (!r.ok) throw 0;
-    return await r.json();
-  }catch{ return null; }
-}
-
-// 画像の多段フォールバック解決
-async function resolveSnapshotPath(key, variant, meta){
-  // 1) meta.snapshots があれば最優先
-  const m = meta?.snapshots?.[variant];
-  if (m) {
-    const url = `${BASE}/${m}`;
-    if (await exists(url)) return url;
-  }
-
-  // 2) よくあるファイル名の総当たり（大文字小文字・アンダー/ハイフン）
-  const candidates = [];
-  const bases = [
-    `${key}_${variant}`, `${key}-${variant}`,
-    `${key.toUpperCase()}_${variant.toUpperCase()}`, `${key.toUpperCase()}-${variant.toUpperCase()}`
-  ];
-  for (const b of bases) {
-    candidates.push(`${BASE}/${b}.png`, `${BASE}/${b}.PNG`, `${BASE}/${b}.svg`);
-  }
-
-  // 3) 旧来の1日レベル表記など（例: 1d / level）
-  if (variant==="1y"||variant==="1m"||variant==="7d") {
-    candidates.push(`${BASE}/${key}_${variant}_level.png`);
-  }
-  if (variant==="am") {
-    candidates.push(`${BASE}/${key}_intraday_am.png`, `${BASE}/${key}_am.png`);
-  }
-
-  for (const c of candidates) {
-    if (await exists(c)) return c;
-  }
-  return null;
-}
-
-// 騰落率の取得（meta → テキストの順）
-async function resolvePercent(key, meta){
-  // 1) meta 優先
-  if (meta?.percent?.intraday != null) return Number(meta.percent.intraday);
-
-  // 2) 既知の stats.json 形式（あれば）
-  if (meta?.headlinePercent != null) return Number(meta.headlinePercent);
-
-  // 3) フォールバック: *_post_intraday.txt から "+1.23%" 抜粋
-  const txtUrl = `${BASE}/${key}${POST_SUFFIX}`;
-  try{
-    const r = await fetch(txtUrl, {cache:"no-store"});
-    if (r.ok) {
-      const t = await r.text();
-      const m = t.match(/([+\-]?\d+(?:\.\d+)?)%/);
-      if (m) return Number(m[1]);
-    }
-  }catch{}
-
-  return null; // 取れない場合
-}
-
-// 1px ダミー
-const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-async function exists(url){
-  try{ const r=await fetch(url,{method:"HEAD",cache:"no-store"}); return r.ok; }
-  catch{ return false; }
-}
-
-async function updateCard(idx, meta, variant){
-  const pctEl = document.getElementById(`${idx.key}-pct`);
-  const imgEl = document.getElementById(`${idx.key}-img`);
-
-  // 画像
-  const path = await resolveSnapshotPath(idx.key, variant, meta);
-  imgEl.src = path ? `${path}?v=${Date.now()}` : BLANK;
-
-  // 騰落率（intradayだけ算出／他タブでも intraday の値をヘッダに維持）
-  const p = await resolvePercent(idx.key, meta);
-  if (p == null){
-    pctEl.textContent = "N/A";
-    pctEl.className = "pct na";
-  } else if (p > 0){
-    pctEl.textContent = `+${p.toFixed(2)}%`;
-    pctEl.className = "pct up";
-  } else if (p < 0){
-    pctEl.textContent = `${p.toFixed(2)}%`;
-    pctEl.className = "pct down";
-  } else {
-    pctEl.textContent = "0.00%";
-    pctEl.className = "pct";
-  }
-}
-</script>
-</body>
-</html>
