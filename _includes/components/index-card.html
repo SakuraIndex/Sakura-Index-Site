@@ -1,34 +1,233 @@
 {%- comment -%}
-共通インデックスカード（Jekyllは構造だけを出力、データはJSがfetch）
-引数:
-  id, title, badge, description, json_path, intraday_png, am_png
+  共通インデックスカード
+  入力: include.index（辞書）
+    - id            例: "ASTRA4"
+    - title         例: "Astra4"
+    - badge         例: "宇宙ベンチャー"
+    - desc          例: "……"
+    - json_path     例: "/charts/ASTRA4/stats.json"
+    - intraday_png  例: "/charts/ASTRA4/intraday.png"
+    - am_png        例: "/charts/ASTRA4/intraday_am.png"
 {%- endcomment -%}
-<div class="card"
-     data-id="{{ include.id | escape }}"
-     data-json="{{ include.json_path | escape }}"
-     data-intraday-png="{{ include.intraday_png | escape }}"
-     data-am-png="{{ include.am_png | escape }}">
+
+{%- assign idx = include.index -%}
+{%- assign id = idx.id -%}
+{%- assign title = idx.title -%}
+{%- assign badge = idx.badge -%}
+{%- assign desc = idx.desc -%}
+{%- assign json_path = idx.json_path -%}
+{%- assign intraday_png = idx.intraday_png -%}
+{%- assign am_png = idx.am_png -%}
+
+{%- comment -%}
+  旗アイコン（簡易マッピング）
+  日本: ASTRA4, R-BANK9, S-COIN+
+  米国: AIN-10
+{%- endcomment -%}
+{%- assign flag = "🇯🇵" -%}
+{%- if id == "AIN-10" -%}
+  {%- assign flag = "🇺🇸" -%}
+{%- endif -%}
+
+<section class="index-card" data-index-id="{{ id | escape }}">
   <div class="card-head">
-    <div>
-      <div style="font-weight:700;">
-        {{ include.title | escape }}
-        <span class="badge">{{ include.badge | escape }}</span>
-      </div>
-      <div style="font-size:12px;opacity:.85;">{{ include.description | escape }}</div>
+    <div class="card-title">
+      <span class="flag">{{ flag }}</span>
+      <strong>{{ title }}</strong>
+      <span class="badge">{{ badge }}</span>
     </div>
-    <div class="delta">N/A</div>
+    <div class="card-delta">
+      <span class="delta-value" data-delta="pending">N/A</span>
+    </div>
   </div>
 
-  <div class="imgwrap">
-    <img alt="{{ include.id | escape }} chart"
-         src="{{ include.intraday_png | escape }}?v={{ site.time | date: '%s' }}">
+  <p class="card-desc">{{ desc }}</p>
+
+  <div class="card-chart">
+    <img
+      class="chart-img"
+      src="{{ intraday_png | escape }}"
+      alt="{{ id }} chart"
+      loading="lazy"
+      onerror="this.onerror=null; this.src='{{ am_png | escape }}';"
+    />
   </div>
 
-  <div class="tabs">
-    <button class="active" data-kind="intraday">Intraday</button>
-    <button data-kind="am">前場(AM)</button>
-    <button disabled>7日</button>
-    <button disabled>1ヶ月</button>
-    <button disabled>1年</button>
+  <div class="card-actions">
+    <button type="button" class="ghost">Intraday</button>
+    <button type="button" class="ghost">前場(AM)</button>
+    <button type="button" class="ghost">7日</button>
+    <button type="button" class="ghost">1ヶ月</button>
+    <button type="button" class="ghost">1年</button>
   </div>
-</div>
+
+  {%- comment -%} データ取得に必要なパスを data 属性で埋め込む {%- endcomment -%}
+  <template class="stats-source" data-json="{{ json_path | escape }}"></template>
+</section>
+
+{%- comment -%}
+  --- 最小JS（重複ロード防止） ---
+  ・各カードの <template.stats-source> から JSON パスを取り出して fetch
+  ・表示値の決定ロジック:
+      1) JSON に value_type があればそれに従う
+         - "percent" なら delta_level をそのまま%表示
+         - "ratio"    なら pct_intraday を 100倍して%表示
+      2) 無ければヒューリスティック:
+         - scale === "percent" かつ delta_level が数値 -> delta_level を%表示
+         - pct_intraday が数値 -> 値が ±1.5 未満なら 100倍（比率と推定）、それ以外はそのまま%とみなす
+  ・正負に応じて class を付与（positive / negative / zero）
+{%- endcomment -%}
+<script>
+(function () {
+  if (window.__sakuraIndexCardLoaded) return;
+  window.__sakuraIndexCardLoaded = true;
+
+  function fmtPct(v) {
+    if (!isFinite(v)) return 'N/A';
+    const sign = v > 0 ? '+' : (v < 0 ? '' : '');
+    // 小数2桁固定
+    return sign + v.toFixed(2) + '%';
+  }
+
+  function decideDelta(stats) {
+    if (!stats || typeof stats !== 'object') return { text: 'N/A', className: '' };
+
+    // 1) 明示の value_type を優先
+    if (typeof stats.value_type === 'string') {
+      const vt = stats.value_type.toLowerCase();
+      if (vt === 'percent' && typeof stats.delta_level === 'number') {
+        return decorate(stats.delta_level);
+      }
+      if (vt === 'ratio' && typeof stats.pct_intraday === 'number') {
+        return decorate(stats.pct_intraday * 100);
+      }
+    }
+
+    // 2) 暫定ヒューリスティック
+    // AIN-10 など: scale == "percent" かつ delta_level がパーセント → そのまま
+    if (stats.scale === 'percent' && typeof stats.delta_level === 'number') {
+      return decorate(stats.delta_level);
+    }
+
+    // 多くの指数: pct_intraday があれば使う
+    if (typeof stats.pct_intraday === 'number') {
+      let v = stats.pct_intraday;
+      // 値が小さい(±1.5未満)→比率と推定して×100、大きい→既に％とみなす
+      if (Math.abs(v) < 1.5) v = v * 100;
+      return decorate(v);
+    }
+
+    return { text: 'N/A', className: '' };
+  }
+
+  function decorate(valuePct) {
+    const text = fmtPct(valuePct);
+    const className =
+      valuePct > 0 ? 'positive' :
+      valuePct < 0 ? 'negative' : 'zero';
+    return { text, className };
+  }
+
+  async function loadOneCard(card) {
+    const tpl = card.querySelector('template.stats-source');
+    if (!tpl) return;
+
+    const url = tpl.dataset.json;
+    const out = card.querySelector('[data-delta]');
+    if (!out) return;
+
+    try {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(res.status + ' ' + url);
+      const stats = await res.json();
+
+      const picked = decideDelta(stats);
+      out.textContent = picked.text;
+      out.classList.remove('positive', 'negative', 'zero');
+      if (picked.className) out.classList.add(picked.className);
+      out.dataset.delta = 'done';
+    } catch (e) {
+      out.textContent = 'N/A';
+      out.dataset.delta = 'error';
+      // console.warn('stats load failed:', url, e);
+    }
+  }
+
+  function boot() {
+    document.querySelectorAll('.index-card').forEach(loadOneCard);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
+
+<style>
+/* 軽量スタイル（必要なら調整） */
+.index-card {
+  display: grid;
+  gap: .6rem;
+  padding: 1rem;
+  border-radius: .9rem;
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
+}
+.index-card .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.index-card .card-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.05rem;
+}
+.index-card .flag { font-size: 1.15rem; }
+.index-card .badge {
+  font-size: .75rem;
+  padding: .12rem .5rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+.index-card .card-delta .delta-value {
+  font-weight: 700;
+}
+.index-card .card-delta .positive { color: #27d17f; }
+.index-card .card-delta .negative { color: #ff6b6b; }
+.index-card .card-delta .zero { color: #c7c7c7; }
+
+.index-card .card-desc {
+  margin: 0;
+  opacity: .85;
+  font-size: .92rem;
+}
+
+.index-card .card-chart {
+  background: rgba(255,255,255,0.02);
+  border-radius: .6rem;
+  overflow: hidden;
+}
+.index-card .chart-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.index-card .card-actions {
+  display: flex;
+  gap: .5rem;
+}
+.index-card .card-actions .ghost {
+  padding: .35rem .7rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+</style>
