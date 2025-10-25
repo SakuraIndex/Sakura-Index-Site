@@ -1,77 +1,39 @@
 {%- comment -%}
-  受け取るパラメータ:
-    id, title, badge, flag, desc
-    stats_json    … index.html 側で capture した JSON 中身（文字列）
-    intraday_png  … 画像URL（変数）
-    am_png        … 画像URL（変数）
+汎用インデックスカード（完全版・JSが stats_json をfetchして騰落率を更新）
+引数:
+  id, title, flag, badge, desc
+  stats_json   : /charts/*/stats.json のパス
+  intraday_png : /charts/*/intraday.png
+  am_png       : /charts/*/intraday_am.png  （今は未使用。将来の切替に備えて保持）
 {%- endcomment -%}
 
-{%- assign _raw = include.stats_json | strip_newlines -%}
-
-{%- comment -%} "pct_intraday" を文字列操作で抽出（JSON パース不可環境向け） {%- endcomment -%}
-{%- assign pct_value = nil -%}
-{%- if _raw contains '"pct_intraday"' -%}
-  {%- assign after = _raw | split:'"pct_intraday"' | last -%}
-  {%- assign after = after | split:':' | last -%}
-  {%- assign num   = after | split:',' | first | strip -%}
-  {%- assign pct_value = num | plus: 0 -%}
-{%- endif -%}
-
-{%- comment -%}
-  表示用の数値と色分け
-  ・abs が極端（> 100）→ N/A
-  ・値が無い → N/A
-{%- endcomment -%}
-{%- assign has_pct = false -%}
-{%- assign pct_text = 'N/A' -%}
-{%- assign pct_class = 'text-muted' -%}
-
-{%- if pct_value != nil -%}
-  {%- assign abs = pct_value | abs -%}
-  {%- if abs > 100 -%}
-    {%- assign has_pct = false -%}
-  {%- else -%}
-    {%- assign has_pct = true -%}
-    {%- assign pct_text = pct_value | times: 100.0 | round: 2 | append: '%' -%}
-    {%- if pct_value > 0 -%}
-      {%- assign pct_class = 'text-success' -%}
-      {%- assign pct_text = '+' | append: pct_text -%}
-    {%- elsif pct_value < 0 -%}
-      {%- assign pct_class = 'text-danger' -%}
-    {%- else -%}
-      {%- assign pct_class = 'text-muted' -%}
-      {%- assign pct_text = '0%' -%}
-    {%- endif -%}
-  {%- endif -%}
-{%- endif -%}
-
-{%- if has_pct == false -%}
-  {%- assign pct_text = 'N/A' -%}
-  {%- assign pct_class = 'text-muted' -%}
-{%- endif -%}
-
-{%- comment -%} 見た目（カード） {%- endcomment -%}
-<div class="Box" style="background:#0b1220;border:1px solid rgba(255,255,255,.08);border-radius:14px;margin:18px 0;padding:14px 14px 12px;">
-  <div style="display:flex;align-items:center;gap:.5rem;justify-content:space-between;">
-    <div style="display:flex;align-items:center;gap:.6rem;">
-      <span style="font-size:1.05rem;">{{ include.flag }}</span>
-      <strong style="font-size:1.05rem;">{{ include.title }}</strong>
-      <span class="Label Label--gray" style="opacity:.9;">{{ include.badge }}</span>
+<div class="idx-card" data-stats="{{ stats_json | relative_url }}">
+  <div class="idx-head">
+    <div class="idx-title">
+      <span>{{ flag }}</span>
+      <span>{{ title }}</span>
+      <span class="idx-badge">{{ badge }}</span>
     </div>
-    <strong class="{{ pct_class }}" style="font-size:1.05rem;">{{ pct_text }}</strong>
+    <div class="idx-pct na">N/A</div>
   </div>
 
-  <p style="opacity:.8;margin:.4rem 0 1rem;">{{ include.desc }}</p>
+  <p class="idx-desc">{{ desc }}</p>
 
-  <div class="Box" style="border-radius:10px;overflow:hidden;background:#0a0f1a;">
-    <img src="{{ include.intraday_png }}" alt="{{ include.id }} chart" loading="lazy" style="display:block;width:100%;height:auto;">
+  <div class="chart-wrap">
+    <img
+      class="chart-img"
+      alt="{{ id }} chart"
+      src="{{ intraday_png | relative_url }}"
+      loading="lazy"
+      decoding="async"
+    />
   </div>
 
-  <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap;">
-    <button class="btn btn-sm" disabled>Intraday</button>
-    <button class="btn btn-sm" disabled>前場(AM)</button>
-    <button class="btn btn-sm" disabled>7日</button>
-    <button class="btn btn-sm" disabled>1ヶ月</button>
-    <button class="btn btn-sm" disabled>1年</button>
+  <div class="idx-tabs">
+    <span class="idx-tab active">Intraday</span>
+    <span class="idx-tab">前場(AM)</span>
+    <span class="idx-tab">7日</span>
+    <span class="idx-tab">1ヶ月</span>
+    <span class="idx-tab">1年</span>
   </div>
 </div>
