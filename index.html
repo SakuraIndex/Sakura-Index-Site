@@ -3,108 +3,55 @@ title: 桜Index - 公式サイト
 layout: null
 ---
 
-{%- comment -%}
-このページは Project Pages（/ ルート配信）を前提に、/charts/* に置かれた
-各インデックスのスナップショット画像と stats.json を読み込んで表示します。
-同じリポジトリ内の _includes/components/index-card.html を利用します。
-{%- endcomment -%}
-
-{%- assign root = site.baseurl | default: '' -%}
-
-{%- comment -%}
-表示するインデックスの定義
-  id        : 一意キー（パスのディレクトリ名と合わせる）
-  title     : 見出し
-  badge     : ラベル
-  desc      : カード本文の説明
-  json_path : stats.json のパス（Jekyll から見える絶対パス）
-  intraday_png : intraday.png（終日/日中スナップ）
-  am_png       : intraday_am.png（前場スナップ。存在しなければ include 内で自動フォールバック）
-{%- endcomment -%}
-
 {%- assign indices =  [{
   "id":"ASTRA4",
   "title":"Astra4",
   "badge":"宇宙ベンチャー",
   "desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。",
-  "json_path":    root | append: "/charts/ASTRA4/stats.json",
-  "intraday_png": root | append: "/charts/ASTRA4/intraday.png",
-  "am_png":       root | append: "/charts/ASTRA4/intraday_am.png"
+  "json_path":"/charts/ASTRA4/stats.json",
+  "intraday_png":"/charts/ASTRA4/intraday.png",
+  "am_png":"/charts/ASTRA4/intraday_am.png"
 },{
   "id":"R-BANK9",
   "title":"R-BANK9",
   "badge":"地方銀行",
   "desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。",
-  "json_path":    root | append: "/charts/R-BANK9/stats.json",
-  "intraday_png": root | append: "/charts/R-BANK9/intraday.png",
-  "am_png":       root | append: "/charts/R-BANK9/intraday_am.png"
+  "json_path":"/charts/R-BANK9/stats.json",
+  "intraday_png":"/charts/R-BANK9/intraday.png",
+  "am_png":"/charts/R-BANK9/intraday_am.png"
 },{
   "id":"AIN-10",
   "title":"AIN-10",
   "badge":"AI関連10",
   "desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。",
-  "json_path":    root | append: "/charts/AIN-10/stats.json",
-  "intraday_png": root | append: "/charts/AIN-10/intraday.png",
-  "am_png":       root | append: "/charts/AIN-10/intraday_am.png"
+  "json_path":"/charts/AIN-10/stats.json",
+  "intraday_png":"/charts/AIN-10/intraday.png",
+  "am_png":"/charts/AIN-10/intraday_am.png"
 },{
   "id":"S-COIN+",
   "title":"S-COIN+",
   "badge":"仮想資産関連",
   "desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。",
-  "json_path":    root | append: "/charts/S-COIN+/stats.json",
-  "intraday_png": root | append: "/charts/S-COIN+/intraday.png",
-  "am_png":       root | append: "/charts/S-COIN+/intraday_am.png"
+  "json_path":"/charts/S-COIN+/stats.json",
+  "intraday_png":"/charts/S-COIN+/intraday.png",
+  "am_png":"/charts/S-COIN+/intraday_am.png"
 }] -%}
 
-<!—– ここからページヘッダー ——>
-<header class="page-header">
+<header>
   <h1>🌸 桜Index - 公式サイト</h1>
-  <p class="updated-at">
-    同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: /charts/*
-  </p>
-  <nav class="ext-links">
-    <a class="btn" href="https://twitter.com/sakuraindex" target="_blank" rel="noopener">公式X（Twitter）</a>
-    <a class="btn" href="https://note.com/" target="_blank" rel="noopener">公式note</a>
-  </nav>
+  <p>同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</p>
+  <a href="https://twitter.com/sakuraindex" target="_blank">公式X（Twitter）</a>
+  <a href="https://note.com/" target="_blank">公式note</a>
 </header>
 
 <main class="cards-grid">
-  {%- comment -%}
-  各カードを include で描画。前場スナップ（am_png）が無ければ、include 内で intraday_png に自動フォールバックします。
-  騰落率（右上の数字）は /charts/*/stats.json を読み込み、以下優先で表示します。
-    1) AIN-10: delta_level * scale（percent）
-    2) ASTRA4 / R-BANK9 / S-COIN+: pct_intraday（ratio -> % 変換、あるいは percent の場合はそのまま）
-  {%- endcomment -%}
   {%- for idx in indices -%}
-    {%- include components/index-card.html
-        id=idx.id
-        title=idx.title
-        badge=idx.badge
-        description=idx.desc
-        json_path=idx.json_path
-        intraday_png=idx.intraday_png
-        am_png=idx.am_png
-    -%}
+    {%- include components/index-card.html index=idx -%}
   {%- endfor -%}
 </main>
 
-<footer class="site-footer">
-  <p class="note">
-    データ：各指数は等加重指数（仕様は各リポジトリ参照） ／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-    © {{ "now" | date: "%Y" }} 桜Index
-  </p>
+<footer>
+  <p>データ：各指数は等加重指数。画像は各リポジトリのスナップショットと同期。<br>
+  ※本サイトは投資助言ではありません。判断は自己責任でお願いします。<br>
+  © {{ "now" | date: "%Y" }} 桜Index</p>
 </footer>
-
-<style>
-/* 最低限の体裁（必要に応じて元の CSS に合わせてください） */
-body{margin:0;background:#0f1720;color:#e5e7eb;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}
-.page-header{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:20px 24px}
-.page-header h1{margin:0;font-size:22px}
-.page-header .updated-at{opacity:.8;margin:0}
-.page-header .ext-links{display:flex;gap:8px}
-.page-header .ext-links .btn{padding:6px 10px;border-radius:8px;background:#1f2937;color:#e5e7eb;text-decoration:none}
-.cards-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:0 24px 32px}
-@media (max-width: 980px){.cards-grid{grid-template-columns:1fr}}
-.site-footer{padding:24px;text-align:center;opacity:.8}
-</style>
