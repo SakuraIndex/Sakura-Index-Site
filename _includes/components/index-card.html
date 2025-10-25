@@ -1,76 +1,64 @@
 {%- comment -%}
-  汎用インデックスカード（stats.json 対応）
+  汎用インデックスカード（stats.json の文字列を渡す）
   受け取りパラメータ:
-    - id              : 例 "ASTRA4"
-    - title           : 表示名
-    - badge           : 小バッジ
-    - desc            : 説明文
-    - stats_json      : capture で取り込んだ stats.json の文字列
-    - intraday_png    : /charts/<id>/intraday.png
-    - am_png          : /charts/<id>/intraday_am.png
-    - d7_png          : 任意（7日チャート）
-    - m1_png          : 任意（1ヶ月チャート）
-    - y1_png          : 任意（1年チャート）
-    - flag            : 例 "🇯🇵"
+    - id, title, badge, desc, flag
+    - stats_json  : capture した charts/<id>/stats.json の文字列
+    - intraday_png: /charts/<id>/intraday.png
+    - am_png      : /charts/<id>/intraday_am.png
+    - d7_png/m1_png/y1_png : 任意
+    - scale_hint  : "ratio" | "percent"（任意・強制指定用）
 {%- endcomment -%}
 
 {%- assign _raw = include.stats_json | strip_newlines -%}
 
-{%- comment -%}
-  1) 値の抽出
-     - pct_intraday が最優先
-     - 無ければ delta_level を使用
-     - scale が無い/不明な場合に備えて **自動推定** を入れる
-{%- endcomment -%}
-
 {%- assign pct_num = nil -%}
 {%- assign scale = nil -%}
-{%- assign basis = nil -%}
 
-{%- if _raw != "" and _raw != nil -%}
-  {%- comment -%} 値候補 {%- endcomment -%}
+{%- if _raw and _raw != "" -%}
+  {%- comment -%} 値の抽出（pct_intraday → delta_level の順） {%- endcomment -%}
   {%- assign _pct_try = _raw | split:'"pct_intraday":' | last | split:',' | first | replace:'}','' | strip -%}
-  {%- assign _pct_is_num = _pct_try | plus: 0 -%}
+  {%- assign _pct_num = _pct_try | plus: 0 -%}
 
-  {%- assign _delta_try = _raw | split:'"delta_level":' | last | split:',' | first | replace:'}','' | strip -%}
-  {%- assign _delta_is_num = _delta_try | plus: 0 -%}
+  {%- assign _delta_try = _raw | split:'"delta_level":'    | last | split:',' | first | replace:'}','' | strip -%}
+  {%- assign _delta_num = _delta_try | plus: 0 -%}
 
-  {%- comment -%} scale / basis {%- endcomment -%}
-  {%- assign _scale_raw = _raw | split:'"scale":' | last | split:',' | first | replace:'"','' | replace:'}','' | strip -%}
-  {%- if _scale_raw == _raw or _scale_raw == "" -%}
-    {%- assign scale = nil -%}
-  {%- else -%}
-    {%- assign scale = _scale_raw -%}
-  {%- endif -%}
-
-  {%- assign basis = _raw | split:'"basis":' | last | split:',' | first | replace:'"','' | replace:'}','' | strip -%}
-
-  {%- comment -%} どちらの値を使うか {%- endcomment -%}
   {%- if _pct_try != _raw and _pct_try != "" -%}
-    {%- assign raw_value = _pct_is_num -%}
+    {%- assign raw_value = _pct_num -%}
   {%- elsif _delta_try != _raw and _delta_try != "" -%}
-    {%- assign raw_value = _delta_is_num -%}
+    {%- assign raw_value = _delta_num -%}
   {%- else -%}
     {%- assign raw_value = nil -%}
   {%- endif -%}
 
+  {%- comment -%} scale の取得 {%- endcomment -%}
+  {%- assign _scale_raw = _raw | split:'"scale":' | last | split:',' | first | replace:'"','' | replace:'}','' | strip -%}
+  {%- if _scale_raw != _raw and _scale_raw != "" -%}
+    {%- assign scale = _scale_raw -%}
+  {%- endif -%}
+
   {%- comment -%}
-    2) パーセント化
-       - scale == "ratio"      → 100 倍
-       - scale == "percent"    → そのまま
-       - scale が無い/不明     → |値| < 0.5 を ratio とみなし 100 倍、そうでなければ percent
+    スケール確定:
+      - include.scale_hint が最優先
+      - 次に stats.json の "scale"
+      - それでも無い場合は自動推定（|value| < 0.5 → ratio とみなす）
   {%- endcomment -%}
   {%- if raw_value != nil -%}
-    {%- assign absval = raw_value | abs -%}
-    {%- if scale == 'ratio' or (scale == nil and absval < 0.5) -%}
+    {%- assign chosen = include.scale_hint | default: scale -%}
+    {%- if chosen == 'ratio' -%}
       {%- assign pct_num = raw_value | times: 100 -%}
-    {%- else -%}
+    {%- elsif chosen == 'percent' -%}
       {%- assign pct_num = raw_value -%}
+    {%- else -%}
+      {%- assign absval = raw_value | abs -%}
+      {%- if absval < 0.5 -%}
+        {%- assign pct_num = raw_value | times: 100 -%}
+      {%- else -%}
+        {%- assign pct_num = raw_value -%}
+      {%- endif -%}
     {%- endif -%}
   {%- endif -%}
 {%- endif -%}
 
-{%- comment -%} 表示用の成形 {%- endcomment -%}
 {%- if pct_num == nil -%}
   {%- assign pct_text = 'N/A' -%}
   {%- assign pct_class = 'pct-na' -%}
@@ -103,7 +91,7 @@
   {% endif %}
 
   <div class="chart-wrap">
-    <img class="chart" src="{{ include.intraday_png }}" alt="{{ include.id }} chart">
+    <img class="chart" src="{{ site.baseurl }}{{ include.intraday_png }}" alt="{{ include.id }} chart">
   </div>
 
   <div class="btns">
