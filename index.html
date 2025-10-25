@@ -23,6 +23,7 @@
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
     .card{background:var(--panel);border:1px solid #1f2937;border-radius:14px;padding:14px}
     .head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .flag{font-size:16px;line-height:1}
     .title{font-weight:700}
     .badge{background:#1f2937;border:1px solid #334155;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:11px}
     .delta{margin-left:auto;font-weight:700}
@@ -60,17 +61,17 @@
   </div>
 
   <script>
-    // ====== インデックス定義 ======
+    // ====== 各指数の定義 ======
     const INDEXES = [
-      { id: 'ASTRA4', title: 'Astra4',   badge: '宇宙ベンチャー', desc: '宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-      { id: 'R-BANK9', title: 'R-BANK9', badge: '地方銀行',       desc: '地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-      { id: 'AIN-10',  title: 'AIN-10',  badge: 'AI関連10',       desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-      { id: 'S-COIN+', title: 'S-COIN+', badge: '仮想資産関連',   desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+      { id: 'ASTRA4', title: 'Astra4', flag: '🇯🇵', badge: '宇宙ベンチャー', desc: '宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+      { id: 'R-BANK9', title: 'R-BANK9', flag: '🇯🇵', badge: '地方銀行', desc: '地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+      { id: 'AIN-10', title: 'AIN-10', flag: '🇺🇸', badge: 'AI関連10', desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
+      { id: 'S-COIN+', title: 'S-COIN+', flag: '🌐', badge: '仮想資産関連', desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
     ];
 
-    // ====== ルート自動検出（charts/ or docs/charts/） ======
-    const baseDir = window.location.pathname.replace(/\/[^/]*$/, ''); // index.html の親
-    let CHARTS_ROOT = null; // 例) /<repo>/charts or /<repo>/docs/charts
+    // ====== ルート検出 ======
+    const baseDir = window.location.pathname.replace(/\/[^/]*$/, '');
+    let CHARTS_ROOT = null;
 
     async function pathExists(url) {
       try { const r = await fetch(url, { method: 'HEAD', cache: 'no-store' }); return r.ok; }
@@ -78,33 +79,31 @@
     }
 
     async function decideChartsRoot() {
-      // まず charts/ を試し、ダメなら docs/charts/
       const cand1 = `${baseDir}/charts/${INDEXES[0].id}/stats.json`;
       if (await pathExists(cand1)) { CHARTS_ROOT = `${baseDir}/charts`; return; }
       const cand2 = `${baseDir}/docs/charts/${INDEXES[0].id}/stats.json`;
       if (await pathExists(cand2)) { CHARTS_ROOT = `${baseDir}/docs/charts`; return; }
-      // 最後の保険（存在しなくても進む）
       CHARTS_ROOT = `${baseDir}/charts`;
     }
 
-    // ====== URL ヘルパ ======
     const jsonPath      = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/stats.json`;
     const intradayPath  = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday.png`;
     const intradayAmPath= (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday_am.png`;
 
-    // ====== 騰落率の抽出（複数フォーマット対応） ======
+    // ====== 騰落率抽出 ======
     function pickDeltaPct(stats) {
-      // AIN-10 など: delta_level + (scale|value_type)=percent
-      if (stats && typeof stats.delta_level === 'number' &&
-          (stats.scale === 'percent' || stats.value_type === 'percent')) {
-        return stats.delta_level * 100;
+      if (!stats) return null;
+
+      // 値がすでに percent 表示の場合（例: 1.23 = 1.23%）
+      if (stats.scale === 'percent' || stats.value_type === 'percent') {
+        if (typeof stats.delta_level === 'number') return stats.delta_level;
+        if (typeof stats.pct_intraday === 'number') return stats.pct_intraday;
       }
-      // ASTRA4/R-BANK9/S-COIN+ など: pct_intraday
-      if (stats && typeof stats.pct_intraday === 'number') {
-        return stats.pct_intraday * 100;
-      }
-      // 互換: pct_id（異常値は弾く）
-      if (stats && typeof stats.pct_id === 'number') {
+
+      // 値が ratio（例: 0.0123 = 1.23%）の場合
+      if (typeof stats.delta_level === 'number') return stats.delta_level * 100;
+      if (typeof stats.pct_intraday === 'number') return stats.pct_intraday * 100;
+      if (typeof stats.pct_id === 'number') {
         const v = stats.pct_id * 100;
         if (Math.abs(v) <= 30) return v;
       }
@@ -112,7 +111,7 @@
     }
     const fmt = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 
-    // ====== 画像フォールバック解決 ======
+    // ====== 画像解決 ======
     async function resolveImage(id) {
       const a = intradayPath(id);
       if (await pathExists(a)) return a;
@@ -122,11 +121,12 @@
     }
 
     // ====== カード描画 ======
-    function renderCard({ id, title, badge, desc }) {
+    function renderCard({ id, title, flag, badge, desc }) {
       const el = document.createElement('section');
       el.className = 'card';
       el.innerHTML = `
         <div class="head">
+          <span class="flag">${flag}</span>
           <div class="title">${title}</div>
           <span class="badge">${badge}</span>
           <div class="delta na" id="delta-${id}">N/A</div>
@@ -144,59 +144,41 @@
       return el;
     }
 
-    // ====== 起動 ======
     async function boot() {
-      // 年号
       document.getElementById('y').textContent = new Date().getFullYear();
-
-      // ルート決定
       await decideChartsRoot();
 
-      // ヘッダの表示（見やすいよう、どちらを使ったかを表示）
-      const n = new Date(); const pad=(x)=>String(x).padStart(2,'0');
+      const n = new Date();
+      const pad = (x)=>String(x).padStart(2,'0');
       const stamp = `${n.getFullYear()}/${pad(n.getMonth()+1)}/${pad(n.getDate())} ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
       const pathLabel = CHARTS_ROOT.includes('/docs/') ? 'docs/charts/*' : 'charts/*';
       document.getElementById('synced-at').textContent = `同期完了：${stamp} ／ データ: ${pathLabel}`;
 
-      // カード配置
       const grid = document.getElementById('cards');
-      INDEXES.forEach(cfg => {
-        const col = document.createElement('div');
-        col.className = 'col';
-        col.appendChild(renderCard(cfg));
-        grid.appendChild(col);
-      });
+      INDEXES.forEach(cfg => grid.appendChild(renderCard(cfg)));
 
-      // 各カードにデータ投入
       for (const idx of INDEXES) {
         const $img   = document.getElementById(`img-${idx.id}`);
         const $delta = document.getElementById(`delta-${idx.id}`);
 
-        // 画像
-        resolveImage(idx.id).then(src => {
-          if (src) $img.src = src; else $img.style.display = 'none';
-        });
+        resolveImage(idx.id).then(src => { if (src) $img.src = src; else $img.style.display='none'; });
 
-        // JSON → 騰落率
         try {
           const res = await fetch(jsonPath(idx.id), { cache: 'no-store' });
           if (!res.ok) throw new Error('json not found');
           const stats = await res.json();
           const v = pickDeltaPct(stats);
           if (v === null || Number.isNaN(v)) {
-            $delta.textContent = 'N/A';
-            $delta.className = 'delta na';
+            $delta.textContent = 'N/A'; $delta.className='delta na';
           } else {
             $delta.textContent = fmt(v);
-            $delta.className = 'delta ' + (v > 0 ? 'pos' : (v < 0 ? 'neg' : 'na'));
+            $delta.className = 'delta ' + (v>0?'pos':(v<0?'neg':'na'));
           }
         } catch {
-          $delta.textContent = 'N/A';
-          $delta.className = 'delta na';
+          $delta.textContent = 'N/A'; $delta.className='delta na';
         }
       }
     }
-
     boot();
   </script>
 </body>
