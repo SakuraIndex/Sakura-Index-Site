@@ -1,140 +1,120 @@
 {%- comment -%}
-共通カード部品（Liquidのみで動作・GitHub Pages互換）
-受け取るパラメータ：
-- id           : 例 "ASTRA4"
-- flag         : 絵文字国旗など
-- title        : 表示名
-- badge        : 小バッジ（例：宇宙ベンチャー / 地方銀行 / AI関連10 / 仮想資産関連）
-- desc         : 説明文
-- stats_json   : index.html 側で capture して渡す charts/<ID>/stats.json の文字列
-- intraday_png : intraday スナップショットの相対パス
-- am_png       : AM（前場）スナップショットの相対パス（任意）
-- d7_png / m1_png / y1_png : 将来拡張用のスナップショット（任意）
+  共通カード
+  受け取り:
+    id, flag, title, badge, desc
+    stats_json (文字列)
+    intraday_png, am_png (相対パス)
+  期待 stats_json のキー（存在すれば使う）:
+    - pct_intraday: 比率(=0.0123)または百分率(=1.23 も可)
+    - delta_level: 補助 (scale: "percent" の場合あり)
+    - scale: "percent" | 省略
+  表示ルール:
+    1) 基本は pct_intraday を採用
+    2) なければ delta_level を採用
+    3) 数値が 1 未満 → 百分率化（×100）
+       数値が 1 以上 → そのまま（既に % と判断）
+    4) 異常な値(絶対値 > 200)は N/A（安全弁）
 {%- endcomment -%}
+
+<style>
+  .card{background:#0e1522;border:1px solid #1f2a40;border-radius:18px;padding:14px 16px}
+  .card + .card{margin-top:0}
+  .card__head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .left{display:flex;align-items:center;gap:8px}
+  .flag{font-size:16px}
+  .title{font-weight:700}
+  .chip{font-size:11px;background:#0f1726;border:1px solid #1f2a40;color:#9fb5e4;border-radius:999px;padding:.2rem .5rem}
+  .right{font-weight:800}
+  .pct{color:#36d399}
+  .pct.neg{color:#ff6b6b}
+  .desc{color:#93a4c8;font-size:13px;margin-top:2px;margin-bottom:10px}
+  .imgwrap{background:#0b1119;border:1px solid #1f2a40;border-radius:12px;padding:8px}
+  .imgwrap img{display:block;width:100%;height:auto;border-radius:6px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .tab{font-size:12px;color:#cdddff;background:#0f1726;border:1px solid #1f2a40;padding:.35rem .6rem;border-radius:999px}
+  .tab.active{outline:2px solid #233252}
+</style>
+
+{%- assign raw = include.stats_json | strip_newlines -%}
+
+{%- comment -%} JSON 文字列から値を緩やかに抽出 {%- endcomment -%}
+{%- assign pct_val = "" -%}
+{%- assign delta_val = "" -%}
+{%- assign scale_val = "" -%}
+
+{%- if raw contains '"pct_intraday"' -%}
+  {%- assign tmp = raw | split:'"pct_intraday"' | last -%}
+  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
+  {%- assign pct_val = tmp | replace:'"','' | replace:'%','' | strip -%}
+{%- endif -%}
+
+{%- if raw contains '"delta_level"' -%}
+  {%- assign tmp = raw | split:'"delta_level"' | last -%}
+  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
+  {%- assign delta_val = tmp | replace:'"','' | replace:'%','' | strip -%}
+{%- endif -%}
+
+{%- if raw contains '"scale"' -%}
+  {%- assign tmp = raw | split:'"scale"' | last -%}
+  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
+  {%- assign scale_val = tmp | replace:'"','' | strip -%}
+{%- endif -%}
+
+{%- comment -%} 数値化 + 百分率/比率の自動判定 {%- endcomment -%}
+{%- assign show_val = pct_val -%}
+{%- if show_val == "" -%}{%- assign show_val = delta_val -%}{%- endif -%}
+
+{%- assign n = 0.0 -%}
+{%- if show_val != "" -%}
+  {%- assign n = show_val | plus: 0 -%}
+  {%- if scale_val == "percent" -%}
+    {%- assign n = n -%} {# すでに%想定 #}
+  {%- else -%}
+    {%- if n < 1 and n > -1 -%}{%- assign n = n | times: 100 -%}{%- endif -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- assign display = "N/A" -%}
+{%- if show_val != "" and n < 200 and n > -200 -%}
+  {%- assign s = n | round: 2 -%}
+  {%- if s > 0 -%}{%- assign display = "+" | append: s | append: "%" -%}
+  {%- elsif s < 0 -%}{%- assign display = s | append: "%" -%}
+  {%- else -%}{%- assign display = "+0.00%" -%}{%- endif -%}
+{%- endif -%}
 
 <div class="card">
   <div class="card__head">
-    <div class="card__title">
-      <span class="card__flag">{{ include.flag }}</span>
-      <span class="card__name">{{ include.title }}</span>
-      {% if include.badge %}
-      <span class="card__badge">{{ include.badge }}</span>
-      {% endif %}
+    <div class="left">
+      <span class="flag">{{ include.flag }}</span>
+      <span class="title">{{ include.title }}</span>
+      <span class="chip">{{ include.badge }}</span>
     </div>
-
-    {%- comment -%} --- 騰落率の抽出ロジック --- {%- endcomment -%}
-    {%- assign pct_num = 0 -%}
-    {%- assign delta_num = 0 -%}
-    {%- assign scale = '' -%}
-
-    {%- if include.stats_json and include.stats_json != '' -%}
-      {%- if include.stats_json contains '"pct_intraday":' -%}
-        {%- assign _tmp = include.stats_json | split:'"pct_intraday":' | last -%}
-        {%- assign _pct_raw = _tmp | split:',' | first | strip -%}
-        {%- assign pct_num = _pct_raw | plus: 0 -%}
+    <div class="right">
+      {%- if display == "N/A" -%}
+        <span class="pct">N/A</span>
+      {%- else -%}
+        {%- assign sign = n | plus: 0 -%}
+        <span class="pct{% if sign < 0 %} neg{% endif %}">{{ display }}</span>
       {%- endif -%}
-
-      {%- if include.stats_json contains '"delta_level":' -%}
-        {%- assign _tmpd = include.stats_json | split:'"delta_level":' | last -%}
-        {%- assign _delta_raw = _tmpd | split:',' | first | strip -%}
-        {%- assign delta_num = _delta_raw | plus: 0 -%}
-      {%- endif -%}
-
-      {%- if include.stats_json contains '"scale":' -%}
-        {%- assign _tmps = include.stats_json | split:'"scale":' | last -%}
-        {%- assign _scale_raw = _tmps | split:',' | first | replace:'"','' | strip -%}
-        {%- assign scale = _scale_raw -%}
-      {%- endif -%}
-    {%- endif -%}
-
-    {%- comment -%}
-      AIN-10 : delta_level + scale(percent) を優先
-      ASTRA4/R-BANK9/S-COIN+ : pct_intraday（比率/百分率）を優先
-    {%- endcomment -%}
-    {%- assign show_val = pct_num -%}
-    {%- if include.id == 'AIN-10' -%}
-      {%- assign show_val = delta_num -%}
-    {%- endif -%}
-
-    {%- if scale == 'ratio' -%}
-      {%- assign show_val = show_val | times: 100 -%}
-    {%- endif -%}
-
-    {%- assign abs_val = show_val | abs -%}
-    {%- assign sign = '+' -%}
-    {%- if show_val < 0 -%}{%- assign sign = '-' -%}{%- endif -%}
-
-    <div class="card__change {{ sign }}">
-      {{ sign }}{{ abs_val | round: 2 }}%
     </div>
   </div>
 
-  <div class="card__desc">
-    {{ include.desc }}
+  <div class="desc">{{ include.desc }}</div>
+
+  <div class="imgwrap">
+    <img
+      src="{{ include.intraday_png | relative_url }}"
+      alt="{{ include.id }} chart"
+      loading="lazy"
+      decoding="async"
+      onerror="this.onerror=null;this.src='{{ include.am_png | relative_url }}';">
   </div>
 
-  <div class="chartwrap">
-    <img class="snapshot" alt="{{ include.id }} chart"
-         src="{{ include.intraday_png }}">
-  </div>
-
-  <div class="card__tabs">
-    <button class="tab is-active">Intraday</button>
-    <button class="tab">前場(AM)</button>
-    <button class="tab">7日</button>
-    <button class="tab">1ヶ月</button>
-    <button class="tab">1年</button>
+  <div class="tabs" aria-hidden="true">
+    <span class="tab active">Intraday</span>
+    <span class="tab">前場(AM)</span>
+    <span class="tab">7日</span>
+    <span class="tab">1ヶ月</span>
+    <span class="tab">1年</span>
   </div>
 </div>
-
-<style>
-  .card{
-    background:#121720;
-    border:1px solid #1e2532;
-    border-radius:16px;
-    padding:16px 16px 12px;
-    box-shadow:0 0 0 1px rgba(255,255,255,0.02) inset;
-  }
-  .card + .card{ margin-top:16px; }
-  .card__head{
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .card__title{ display:flex; align-items:center; gap:.5rem; }
-  .card__flag{ font-size:18px; }
-  .card__name{
-    font-weight:700; font-size:18px; letter-spacing:.2px;
-  }
-  .card__badge{
-    font-size:12px; padding:.2rem .5rem;
-    background:#233045; color:#a9c2ff; border-radius:999px;
-  }
-  .card__change{
-    font-weight:800; font-size:16px;
-  }
-  .card__change.+{ color:#32e6a1; }
-  .card__change.-{ color:#f26d7e; }
-  .card__desc{
-    color:#b8c2d9; font-size:13px; margin:.5rem 0 1rem;
-  }
-  .chartwrap{
-    width:100%;
-    background:#0e131b;
-    border:1px solid #1e2532;
-    border-radius:12px;
-    padding:8px;
-  }
-  .snapshot{
-    display:block;
-    width:100%;
-    height:auto;
-    max-height:280px;     /* ここで巨大画像を抑止 */
-    object-fit:contain;   /* 枠内に収める */
-  }
-  .card__tabs{ display:flex; gap:.5rem; margin-top:.8rem; }
-  .tab{
-    font-size:12px; color:#c6d1ee;
-    background:#0f1520; border:1px solid #25314a;
-    padding:.35rem .7rem; border-radius:999px;
-  }
-  .tab.is-active{ color:#10151f; background:#c6d1ee; }
-</style>
