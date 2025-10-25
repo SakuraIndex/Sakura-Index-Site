@@ -58,25 +58,69 @@ layout: null
 </main>
 
 <script>
-/* ========= 超堅牢パス解決 & デバッグログ =========
-   1) 相対: charts/, docs/charts/
-   2) baseurl付: {{site.baseurl}}/charts, {{site.baseurl}}/docs/charts
-   3) encodeURIComponent(id) と 生 id の両方を試行
-*/
+/* ========= 強化ポイント =========
+ * 1) 同一オリジン（このサイト内）の /charts /docs/charts を探索
+ * 2) さらに、指数ごとに別リポ/別Pagesの「外部オリジン」を設定できるように
+ * 3) IDの表記ゆれ（S-COIN+ など）に対して、フォルダ名の候補を自動生成
+ * 4) Console に詳細ログ（OK/404）を出力
+ */
+
+/*** ▼▼ ここに “別リポ/別ドメイン（外部オリジン）” を必要に応じて設定してください ▼▼
+ *  例:
+ *   'ASTRA4' : 'https://sakuraiindex.github.io/ASTRA4',
+ *   'R-BANK9': 'https://sakuraiindex.github.io/R-BANK9',
+ *   'AIN-10' : 'https://sakuraiindex.github.io/AIN-10',
+ *   'S-COIN+': 'https://sakuraiindex.github.io/S-COIN-PLUS'
+ * 空のままでもOK（同一オリジンのみ探索）
+ */
+const EXTERNAL_ORIGINS = {
+  // 'ASTRA4' : 'https://<your-org>.github.io/<Astra4-repo>',
+  // 'R-BANK9': 'https://<your-org>.github.io/<R-BANK9-repo>',
+  // 'AIN-10' : 'https://<your-org>.github.io/<AIN-10-repo>',
+  // 'S-COIN+': 'https://<your-org>.github.io/<S-COIN-PLUS-repo>',
+};
+/*** ▲▲ ここまで ▲▲ */
+
 (function(){
-  const base = "{{ site.baseurl | default: '' }}";      // 例: "/Sakura-Index-Site" or ""
+  const base = "{{ site.baseurl | default: '' }}";
   const withBase = p => (base ? base + (p.startsWith('/')? p : '/'+p) : (p.startsWith('/')? p : '/'+p));
   const uniq = arr => [...new Set(arr)];
 
-  function buildCandidates(id, files){
-    const enc = encodeURIComponent(id);
+  // ID からフォルダ候補（IDの表記ゆれ）を作る
+  function folderCandidates(id){
+    const raw = id;
+    const enc = encodeURIComponent(id);     // 例: 'S-COIN+' -> 'S-COIN%2B'
+    const minus = id.replace(/\+/g,'-');    // 例: 'S-COIN-'
+    const plusW = id.replace(/\+/g,'PLUS'); // 例: 'S-COINPLUS'
+    const under = id.replace(/\+/g,'_');    // 例: 'S-COIN_'
+    return uniq([raw, enc, minus, plusW, under]);
+  }
+
+  // 画像/JSON ファイル名
+  const FILES_IMG = ['intraday_am.png','intraday.png'];
+  const FILES_JSON = ['stats.json'];
+
+  function buildCandidatesFor(id, files, origins){
+    const folders = folderCandidates(id);
     const list = [];
+
+    // 1) 同一オリジン（このサイト内ルート & baseurl）
     for(const f of files){
-      // 相対
-      list.push(`charts/${enc}/${f}`, `docs/charts/${enc}/${f}`, `charts/${id}/${f}`, `docs/charts/${id}/${f}`);
-      // base付き
-      list.push(withBase(`charts/${enc}/${f}`), withBase(`docs/charts/${enc}/${f}`));
-      list.push(withBase(`charts/${id}/${f}`),  withBase(`docs/charts/${id}/${f}`));
+      for(const fd of folders){
+        list.push(`charts/${fd}/${f}`, `docs/charts/${fd}/${f}`);
+        list.push(withBase(`charts/${fd}/${f}`), withBase(`docs/charts/${fd}/${f}`));
+      }
+    }
+
+    // 2) 外部オリジン（必要に応じて設定）
+    const ext = origins[id];
+    if(ext){
+      for(const f of files){
+        for(const fd of folders){
+          list.push(`${ext.replace(/\/$/,'')}/charts/${fd}/${f}`);
+          list.push(`${ext.replace(/\/$/,'')}/docs/charts/${fd}/${f}`);
+        }
+      }
     }
     return uniq(list);
   }
@@ -84,7 +128,7 @@ layout: null
   function tryLoadImage(card, id){
     const img = card.querySelector('.chart-img');
     const fb  = card.querySelector('.img-fallback');
-    const paths = buildCandidates(id, ['intraday_am.png','intraday.png']);
+    const paths = buildCandidatesFor(id, FILES_IMG, EXTERNAL_ORIGINS);
     let i = 0;
     function next(){
       if(i >= paths.length){ img.style.display='none'; fb.style.display='block'; return; }
@@ -92,7 +136,8 @@ layout: null
       const probe = new Image();
       probe.onload = ()=>{ img.src = url; img.style.display='block'; fb.style.display='none'; console.log(`[chart OK] ${id} -> ${url}`); };
       probe.onerror= ()=>{ console.log(`[chart 404] ${id} × ${url}`); next(); };
-      probe.src = url + `?v=${Date.now()}`; // キャッシュ回避
+      // キャッシュバスター
+      probe.src = url + (url.includes('?') ? `&v=${Date.now()}` : `?v=${Date.now()}`);
     }
     console.log(`[chart try] ${id}`, paths);
     next();
@@ -100,21 +145,23 @@ layout: null
 
   function tryLoadStats(card, id){
     const pct = card.querySelector('.idx-pct');
-    const paths = buildCandidates(id, ['stats.json']);
+    const paths = buildCandidatesFor(id, FILES_JSON, EXTERNAL_ORIGINS);
     const keys  = ['pct_intraday','pct','intraday_pct','am_pct','delta','delta_level','change'];
 
     function asPct(v){
       if(v===null || v===undefined || v==='') return null;
       let x = typeof v==='string' ? parseFloat(v) : v;
       if(!isFinite(x)) return null;
-      if(Math.abs(x) > 1.0) x = x/100.0; // 123 → 1.23%
+      if(Math.abs(x) > 1.0) x = x/100.0; // 123 -> 1.23%
       const p = x*100.0;
-      return { text:(p>0?'+':'')+p.toFixed(2)+'%', cls:(p>0?'up':(p<0?'down':'na')) };
+      const text = (p>0?'+':'') + p.toFixed(2) + '%';
+      const cls  = (p>0?'up':(p<0?'down':'na'));
+      return { text, cls };
     }
 
     let i = 0;
     function next(){
-      if(i >= paths.length){ pct.textContent='N/A'; pct.className='idx-pct na'; return; }
+      if(i >= paths.length){ pct.textContent='N/A'; pct.className='idx-pct na'; pct.style.color='#94a3b8'; return; }
       const url = paths[i++];
       fetch(url, {cache:'no-cache'})
         .then(r=>{ if(!r.ok) throw 0; return r.json(); })
