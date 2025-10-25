@@ -1,6 +1,15 @@
 # _config.yml
-title: Sakura Index
-description: docs/charts/* snapshots
-timezone: Asia/Tokyo
-plugins: []     # 必要な外部プラグインは使っていません
+title: 桜Index - 公式サイト
+url: https://sakuraindex.github.io
+baseurl: /Sakura-Index-Site   # ← プロジェクトサイトの場合は必須
+
+exclude:
+  - README.md
+  - scripts
+  - node_modules
+  - .github
+
+# Liquid / Jekyll の安全対策
 markdown: kramdown
+highlighter: rouge
+timezone: Asia/Tokyo
