@@ -1,62 +1,68 @@
 {%- comment -%}
-汎用インデックスカード（stats.json“中身”を stats_json として受け取る版）
-- 使い方（index.html 側）:
-  {% capture ASTRA_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
-  {% include components/index-card.html
-      id="ASTRA4"
-      title="Astra4"
-      badge="宇宙ベンチャー"
-      desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-      stats_json=ASTRA_stats
-      intraday_png="/charts/ASTRA4/intraday.png"
-      am_png="/charts/ASTRA4/intraday_am.png"
-  %}
-- 重要:
-  画像は src="{{ site.baseurl }}{{ include.intraday_png }}" のように baseurl を前置
+  汎用インデックスカード（stats.json 対応）
+  受け取りパラメータ:
+    - id              : 例 "ASTRA4"
+    - title           : 表示名
+    - badge           : 小バッジ
+    - desc            : 説明文
+    - stats_json      : capture で取り込んだ stats.json の文字列
+    - intraday_png    : /charts/<id>/intraday.png
+    - am_png          : /charts/<id>/intraday_am.png
+    - d7_png          : 任意（7日チャート）
+    - m1_png          : 任意（1ヶ月チャート）
+    - y1_png          : 任意（1年チャート）
+    - flag            : 例 "🇯🇵"
 {%- endcomment -%}
 
 {%- assign _raw = include.stats_json | strip_newlines -%}
 
-{%- comment -%} 安全側：stats_json が空なら N/A {%- endcomment -%}
-{%- if _raw == "" or _raw == nil -%}
-  {%- assign pct_num = nil -%}
-  {%- assign scale = nil -%}
-  {%- assign basis = nil -%}
-{%- else -%}
-  {%- comment -%}
-  JSON を Liquid の文字列操作でパース（GitHub Pages の制約でフィルタのみ）
-  優先度:
-    1) "pct_intraday" があればそれを使う
-    2) なければ "delta_level" を使う
-  表示は "scale" によって補正:
-    - "percent" ならそのまま（例: 1.23 -> +1.23%）
-    - "ratio"   なら 100 倍（例: 0.0123 -> +1.23%）
-  {%- endcomment -%}
+{%- comment -%}
+  1) 値の抽出
+     - pct_intraday が最優先
+     - 無ければ delta_level を使用
+     - scale が無い/不明な場合に備えて **自動推定** を入れる
+{%- endcomment -%}
 
-  {%- assign _pct_try = _raw | split: '"pct_intraday":' | last | split: ',' | first | replace:'}','' | strip -%}
+{%- assign pct_num = nil -%}
+{%- assign scale = nil -%}
+{%- assign basis = nil -%}
+
+{%- if _raw != "" and _raw != nil -%}
+  {%- comment -%} 値候補 {%- endcomment -%}
+  {%- assign _pct_try = _raw | split:'"pct_intraday":' | last | split:',' | first | replace:'}','' | strip -%}
   {%- assign _pct_is_num = _pct_try | plus: 0 -%}
 
-  {%- assign _delta_try = _raw | split: '"delta_level":' | last | split: ',' | first | replace:'}','' | strip -%}
+  {%- assign _delta_try = _raw | split:'"delta_level":' | last | split:',' | first | replace:'}','' | strip -%}
   {%- assign _delta_is_num = _delta_try | plus: 0 -%}
 
-  {%- assign scale = _raw | split: '"scale":' | last | split: ',' | first | replace:'"','' | replace:'}','' | strip -%}
-  {%- assign basis = _raw | split: '"basis":' | last | split: ',' | first | replace:'"','' | replace:'}','' | strip -%}
-
-  {%- if _pct_try != _raw and _pct_try != "" -%}
-    {%- assign raw_value = _pct_is_num -%}
-    {%- assign vt = 'pct' -%}
-  {%- elsif _delta_try != _raw and _delta_try != "" -%}
-    {%- assign raw_value = _delta_is_num -%}
-    {%- assign vt = 'delta' -%}
+  {%- comment -%} scale / basis {%- endcomment -%}
+  {%- assign _scale_raw = _raw | split:'"scale":' | last | split:',' | first | replace:'"','' | replace:'}','' | strip -%}
+  {%- if _scale_raw == _raw or _scale_raw == "" -%}
+    {%- assign scale = nil -%}
   {%- else -%}
-    {%- assign raw_value = nil -%}
-    {%- assign vt = nil -%}
+    {%- assign scale = _scale_raw -%}
   {%- endif -%}
 
-  {%- if raw_value == nil -%}
-    {%- assign pct_num = nil -%}
+  {%- assign basis = _raw | split:'"basis":' | last | split:',' | first | replace:'"','' | replace:'}','' | strip -%}
+
+  {%- comment -%} どちらの値を使うか {%- endcomment -%}
+  {%- if _pct_try != _raw and _pct_try != "" -%}
+    {%- assign raw_value = _pct_is_num -%}
+  {%- elsif _delta_try != _raw and _delta_try != "" -%}
+    {%- assign raw_value = _delta_is_num -%}
   {%- else -%}
-    {%- if scale == 'ratio' -%}
+    {%- assign raw_value = nil -%}
+  {%- endif -%}
+
+  {%- comment -%}
+    2) パーセント化
+       - scale == "ratio"      → 100 倍
+       - scale == "percent"    → そのまま
+       - scale が無い/不明     → |値| < 0.5 を ratio とみなし 100 倍、そうでなければ percent
+  {%- endcomment -%}
+  {%- if raw_value != nil -%}
+    {%- assign absval = raw_value | abs -%}
+    {%- if scale == 'ratio' or (scale == nil and absval < 0.5) -%}
       {%- assign pct_num = raw_value | times: 100 -%}
     {%- else -%}
       {%- assign pct_num = raw_value -%}
@@ -64,60 +70,47 @@
   {%- endif -%}
 {%- endif -%}
 
-{%- comment -%} 見た目定義（前回“良かった方”に合わせて微調整） {%- endcomment -%}
-<style>
-  .card { background-color: #0b1220; border: 1px solid #1e293b; border-radius: 16px; padding: 16px 16px 12px 16px; box-shadow: 0 0 0 1px rgba(148,163,184,0.04) inset; }
-  .card h3 { margin: 0; font-size: 20px; font-weight: 700; color: #e2e8f0; display:flex; align-items:center; gap:10px;}
-  .sub { display:inline-block; font-size: 12px; color: #94a3b8; background:#0f172a; border:1px solid #1e293b; padding:3px 8px; border-radius: 999px; }
-  .desc { margin: 8px 0 10px 0; color:#94a3b8; font-size: 13px; }
-  .delta { margin-left:auto; font-size: 16px; font-weight: 800; }
-  .delta.pos { color:#34d399; }  /* + */
-  .delta.neg { color:#f87171; }  /* - */
-  .chartbox { background:#0a0f1a; border:1px solid #1e293b; border-radius: 10px; height: 260px; display:flex; align-items:center; justify-content:center; overflow:hidden;}
-  .chartbox img { width:100%; height:100%; object-fit:contain; }
-  .btns { display:flex; gap:8px; margin-top:12px; }
-  .btn { color:#cbd5e1; background:#0f172a; border:1px solid #223045; border-radius:999px; padding:6px 10px; font-size:12px; }
-  .row { display:flex; align-items:center; gap:10px;}
-</style>
+{%- comment -%} 表示用の成形 {%- endcomment -%}
+{%- if pct_num == nil -%}
+  {%- assign pct_text = 'N/A' -%}
+  {%- assign pct_class = 'pct-na' -%}
+{%- else -%}
+  {%- assign rounded = pct_num | round: 2 -%}
+  {%- if rounded > 0 -%}
+    {%- assign pct_text = '+' | append: rounded | append: '%' -%}
+    {%- assign pct_class = 'pct-up' -%}
+  {%- elsif rounded < 0 -%}
+    {%- assign pct_text = rounded | append: '%' -%}
+    {%- assign pct_class = 'pct-down' -%}
+  {%- else -%}
+    {%- assign pct_text = '0%' -%}
+    {%- assign pct_class = 'pct-zero' -%}
+  {%- endif -%}
+{%- endif -%}
 
 <div class="card">
-  <div class="row">
-    <h3>
-      {%- if include.flag -%}<span>{{ include.flag }}</span>{%- endif -%}
-      <span>{{ include.title }}</span>
-      {%- if include.badge -%}<span class="sub">{{ include.badge }}</span>{%- endif -%}
-    </h3>
-
-    {%- if pct_num == nil -%}
-      <span class="delta sub">N/A</span>
-    {%- else -%}
-      {%- assign rounded = pct_num | round: 2 -%}
-      {%- if rounded > 0 -%}
-        <span class="delta pos">+{{ rounded }}%</span>
-      {%- elsif rounded < 0 -%}
-        <span class="delta neg">{{ rounded }}%</span>
-      {%- else -%}
-        <span class="delta sub">0%</span>
-      {%- endif -%}
-    {%- endif -%}
+  <div class="card-hd">
+    <div class="title">
+      <span class="flag">{{ include.flag | default: '' }}</span>
+      <span class="name">{{ include.title }}</span>
+      {% if include.badge %}<span class="badge">{{ include.badge }}</span>{% endif %}
+    </div>
+    <div class="pct {{ pct_class }}">{{ pct_text }}</div>
   </div>
 
-  {%- if include.desc -%}
-    <div class="desc">{{ include.desc }}</div>
-  {%- endif -%}
+  {% if include.desc %}
+  <p class="desc">{{ include.desc }}</p>
+  {% endif %}
 
-  <div class="chartbox">
-    <img
-      alt="{{ include.id }} chart"
-      src="{{ site.baseurl }}{{ include.intraday_png }}"
-      onerror="this.style.opacity=0.25; this.alt='chart (no image)';">
+  <div class="chart-wrap">
+    <img class="chart" src="{{ include.intraday_png }}" alt="{{ include.id }} chart">
   </div>
 
   <div class="btns">
-    <button class="btn" onclick="this.closest('.card').querySelector('img').src='{{ site.baseurl }}{{ include.intraday_png }}'">Intraday</button>
-    <button class="btn" onclick="this.closest('.card').querySelector('img').src='{{ site.baseurl }}{{ include.am_png }}'">前場(AM)</button>
-    <button class="btn" disabled>7日</button>
-    <button class="btn" disabled>1ヶ月</button>
-    <button class="btn" disabled>1年</button>
+    <span class="btn btn-active">Intraday</span>
+    <span class="btn">前場(AM)</span>
+    <span class="btn">7日</span>
+    <span class="btn">1ヶ月</span>
+    <span class="btn">1年</span>
   </div>
 </div>
