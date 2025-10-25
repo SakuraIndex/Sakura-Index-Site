@@ -1,0 +1,6 @@
+# _config.yml
+title: Sakura Index
+description: docs/charts/* snapshots
+timezone: Asia/Tokyo
+plugins: []     # 必要な外部プラグインは使っていません
+markdown: kramdown
