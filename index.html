@@ -52,94 +52,175 @@
 
   <footer>
     データ: 各指数は等加重指数（仕様は各リポジトリ参照）<br>
-    画像は各指数リポ生成スナップショットを同期しています。<br>
+    画像は各指数リポジトリの自動生成スナップショットを同期しています。<br>
     ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
     © 2025 桜Index
   </footer>
 </div>
 
 <script>
-/* === index構成 === */
+/* =====================
+   設定
+===================== */
 const INDEXES = [
-  { key:"astra4",  flag:"🇯🇵", name:"Astra4",  tag:"宇宙ベンチャー", desc:"宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"},
-  { key:"rbank9",  flag:"🇯🇵", name:"R-BANK9", tag:"地方銀行", desc:"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"},
-  { key:"ain10",   flag:"🇺🇸", name:"AIN-10",  tag:"AI関連10", desc:"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"},
-  { key:"scoin_plus", flag:"🇯🇵", name:"S-COIN+", tag:"仮想資産関連", desc:"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"}
+  { key:"astra4",      flag:"🇯🇵", name:"Astra4",   tag:"宇宙ベンチャー", desc:"宇宙関連銘柄の等ウェイト指数。可視化はボラティリティに配慮。"},
+  { key:"rbank9",      flag:"🇯🇵", name:"R-BANK9",  tag:"地方銀行",     desc:"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"},
+  { key:"ain10",       flag:"🇺🇸", name:"AIN-10",   tag:"AI関連10",     desc:"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"},
+  { key:"scoin_plus",  flag:"🇯🇵", name:"S-COIN+",  tag:"仮想資産関連", desc:"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"},
 ];
-
 const VARS = ["intraday","am","7d","1m","1y"];
+const BASE = "docs/charts";                 // 画像ディレクトリ
+const META_DIR = `${BASE}/meta`;            // メタJSON（無くてもOK）
+const POST_SUFFIX = "_post_intraday.txt";   // 騰落率フォールバックの候補
+
 document.getElementById("syncAt").textContent =
   new Date().toLocaleString("ja-JP",{hour12:false});
 
-/* === DOM生成 === */
-const grid=document.getElementById("grid");
-for(const idx of INDEXES){
-  const el=document.createElement("article");
-  el.className="card";
-  el.innerHTML=`
+/* =====================
+   UI 構築
+===================== */
+const grid = document.getElementById("grid");
+for (const idx of INDEXES) {
+  const el = document.createElement("article");
+  el.className = "card";
+  el.innerHTML = `
     <div class="card-hd">
-      <div class="id-left"><span class="flag">${idx.flag}</span>
-      <b>${idx.name}</b><span class="badge">${idx.tag}</span></div>
+      <div class="id-left">
+        <span class="flag">${idx.flag}</span>
+        <b>${idx.name}</b>
+        <span class="badge">${idx.tag}</span>
+      </div>
       <div class="pct na" id="${idx.key}-pct">N/A</div>
     </div>
     <p class="desc">${idx.desc}</p>
     <div class="chart"><img id="${idx.key}-img" alt="${idx.name} chart"></div>
     <div class="tabs">
-      ${VARS.map(v=>`<button data-v="${v}" class="${v==="intraday"?"active":""}">${tabName(v)}</button>`).join("")}
+      ${VARS.map(v => `<button data-v="${v}" class="${v==="intraday"?"active":""}">${tabName(v)}</button>`).join("")}
     </div>`;
   grid.appendChild(el);
 }
 
-/* === メタJSON読込・画像更新 === */
-const BASE="docs/charts";
-const META_DIR=`${BASE}/meta`;
+/* =====================
+   データ読込 & 表示
+===================== */
+(async () => {
+  for (const idx of INDEXES) {
+    const meta = await fetchJSON(`${META_DIR}/${idx.key}.json`);  // なくてもOK
+    await updateCard(idx, meta, "intraday");
 
-(async()=>{
-  for(const idx of INDEXES){
-    const meta=await fetchJSON(`${META_DIR}/${idx.key}.json`);
-    updateCard(idx,meta);
+    // タブ切り替え
+    const card = document.getElementById(`${idx.key}-img`).closest(".card");
+    card.querySelectorAll(".tabs button").forEach(btn => {
+      btn.onclick = async () => {
+        card.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        const v = btn.dataset.v;
+        await updateCard(idx, meta, v);
+      };
+    });
   }
 })();
 
-/* === 関数 === */
+/* =====================
+   関数群
+===================== */
 function tabName(v){
   return v==="intraday"?"Intraday":v==="am"?"前場(AM)":v==="7d"?"7日":v==="1m"?"1ヶ月":"1年";
 }
+
 async function fetchJSON(url){
-  try{const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw 0;return await r.json();}
-  catch{return null;}
+  try{
+    const r = await fetch(url,{cache:"no-store"});
+    if (!r.ok) throw 0;
+    return await r.json();
+  }catch{ return null; }
 }
 
-function updateCard(idx,meta){
-  const pct=document.getElementById(`${idx.key}-pct`);
-  const img=document.getElementById(`${idx.key}-img`);
-  const tabs=document.querySelectorAll(`[data-v][class*="active"]`);
-  const p = getHeadline(meta);
-  if(p==null){pct.textContent="N/A";pct.className="pct na";}
-  else if(p>0){pct.textContent=`+${p.toFixed(2)}%`;pct.className="pct up";}
-  else if(p<0){pct.textContent=`${p.toFixed(2)}%`;pct.className="pct down";}
-  else {pct.textContent="0.00%";pct.className="pct";}
-  const snap=meta?.snapshots?.intraday||meta?.snapshots?.["1d"]||meta?.snapshots?.["7d"];
-  img.src=snap?`${BASE}/${snap}?v=${Date.now()}`:"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+// 画像の多段フォールバック解決
+async function resolveSnapshotPath(key, variant, meta){
+  // 1) meta.snapshots があれば最優先
+  const m = meta?.snapshots?.[variant];
+  if (m) {
+    const url = `${BASE}/${m}`;
+    if (await exists(url)) return url;
+  }
 
-  // tabクリックイベント
-  const card=img.closest(".card");
-  card.querySelectorAll(".tabs button").forEach(b=>{
-    b.onclick=()=>{
-      card.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      const v=b.dataset.v;
-      const target=meta?.snapshots?.[v]||snap;
-      img.src=target?`${BASE}/${target}?v=${Date.now()}`:img.src;
-    };
-  });
-}
+  // 2) よくあるファイル名の総当たり（大文字小文字・アンダー/ハイフン）
+  const candidates = [];
+  const bases = [
+    `${key}_${variant}`, `${key}-${variant}`,
+    `${key.toUpperCase()}_${variant.toUpperCase()}`, `${key.toUpperCase()}-${variant.toUpperCase()}`
+  ];
+  for (const b of bases) {
+    candidates.push(`${BASE}/${b}.png`, `${BASE}/${b}.PNG`, `${BASE}/${b}.svg`);
+  }
 
-function getHeadline(meta){
-  if(!meta)return null;
-  if(meta.percent?.intraday!=null)return meta.percent.intraday;
-  if(meta.level?.["1d"]!=null)return meta.level["1d"];
+  // 3) 旧来の1日レベル表記など（例: 1d / level）
+  if (variant==="1y"||variant==="1m"||variant==="7d") {
+    candidates.push(`${BASE}/${key}_${variant}_level.png`);
+  }
+  if (variant==="am") {
+    candidates.push(`${BASE}/${key}_intraday_am.png`, `${BASE}/${key}_am.png`);
+  }
+
+  for (const c of candidates) {
+    if (await exists(c)) return c;
+  }
   return null;
+}
+
+// 騰落率の取得（meta → テキストの順）
+async function resolvePercent(key, meta){
+  // 1) meta 優先
+  if (meta?.percent?.intraday != null) return Number(meta.percent.intraday);
+
+  // 2) 既知の stats.json 形式（あれば）
+  if (meta?.headlinePercent != null) return Number(meta.headlinePercent);
+
+  // 3) フォールバック: *_post_intraday.txt から "+1.23%" 抜粋
+  const txtUrl = `${BASE}/${key}${POST_SUFFIX}`;
+  try{
+    const r = await fetch(txtUrl, {cache:"no-store"});
+    if (r.ok) {
+      const t = await r.text();
+      const m = t.match(/([+\-]?\d+(?:\.\d+)?)%/);
+      if (m) return Number(m[1]);
+    }
+  }catch{}
+
+  return null; // 取れない場合
+}
+
+// 1px ダミー
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+async function exists(url){
+  try{ const r=await fetch(url,{method:"HEAD",cache:"no-store"}); return r.ok; }
+  catch{ return false; }
+}
+
+async function updateCard(idx, meta, variant){
+  const pctEl = document.getElementById(`${idx.key}-pct`);
+  const imgEl = document.getElementById(`${idx.key}-img`);
+
+  // 画像
+  const path = await resolveSnapshotPath(idx.key, variant, meta);
+  imgEl.src = path ? `${path}?v=${Date.now()}` : BLANK;
+
+  // 騰落率（intradayだけ算出／他タブでも intraday の値をヘッダに維持）
+  const p = await resolvePercent(idx.key, meta);
+  if (p == null){
+    pctEl.textContent = "N/A";
+    pctEl.className = "pct na";
+  } else if (p > 0){
+    pctEl.textContent = `+${p.toFixed(2)}%`;
+    pctEl.className = "pct up";
+  } else if (p < 0){
+    pctEl.textContent = `${p.toFixed(2)}%`;
+    pctEl.className = "pct down";
+  } else {
+    pctEl.textContent = "0.00%";
+    pctEl.className = "pct";
+  }
 }
 </script>
 </body>
