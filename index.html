@@ -1,89 +1,111 @@
 ---
 layout: null
-title: "🌸桜Index - 公式サイト"
 ---
 
-<div style="display:flex; gap:.75rem; margin:18px 0 8px;">
-  <a href="https://twitter.com/sakuraindex" class="btn" style="padding:.55rem 1rem; font-size:.95rem; border-radius:.6rem;">公式X（Twitter）</a>
-  <a href="https://note.com/sakuraindex" class="btn" style="padding:.55rem 1rem; font-size:.95rem; border-radius:.6rem;">公式note</a>
-</div>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌸桜Index - 公式サイト</title>
+  <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+</head>
+<body>
 
-<p style="opacity:.7; margin:0 0 12px;">
-  同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*
-</p>
+  <div class="top-actions">
+    <a class="btn" href="https://x.com/your_account" target="_blank" rel="noopener">公式X（Twitter）</a>
+    <a class="btn" href="https://note.com/your_account" target="_blank" rel="noopener">公式note</a>
+  </div>
 
-{%- comment -%}
-  1) 各 index の stats.json を静的パスで取り込み → 文字列として capture
-  2) 画像パスは filter を使わず、事前に assign で変数へ（include へは変数だけ渡す）
-{%- endcomment -%}
+  <div class="index-grid">
 
-{%- comment -%} Astra4 {%- endcomment -%}
-{% capture ASTRA4_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
-{% assign ASTRA4_intraday_png = site.baseurl | append: '/charts/ASTRA4/intraday.png' %}
-{% assign ASTRA4_am_png       = site.baseurl | append: '/charts/ASTRA4/intraday_am.png' %}
+    {% include components/index-card.html
+       id="ASTRA4"
+       title="Astra4"
+       flag="🇯🇵"
+       badge="宇宙ベンチャー"
+       desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+       stats_json="/charts/ASTRA4/stats.json"
+       intraday_png="/charts/ASTRA4/intraday.png"
+       am_png="/charts/ASTRA4/intraday_am.png"
+    %}
 
-{% include components/index-card.html
-  id='ASTRA4'
-  title='Astra4'
-  badge='宇宙ベンチャー'
-  flag='🇯🇵'
-  desc='宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'
-  stats_json=ASTRA4_stats
-  intraday_png=ASTRA4_intraday_png
-  am_png=ASTRA4_am_png
-%}
+    {% include components/index-card.html
+       id="R-BANK9"
+       title="R-BANK9"
+       flag="🇯🇵"
+       badge="地方銀行"
+       desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+       stats_json="/charts/R-BANK9/stats.json"
+       intraday_png="/charts/R-BANK9/intraday.png"
+       am_png="/charts/R-BANK9/intraday_am.png"
+    %}
 
-{%- comment -%} R-BANK9 {%- endcomment -%}
-{% capture RBANK9_stats %}{% include_relative charts/R-BANK9/stats.json %}{% endcapture %}
-{% assign RBANK9_intraday_png = site.baseurl | append: '/charts/R-BANK9/intraday.png' %}
-{% assign RBANK9_am_png       = site.baseurl | append: '/charts/R-BANK9/intraday_am.png' %}
+    {% include components/index-card.html
+       id="AIN-10"
+       title="AIN-10"
+       flag="🇺🇸"
+       badge="AI関連10"
+       desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+       stats_json="/charts/AIN-10/stats.json"
+       intraday_png="/charts/AIN-10/intraday.png"
+       am_png="/charts/AIN-10/intraday_am.png"
+    %}
 
-{% include components/index-card.html
-  id='R-BANK9'
-  title='R-BANK9'
-  badge='地方銀行'
-  flag='🇯🇵'
-  desc='地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'
-  stats_json=RBANK9_stats
-  intraday_png=RBANK9_intraday_png
-  am_png=RBANK9_am_png
-%}
+    {% include components/index-card.html
+       id="S-COIN+"
+       title="S-COIN+"
+       flag="🇯🇵"
+       badge="仮想資産関連"
+       desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+       stats_json="/charts/S-COIN+/stats.json"
+       intraday_png="/charts/S-COIN+/intraday.png"
+       am_png="/charts/S-COIN+/intraday_am.png"
+    %}
 
-{%- comment -%} AIN-10 {%- endcomment -%}
-{% capture AIN10_stats %}{% include_relative charts/AIN-10/stats.json %}{% endcapture %}
-{% assign AIN10_intraday_png = site.baseurl | append: '/charts/AIN-10/intraday.png' %}
-{% assign AIN10_am_png       = site.baseurl | append: '/charts/AIN-10/intraday_am.png' %}
+  </div>
 
-{% include components/index-card.html
-  id='AIN-10'
-  title='AIN-10'
-  badge='AI関連10'
-  flag='🇺🇸'
-  desc='米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'
-  stats_json=AIN10_stats
-  intraday_png=AIN10_intraday_png
-  am_png=AIN10_am_png
-%}
+  <p style="color:#94a3b8; text-align:center; margin:28px 0 8px;">
+    データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
+    © {{ 'now' | date: '%Y' }} 桜Index
+  </p>
 
-{%- comment -%} S-COIN+ {%- endcomment -%}
-{% capture S_COIN_stats %}{% include_relative charts/S-COIN+/stats.json %}{% endcapture %}
-{% assign S_COIN_intraday_png = site.baseurl | append: '/charts/S-COIN+/intraday.png' %}
-{% assign S_COIN_am_png       = site.baseurl | append: '/charts/S-COIN+/intraday_am.png' %}
+  <!-- 騰落率のクライアント更新スクリプト -->
+  <script>
+  (function () {
+    function setPct(el, val) {
+      const cls = ['up','down','na'];
+      el.classList.remove(...cls);
+      if (!isFinite(val)) {
+        el.textContent = 'N/A';
+        el.classList.add('na');
+        return;
+      }
+      const pct = val * 100;
+      const txt = (pct > 0 ? '+' : (pct < 0 ? '' : '')) + pct.toFixed(2) + '%';
+      el.textContent = txt;
+      el.classList.add(pct > 0 ? 'up' : (pct < 0 ? 'down' : 'na'));
+    }
 
-{% include components/index-card.html
-  id='S-COIN+'
-  title='S-COIN+'
-  badge='仮想資産関連'
-  flag='🇯🇵'
-  desc='暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'
-  stats_json=S_COIN_stats
-  intraday_png=S_COIN_intraday_png
-  am_png=S_COIN_am_png
-%}
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.idx-card').forEach(card => {
+        const statsUrl = card.getAttribute('data-stats');
+        const pctEl = card.querySelector('.idx-pct');
+        if (!statsUrl || !pctEl) return;
 
-<hr style="opacity:.1; margin:22px 0;">
-<p style="font-size:.82rem; opacity:.7; line-height:1.6;">
-データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指標リポの自動生成スナップショットと同期しています。<br>
-※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-© {{ "now" | date: "%Y" }} 桜Index
-</p>
+        fetch(statsUrl, { cache: 'no-cache' })
+          .then(r => r.json())
+          .then(j => {
+            // 代表値を優先順で拾う（どれかが存在すればOK）
+            let v = j.pct_intraday ?? j.pct_id ?? j.delta ?? j.delta_level ?? null;
+            if (typeof v === 'string') v = parseFloat(v);
+            setPct(pctEl, v);
+          })
+          .catch(() => setPct(pctEl, NaN));
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
