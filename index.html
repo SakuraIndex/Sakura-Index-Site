@@ -1,7 +1,6 @@
 ---
 title: 桜Index - 公式サイト
 layout: null
-# ここで表示する指数の定義（必要に応じて編集）
 indices:
   - id: "ASTRA4"
     title: "Astra4"
@@ -55,9 +54,7 @@ a.btn{display:inline-block;margin-right:.5rem;padding:.35rem .7rem;border:1px so
 <div class="container">
   <header>
     <h1>🌸 {{ page.title }}</h1>
-    <div class="meta">
-      同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*
-    </div>
+    <div class="meta">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
     <div class="actions">
       <a class="btn" href="https://x.com/SakuraIndex" target="_blank" rel="noopener">公式X（Twitter）</a>
       <a class="btn" href="https://note.com/SakuraIndex" target="_blank" rel="noopener">公式note</a>
@@ -74,6 +71,9 @@ a.btn{display:inline-block;margin-right:.5rem;padding:.35rem .7rem;border:1px so
           json_path=idx.json_path
           intraday_png=idx.intraday_png
           am_png=idx.am_png
+          seven_png=idx.seven_png
+          one_month_png=idx.one_month_png
+          one_year_png=idx.one_year_png
       -%}
     {%- endfor -%}
   </main>
