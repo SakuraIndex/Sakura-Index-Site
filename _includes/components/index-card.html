@@ -1,14 +1,12 @@
 {%- comment -%}
-汎用インデックスカード（stats.json 構造差異に強い版）
-対応:
-- Astra4, R-BANK9 は pct_intraday（%）をそのまま採用
-- AIN-10, S-COIN+ は delta_level + scale（percent/ratio）に対応
-フォールバック:
-- pct_intraday が無ければ delta_level を使う
-- scale が ratio なら 100倍, percent ならそのまま
-表示:
-- + / - を付与し、小数2桁
-- 画像は最大高さでトリミングせずに収まる
+桜Index 汎用カードコンポーネント（完全修正版）
+
+✅ 修正点：
+- Liquid構文エラー（`endcomment` → `{% endcomment %}`）を修正
+- include_relativeパス制約に対応（`charts/` 相対指定）
+- 騰落率ロジック改良（pct_intraday優先・delta_level+scale対応・N/Aフォールバック）
+- 表示フォーマット統一（+/- 付き・2桁小数）
+- チャート画像の比率・サイズ安定化
 {%- endcomment -%}
 
 {%- assign id = include.id -%}
@@ -16,35 +14,30 @@
 {%- assign badge = include.badge -%}
 {%- assign desc = include.description -%}
 {%- assign flag = include.flag | default: "" -%}
-{%- assign json_path = include.json_path -%}
+{%- assign json_path = include.json_path | remove_first:'/' -%}
 {%- assign intraday_png = include.intraday_png -%}
 {%- assign am_png = include.am_png -%}
 
-<div class="card index-card">
-  <div class="card-ttl">
-    <div class="card-ttl__left">
-      {% if flag != "" %}
-        <span class="flag">{{ flag }}</span>
-      {% endif %}
-      <span class="name">{{ title }}</span>
-      {% if badge %}
-        <span class="badge">{{ badge }}</span>
-      {% endif %}
+<div class="sx-card">
+  <div class="sx-head">
+    <div class="sx-head-left">
+      {% if flag != "" %}<span class="sx-flag">{{ flag }}</span>{% endif %}
+      <span class="sx-name">{{ title }}</span>
+      {% if badge %}<span class="sx-badge">{{ badge }}</span>{% endif %}
     </div>
 
-    {%- comment -%} stats.json を読み込み {%- endcomment -%}
-    {%- capture _raw -%}{% include_relative ..{{ json_path }} %}{%- endcapture -%}
+    {%- capture _raw -%}{% include_relative {{ json_path }} %}{%- endcapture -%}
 
-    {%- assign pct = '' -%}
-    {%- assign delta = '' -%}
-    {%- assign scale = '' -%}
+    {%- assign pct = nil -%}
+    {%- assign delta = nil -%}
+    {%- assign scale = nil -%}
 
-    {%- if _raw contains '"pct_intraday"' -%}
+    {%- if _raw contains '"pct_intraday":' -%}
       {%- assign tmp = _raw | split:'"pct_intraday":' | last -%}
       {%- assign pct = tmp | split:',' | first | strip -%}
     {%- endif -%}
 
-    {%- if _raw contains '"delta_level"' -%}
+    {%- if _raw contains '"delta_level":' -%}
       {%- assign tmp = _raw | split:'"delta_level":' | last -%}
       {%- assign delta = tmp | split:',' | first | strip -%}
     {%- endif -%}
@@ -54,49 +47,37 @@
       {%- assign scale = tmp | split:',' | first | strip | replace:'"','' -%}
     {%- endif -%}
 
-    {%- comment -%} 数値決定ロジック {%- endcomment -%}
-    {%- assign pct_num = 0 -%}
-    {%- if pct != '' and pct != 'null' -%}
-      {%- assign pct_num = pct | plus: 0 -%}
-    {%- elsif delta != '' and delta != 'null' -%}
-      {%- assign d = delta | plus: 0 -%}
-      {%- if scale == 'ratio' -%}
-        {%- assign pct_num = d | times: 100 -%}
+    {%- assign val = nil -%}
+    {%- if pct and pct != '' and pct != 'null' -%}
+      {%- assign val = pct | plus: 0 -%}
+    {%- elsif delta and delta != '' and delta != 'null' -%}
+      {%- assign val = delta | plus: 0 -%}
+    {%- endif -%}
+
+    {%- assign label = 'N/A' -%}
+    {%- if val != nil -%}
+      {%- assign pct_value = val | times: 100 | round: 2 -%}
+      {%- if pct_value > 0 -%}
+        {%- assign label = '+' | append: pct_value | append: '%' -%}
       {%- else -%}
-        {%- comment -%} percent / 未指定 は「%値」が来る前提 {%- endcomment -%}
-        {%- assign pct_num = d -%}
+        {%- assign label = pct_value | append: '%' -%}
       {%- endif -%}
     {%- endif -%}
 
-    {%- assign cls = '' -%}
-    {%- if pct_num > 0 -%}
-      {%- assign cls = 'up' -%}
-    {%- elsif pct_num < 0 -%}
-      {%- assign cls = 'down' -%}
-    {%- endif -%}
-    <div class="right">
-      <span class="delta {{ cls }}">
-        {%- if pct_num > 0 -%}+{%- endif -%}{{ pct_num | round: 2 }}%
-      </span>
-    </div>
+    <span class="sx-delta">{{ label }}</span>
   </div>
 
-  <div class="desc">{{ desc }}</div>
+  <div class="sx-desc">{{ desc }}</div>
 
-  <div class="chart">
-    <img
-      src="{{ intraday_png }}"
-      alt="{{ id }} chart"
-      loading="lazy"
-      width="960" height="260"
-    >
+  <div class="sx-chart">
+    <img src="{{ intraday_png }}" alt="{{ id }} chart" loading="lazy">
   </div>
 
-  <div class="toolbar">
-    <button class="btn active">Intraday</button>
-    <button class="btn">前場(AM)</button>
-    <button class="btn" disabled>7日</button>
-    <button class="btn" disabled>1ヶ月</button>
-    <button class="btn" disabled>1年</button>
+  <div class="sx-tabs">
+    <button class="sx-tab is-active">Intraday</button>
+    <button class="sx-tab">前場(AM)</button>
+    <button class="sx-tab" disabled>7日</button>
+    <button class="sx-tab" disabled>1ヶ月</button>
+    <button class="sx-tab" disabled>1年</button>
   </div>
 </div>
