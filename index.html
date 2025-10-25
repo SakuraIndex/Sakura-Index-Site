@@ -6,22 +6,13 @@
   <title>🌸 桜Index - 公式サイト</title>
   <style>
     :root{
-      /* ダーク紺＋シアン寄りのトーン（指定デザイン寄せ） */
-      --bg:#0b1420;
-      --panel:#0f1b28;
-      --panel2:#0c1926;
-      --border:#1c2a3a;
-      --text:#d4e9f7;
-      --sub:#9fb6c7;
-      --muted:#7890a0;
-      --brand:#93c5fd;
-      --accent:#22d3ee;
-      --up:#34d399;
-      --down:#fb7185;
-      --chip:#0b2233;
+      --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
+      --text:#d4e9f7; --sub:#9fb6c7; --muted:#7890a0; --brand:#93c5fd; --accent:#22d3ee;
+      --up:#34d399; --down:#fb7185; --chip:#0b2233;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
     a{color:var(--brand);text-decoration:none}
     .wrap{max-width:1160px;margin:32px auto;padding:0 16px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
@@ -29,18 +20,13 @@
     .title h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.2px}
     .meta{color:var(--muted);font-size:12px;margin-top:4px}
     .btns{display:flex;gap:10px}
-    .btn{
-      background:var(--panel2);border:1px solid var(--border);color:var(--text);
-      padding:11px 16px;border-radius:12px;font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;
-      transition:all .15s ease
-    }
+    .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+      padding:11px 16px;border-radius:12px;font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;transition:all .15s ease}
     .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{
-      background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
-      border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px 14px;position:relative
-    }
+    .card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
+      border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px 14px;position:relative}
     .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
     .flag{font-size:18px;line-height:1}
     .name{font-size:18px;font-weight:700;letter-spacing:.2px}
@@ -48,10 +34,8 @@
     .desc{color:var(--sub);font-size:12px;margin:2px 0 8px 28px}
     .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
     .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
-    .chart{
-      width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
-      background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden
-    }
+    .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
+      background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .chart img{display:block;width:100%;height:100%;object-fit:contain}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);padding:6px 10px;border-radius:999px}
@@ -63,10 +47,7 @@
   <div class="wrap">
     <header>
       <div>
-        <div class="title">
-          <div style="font-size:22px">🌸</div>
-          <h1>桜Index - 公式サイト</h1>
-        </div>
+        <div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
         <div class="meta" id="syncMeta">同期完了：-- / データ: charts/*</div>
       </div>
       <div class="btns">
@@ -77,8 +58,7 @@
 
     <section class="grid" id="cards"></section>
 
-    <div class="hint">データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポジトリの自動生成スナップショットと同期しています。<br>
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。</div>
+    <div class="hint">データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポジトリの自動生成スナップショットと同期しています。<br>※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。</div>
     <footer>© <span id="year"></span> 桜Index</footer>
   </div>
 
@@ -90,37 +70,31 @@
     { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',       desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
     { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
   ];
-  /* 別ドメインに置いた場合だけ、ベースURLを指定（空なら現サイト相対） */
-  const EXTERNAL_ORIGINS = {
-    // 'S-COIN+':'https://sakuraindex.github.io/S-COIN-PLUS'
+
+  /* 画像/JSON が別ドメインにある場合だけ指定（空文字なら相対パスで探す） */
+  const EXTERNAL_ORIGINS = { /* 例: 'S-COIN+':'https://sakuraindex.github.io/S-COIN-PLUS' */ };
+
+  /* 必要な銘柄だけ手動スケール補正（"×100" か "÷100"）。基本は **補正なし** にしてください。 */
+  const PCT_TWEAK = {
+    // 例: 'ASTRA4': '×100'
   };
-    // ％表示にする前の「読み出し値」に対して個別調整
-// '÷100' : 与えられた値が 20.31（%値）だった → 0.2031 に直す（あとで×100して 20.31% 表示）
-// '×100' : 与えられた値が 0.2031（小数）だった → 20.31 に直す（あとでそのまま 20.31% 表示）
-const PCT_TWEAK = {
-  'R-BANK9': '÷100',  // ←まずはこれで様子見。必要に応じて '×100' に変える
-};
-  /* フォルダ名の食い違いを明示的に上書き */
+
+  /* ID → フォルダ名の揺れ補正（必要なときだけ） */
   const OVERRIDE_FOLDER = {
-    // 'S-COIN+':'S_COIN_PLUS'
+    // 'S-COIN+': 'S_COIN_PLUS'
   };
-  const PATH_BASES = ['charts','docs/charts'];   // 探索ルート候補
+
+  /* 探索ルート候補（charts と docs/outputs の両方をカバー） */
+  const PATH_BASES = ['charts','docs/charts','docs/outputs'];
   const CHART_FILES = ['intraday_am.png','intraday.png'];
-  const STATS_FILE  = 'stats.json';
 
   /* ========== util ========== */
   const $ = (s,el=document)=>el.querySelector(s);
-  function nowString(){
-    const d=new Date();const p=n=>String(n).padStart(2,'0');
-    return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-  }
+  function nowString(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
   function fmtPct(val){
     if(val==null || Number.isNaN(val)) return {text:'N/A',cls:'na'};
-    const a=Math.abs(val);
-    // しきい値で小数⇔百分率を自動判定
-    const pct = (a>0 && a<1) ? (val*100) : val;
-    const s = (pct>=0?'+':'') + (Math.round(pct*100)/100).toFixed(2) + '%';
-    return {text:s, cls:pct>0?'up':pct<0?'down':'na'};
+    const s = (val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
+    return {text:s, cls: val>0 ? 'up' : val<0 ? 'down' : 'na'};
   }
   function folderCandidates(id){
     if(OVERRIDE_FOLDER[id]) return [OVERRIDE_FOLDER[id]];
@@ -136,11 +110,17 @@ const PCT_TWEAK = {
       encodeURIComponent(id)
     ])];
   }
-  // ★相対パスに修正（先頭スラッシュを付けない）
-  function joinUrl(base, path){
-    if(!base) return path.replace(/^\/+/,'');
-    return base.replace(/\/+$/,'') + '/' + path.replace(/^\/+/,'');
+  function statsFileCandidates(id){
+    const low = id.toLowerCase();
+    const norm = low.replace(/\+/g,'_plus').replace(/-/g,'_');
+    return [
+      'stats.json',                 // charts/ID/stats.json 形式
+      `${norm}_stats.json`,         // docs/outputs/scoin_plus_stats.json 等
+      `${low.replace(/\+/g,'plus').replace(/-/g,'')}_stats.json` // 念のため
+    ];
   }
+  function joinUrl(base, path){ if(!base) return path.replace(/^\/+/,''); return base.replace(/\/+$/,'') + '/' + path.replace(/^\/+/,''); }
+
   function buildChartUrls(idx){
     const base=EXTERNAL_ORIGINS[idx.id]||'';
     const folders=folderCandidates(idx.id), urls=[];
@@ -155,10 +135,12 @@ const PCT_TWEAK = {
   }
   function buildStatsUrls(idx){
     const base=EXTERNAL_ORIGINS[idx.id]||'';
-    const folders=folderCandidates(idx.id), urls=[];
+    const folders=folderCandidates(idx.id), files=statsFileCandidates(idx.id), urls=[];
     for(const pb of PATH_BASES){
       for(const f of folders){
-        urls.push(joinUrl(base, `${pb}/${f}/${STATS_FILE}`));
+        for(const sf of files){
+          urls.push(joinUrl(base, `${pb}/${f}/${sf}`));
+        }
       }
     }
     return urls;
@@ -193,11 +175,14 @@ const PCT_TWEAK = {
     const card=document.createElement('article');card.className='card';
 
     const head=document.createElement('div');head.className='head';
-    head.innerHTML=`<div class="flag">${idx.flag||'🏳️'}</div>
+    head.innerHTML=`
+      <div class="flag">${idx.flag||'🏳️'}</div>
       <div class="name">${idx.title}</div>
       <div class="badge">${idx.badge||''}</div>
       <div class="pct na" id="pct-${idx.id}">N/A</div>`;
     card.appendChild(head);
+
+    const pctEl = card.querySelector(`#pct-${idx.id}`);  // ← 取得を追加
 
     const desc=document.createElement('div');desc.className='desc';desc.textContent=idx.desc||'';card.appendChild(desc);
 
@@ -212,36 +197,27 @@ const PCT_TWEAK = {
     (async()=>{
       // 画像
       await loadFirstImage(img, buildChartUrls(idx));
-      // 騰落率
-    const stats = await fetchFirstJson(buildStatsUrls(idx));
-let raw = null;
 
-// 1) まず“最も意味の近い”フィールドを拾う（pct_intraday 優先）
-if (stats) {
-  if (typeof stats.pct_intraday !== 'undefined') {
-    raw = Number(stats.pct_intraday);
-  } else if (typeof stats.delta_level !== 'undefined') {
-    raw = Number(stats.delta_level);
-  } else if (typeof stats.change_pct !== 'undefined') {
-    raw = Number(stats.change_pct);
-  }
-}
+      // 騰落率（基本は “％単位” として扱い、必要な銘柄だけ個別補正）
+      const stats = await fetchFirstJson(buildStatsUrls(idx));
+      let raw = null;
+      if (stats) {
+        if (typeof stats.pct_intraday !== 'undefined')      raw = Number(stats.pct_intraday);
+        else if (typeof stats.pct_1d !== 'undefined')        raw = Number(stats.pct_1d);
+        else if (typeof stats.delta_level !== 'undefined')   raw = Number(stats.delta_level); // level→％換算が必要なら個別に
+        else if (typeof stats.change_pct !== 'undefined')    raw = Number(stats.change_pct);
+      }
 
-// 2) 個別補正（R-BANK9 など）
-if (raw != null) {
-  const tweak = PCT_TWEAK[idx.id];
-  if (tweak === '÷100') raw = raw / 100;
-  if (tweak === '×100') raw = raw * 100;
-}
+      // 個別補正
+      const tweak = PCT_TWEAK[idx.id];
+      if (raw != null) {
+        if (tweak === '×100') raw = raw * 100;
+        if (tweak === '÷100') raw = raw / 100;
+      }
 
-// 3) ％に正規化して表示
-//   - ここでは raw が "小数(0.2031)" なら ×100、すでに "％値(20.31)" ならそのまま
-let v = null;
-if (raw != null) v = (Math.abs(raw) > 0 && Math.abs(raw) < 1) ? raw * 100 : raw;
-
-const { text, cls } = fmtPct(v);  // fmtPct は“％値”を前提に整形する関数
-pctEl.textContent = text;
-pctEl.className = `pct ${cls}`;
+      const { text, cls } = fmtPct(raw);
+      pctEl.textContent = text;
+      pctEl.className = `pct ${cls}`;
     })();
 
     return card;
