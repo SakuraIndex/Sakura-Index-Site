@@ -1,100 +1,123 @@
 {%- comment -%}
-共通インデックスカード（stats.json に対応）
-引数:
-  id, title, flag, badge, desc,
-  stats_json, intraday_png, am_png (省略可)
+汎用インデックスカード（stats.json“中身”を stats_json として受け取る版）
+- 使い方（index.html 側）:
+  {% capture ASTRA_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
+  {% include components/index-card.html
+      id="ASTRA4"
+      title="Astra4"
+      badge="宇宙ベンチャー"
+      desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+      stats_json=ASTRA_stats
+      intraday_png="/charts/ASTRA4/intraday.png"
+      am_png="/charts/ASTRA4/intraday_am.png"
+  %}
+- 重要:
+  画像は src="{{ site.baseurl }}{{ include.intraday_png }}" のように baseurl を前置
 {%- endcomment -%}
 
-{%- assign _stats_raw = '' -%}
-{%- capture _stats_raw -%}{% include_relative {{ include.stats_json }} %}{%- endcapture -%}
+{%- assign _raw = include.stats_json | strip_newlines -%}
 
-{%- assign stats = nil -%}
-{%- if _stats_raw and _stats_raw != '' and _stats_raw != '---' -%}
-  {%- assign stats = _stats_raw | strip_newlines | replace: ' ', '' | jsonify | parse_json -%}
-{%- endif -%}
+{%- comment -%} 安全側：stats_json が空なら N/A {%- endcomment -%}
+{%- if _raw == "" or _raw == nil -%}
+  {%- assign pct_num = nil -%}
+  {%- assign scale = nil -%}
+  {%- assign basis = nil -%}
+{%- else -%}
+  {%- comment -%}
+  JSON を Liquid の文字列操作でパース（GitHub Pages の制約でフィルタのみ）
+  優先度:
+    1) "pct_intraday" があればそれを使う
+    2) なければ "delta_level" を使う
+  表示は "scale" によって補正:
+    - "percent" ならそのまま（例: 1.23 -> +1.23%）
+    - "ratio"   なら 100 倍（例: 0.0123 -> +1.23%）
+  {%- endcomment -%}
 
-{%- comment -%} 騰落率の抽出ロジック {%- endcomment -%}
-{%- assign pct_source = 0 -%}
-{%- assign scale = 'percent' -%}
-{%- if stats -%}
-  {%- if stats.pct_intraday != nil -%}
-    {%- assign pct_source = stats.pct_intraday -%}
-  {%- elsif stats.delta_level != nil -%}
-    {%- assign pct_source = stats.delta_level -%}
+  {%- assign _pct_try = _raw | split: '"pct_intraday":' | last | split: ',' | first | replace:'}','' | strip -%}
+  {%- assign _pct_is_num = _pct_try | plus: 0 -%}
+
+  {%- assign _delta_try = _raw | split: '"delta_level":' | last | split: ',' | first | replace:'}','' | strip -%}
+  {%- assign _delta_is_num = _delta_try | plus: 0 -%}
+
+  {%- assign scale = _raw | split: '"scale":' | last | split: ',' | first | replace:'"','' | replace:'}','' | strip -%}
+  {%- assign basis = _raw | split: '"basis":' | last | split: ',' | first | replace:'"','' | replace:'}','' | strip -%}
+
+  {%- if _pct_try != _raw and _pct_try != "" -%}
+    {%- assign raw_value = _pct_is_num -%}
+    {%- assign vt = 'pct' -%}
+  {%- elsif _delta_try != _raw and _delta_try != "" -%}
+    {%- assign raw_value = _delta_is_num -%}
+    {%- assign vt = 'delta' -%}
+  {%- else -%}
+    {%- assign raw_value = nil -%}
+    {%- assign vt = nil -%}
   {%- endif -%}
-  {%- if stats.scale != nil and stats.scale != '' -%}
-    {%- assign scale = stats.scale | downcase -%}
+
+  {%- if raw_value == nil -%}
+    {%- assign pct_num = nil -%}
+  {%- else -%}
+    {%- if scale == 'ratio' -%}
+      {%- assign pct_num = raw_value | times: 100 -%}
+    {%- else -%}
+      {%- assign pct_num = raw_value -%}
+    {%- endif -%}
   {%- endif -%}
 {%- endif -%}
 
-{%- assign pct_num = pct_source | plus: 0 -%}
-{%- if scale == 'ratio' or scale == 'fraction' -%}
-  {%- assign pct_num = pct_num | times: 100 -%}
-{%- endif -%}
-
-{%- assign pct_text = 'N/A' -%}
-{%- if pct_source != nil -%}
-  {%- assign sgn = '' -%}
-  {%- if pct_num > 0 -%}{%- assign sgn = '+' -%}{%- endif -%}
-  {%- assign pct_text = sgn | append: (pct_num | round: 2) | append: '%' -%}
-{%- endif -%}
-
-{%- comment -%} ステータス色 {%- endcomment -%}
-{%- assign pill_cls = 'text-slate-300' -%}
-{%- if pct_source != nil -%}
-  {%- if pct_num > 0 -%}{%- assign pill_cls = 'text-emerald-400' -%}
-  {%- elsif pct_num < 0 -%}{%- assign pill_cls = 'text-rose-400' -%}{%- endif -%}
-{%- endif -%}
+{%- comment -%} 見た目定義（前回“良かった方”に合わせて微調整） {%- endcomment -%}
+<style>
+  .card { background-color: #0b1220; border: 1px solid #1e293b; border-radius: 16px; padding: 16px 16px 12px 16px; box-shadow: 0 0 0 1px rgba(148,163,184,0.04) inset; }
+  .card h3 { margin: 0; font-size: 20px; font-weight: 700; color: #e2e8f0; display:flex; align-items:center; gap:10px;}
+  .sub { display:inline-block; font-size: 12px; color: #94a3b8; background:#0f172a; border:1px solid #1e293b; padding:3px 8px; border-radius: 999px; }
+  .desc { margin: 8px 0 10px 0; color:#94a3b8; font-size: 13px; }
+  .delta { margin-left:auto; font-size: 16px; font-weight: 800; }
+  .delta.pos { color:#34d399; }  /* + */
+  .delta.neg { color:#f87171; }  /* - */
+  .chartbox { background:#0a0f1a; border:1px solid #1e293b; border-radius: 10px; height: 260px; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .chartbox img { width:100%; height:100%; object-fit:contain; }
+  .btns { display:flex; gap:8px; margin-top:12px; }
+  .btn { color:#cbd5e1; background:#0f172a; border:1px solid #223045; border-radius:999px; padding:6px 10px; font-size:12px; }
+  .row { display:flex; align-items:center; gap:10px;}
+</style>
 
 <div class="card">
-  <div class="card__head">
-    <div class="card__title">
-      <span class="mr-2">{{ include.flag }}</span>
-      <span class="font-semibold">{{ include.title }}</span>
-      {%- if include.badge and include.badge != '' -%}
-        <span class="badge">{{ include.badge }}</span>
+  <div class="row">
+    <h3>
+      {%- if include.flag -%}<span>{{ include.flag }}</span>{%- endif -%}
+      <span>{{ include.title }}</span>
+      {%- if include.badge -%}<span class="sub">{{ include.badge }}</span>{%- endif -%}
+    </h3>
+
+    {%- if pct_num == nil -%}
+      <span class="delta sub">N/A</span>
+    {%- else -%}
+      {%- assign rounded = pct_num | round: 2 -%}
+      {%- if rounded > 0 -%}
+        <span class="delta pos">+{{ rounded }}%</span>
+      {%- elsif rounded < 0 -%}
+        <span class="delta neg">{{ rounded }}%</span>
+      {%- else -%}
+        <span class="delta sub">0%</span>
       {%- endif -%}
-    </div>
-    <div class="card__pct {{ pill_cls }}">{{ pct_text }}</div>
+    {%- endif -%}
   </div>
 
-  <p class="card__desc">{{ include.desc }}</p>
+  {%- if include.desc -%}
+    <div class="desc">{{ include.desc }}</div>
+  {%- endif -%}
 
   <div class="chartbox">
-    {%- if include.intraday_png and include.intraday_png != '' -%}
-      <img loading="lazy" src="{{ include.intraday_png }}" alt="{{ include.id }} chart">
-    {%- else -%}
-      <div class="chartbox__empty">chart (no image)</div>
-    {%- endif -%}
+    <img
+      alt="{{ include.id }} chart"
+      src="{{ site.baseurl }}{{ include.intraday_png }}"
+      onerror="this.style.opacity=0.25; this.alt='chart (no image)';">
   </div>
 
-  <div class="card__btns">
-    <button class="btn btn--on">Intraday</button>
-    {%- if include.am_png and include.am_png != '' -%}
-      <a class="btn" href="{{ include.am_png }}">前場(AM)</a>
-    {%- else -%}
-      <span class="btn btn--ghost">前場(AM)</span>
-    {%- endif -%}
-    <span class="btn">7日</span><span class="btn">1ヶ月</span><span class="btn">1年</span>
+  <div class="btns">
+    <button class="btn" onclick="this.closest('.card').querySelector('img').src='{{ site.baseurl }}{{ include.intraday_png }}'">Intraday</button>
+    <button class="btn" onclick="this.closest('.card').querySelector('img').src='{{ site.baseurl }}{{ include.am_png }}'">前場(AM)</button>
+    <button class="btn" disabled>7日</button>
+    <button class="btn" disabled>1ヶ月</button>
+    <button class="btn" disabled>1年</button>
   </div>
 </div>
-
-<style>
-/* ---- Card layout (同ファイル内で完結) ---- */
-.card{display:flex;flex-direction:column;gap:.6rem;border:1px solid rgba(148,163,184,.15);background:rgba(2,6,23,.6);border-radius:14px;padding:14px}
-.card__head{display:flex;justify-content:space-between;align-items:center}
-.card__title{display:flex;align-items:center;gap:.5rem}
-.badge{font-size:.72rem;padding:.12rem .5rem;border-radius:9999px;background:rgba(148,163,184,.15);color:#cbd5e1}
-.card__pct{font-weight:700}
-.card__desc{font-size:.86rem;color:#cbd5e1;line-height:1.4;margin:.1rem 0 .3rem}
-.chartbox{position:relative; width:100%; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:rgba(148,163,184,.08)}
-.chartbox > img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
-.chartbox__empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#94a3b8;font-size:.9rem}
-.card__btns{display:flex;gap:.5rem;margin-top:.2rem}
-.btn{font-size:.78rem;padding:.25rem .7rem;border:1px solid rgba(148,163,184,.25);border-radius:9999px;color:#cbd5e1}
-.btn--on{border-color:rgba(148,163,184,.5);background:rgba(148,163,184,.12)}
-.btn--ghost{opacity:.45;border-style:dashed}
-.text-emerald-400{color:#34d399}
-.text-rose-400{color:#fb7185}
-.text-slate-300{color:#cbd5e1}
-</style>
