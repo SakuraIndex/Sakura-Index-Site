@@ -1,14 +1,11 @@
 {%- comment -%}
-汎用インデックスカードコンポーネント（完全版）
-使い方は index.html 内で include するだけ。
+汎用インデックスカード（stats.json構造対応版）
+対応形式：
+- ASTRA4, R-BANK9: pct_intraday (ratio)
+- S-COIN+, AIN-10: delta_level / scale (percent)
 {%- endcomment -%}
 
 {%- assign stats = nil -%}
-{%- assign vt = 'percent' -%}
-{%- assign delta_pct = nil -%}
-{%- assign delta_raw = nil -%}
-{%- assign updated_at = nil -%}
-
 {%- capture _stats_json -%}
   {%- include_relative ..{{ include.json_path }} -%}
 {%- endcapture -%}
@@ -17,17 +14,33 @@
   {%- assign stats = _stats_json | strip_newlines | replace: '	',' ' | replace: '  ',' ' | jsonify | parse_json -%}
 {%- endif -%}
 
-{%- if stats and stats.delta -%}
-  {%- assign delta_raw = stats.delta -%}
-  {%- assign vt = stats.value_type | default: 'percent' -%}
+{%- assign delta_raw = nil -%}
+{%- assign delta_pct = nil -%}
+{%- assign vt = 'ratio' -%}
+
+{%- comment -%}
+優先順位:
+1. delta_level + scale (AIN-10)
+2. pct_intraday (ASTRA4, R-BANK9, S-COIN+)
+{%- endcomment -%}
+
+{%- if stats.delta_level -%}
+  {%- assign delta_raw = stats.delta_level -%}
+  {%- assign vt = stats.scale | default: 'percent' -%}
+{%- elsif stats.pct_intraday -%}
+  {%- assign delta_raw = stats.pct_intraday -%}
+  {%- assign vt = stats.scale | default: 'ratio' -%}
+{%- endif -%}
+
+{%- if delta_raw -%}
   {%- if vt == 'ratio' -%}
     {%- assign delta_pct = delta_raw | times: 100 -%}
   {%- else -%}
     {%- assign delta_pct = delta_raw -%}
   {%- endif -%}
-  {%- assign updated_at = stats.updated_at | default: '' -%}
 {%- endif -%}
 
+{%- assign updated_at = stats.updated_at | default: '' -%}
 {%- assign signClass = 'text-green-400' -%}
 {%- if delta_pct and delta_pct < 0 -%}{%- assign signClass = 'text-red-400' -%}{%- endif -%}
 
