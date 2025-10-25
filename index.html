@@ -1,158 +1,138 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🌸 桜Index - 公式サイト</title>
-  <meta name="description" content="docs/charts/* のスナップショットを用いた簡易ダッシュボード" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>🌸桜Index - 公式サイト</title>
+  <meta name="description" content="各種等加重指数のスナップショットダッシュボード" />
   <style>
-    :root {
-      --bg:#0b1220; --panel:#111a2b; --ink:#e6eefc; --sub:#9fb2d3;
-      --accent:#66d9ef; --pos:#5ce0a4; --neg:#ff7b7b; --muted:#496185;
-      --chip:#1b2640;
+    :root{
+      --bg:#0f172a;--panel:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;
+      --chip:#1f2937;--pos:#10b981;--neg:#ef4444;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      color:var(--ink); background:linear-gradient(180deg,#071022 0%,#0b1220 100%);
-    }
-    .wrap{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-    header h1{margin:0;font-size:22px;letter-spacing:.5px}
-    .small{color:var(--sub);font-size:12px}
-    .links a{display:inline-block;font-size:12px;padding:8px 12px;color:var(--ink);text-decoration:none;border:1px solid #223152;border-radius:10px;background:#101a2d;margin-left:8px}
-    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-    .col-6{grid-column:span 6}
-    @media (max-width: 980px){.col-6{grid-column:span 12}}
-    .card{
-      background:linear-gradient(180deg,#0f1a30 0%,#0b1426 100%);
-      border:1px solid #1b2743;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.35);
-      overflow:hidden; display:flex; flex-direction:column; min-height:380px;
-    }
-    .card .head{padding:14px 14px 8px;display:flex;align-items:center;gap:10px}
-    .card .title{font-weight:700}
-    .badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid #243557;border-radius:999px;padding:4px 8px}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    h1{margin:0;font-size:20px;display:flex;gap:8px;align-items:center}
+    h1 .dot{font-size:20px}
+    .meta{font-size:12px;color:var(--muted)}
+    .social{display:flex;gap:8px}
+    .btn{border:1px solid #334155;background:#0b1220;color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid #1f2937;border-radius:14px;padding:14px}
+    .head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .title{font-weight:700}
+    .badge{background:#1f2937;border:1px solid #334155;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:11px}
     .delta{margin-left:auto;font-weight:700}
-    .delta.pos{color:var(--pos)} .delta.neg{color:var(--neg)} .delta.na{color:var(--muted)}
-    .desc{color:var(--sub);font-size:12px;padding:0 14px 6px}
-    .media{flex:1; display:flex;align-items:center;justify-content:center;padding:6px 8px 14px}
-    .media img{display:block;width:100%;height:auto;border:1px solid #203356;border-radius:10px;background:#0a1326}
-    .tabs{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1b2743;background:#0c1529}
-    .tabs .chip{font-size:12px;color:var(--ink);border:1px solid #223152;background:#111a2c;border-radius:999px;padding:8px 10px}
-    footer{margin-top:26px;color:var(--sub);font-size:12px;text-align:center}
+    .delta.pos{color:var(--pos)}
+    .delta.neg{color:var(--neg)}
+    .delta.na{color:var(--muted)}
+    .desc{font-size:12px;color:var(--muted);margin:6px 0 10px}
+    .media{background:#0b1220;border:1px solid #1f2937;border-radius:10px;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .media img{width:100%;height:100%;object-fit:contain;background:#0b1220}
+    .tabs{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid #334155;color:#cbd5e1;border-radius:999px;padding:4px 10px;font-size:12px}
+    footer{margin:28px 0 8px;font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>🌸 桜Index - 公式サイト</h1>
-      <div class="links">
-        <a href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
-        <a href="https://note.com/" target="_blank" rel="noopener">公式note</a>
+      <div>
+        <h1><span class="dot">🌸</span>桜Index - 公式サイト</h1>
+        <div class="meta" id="synced-at">同期完了：— ／ データ: charts/*</div>
+      </div>
+      <div class="social">
+        <a class="btn" href="https://x.com" target="_blank" rel="noreferrer">公式X（Twitter）</a>
+        <a class="btn" href="https://note.com" target="_blank" rel="noreferrer">公式note</a>
       </div>
     </header>
-    <div class="small" id="synced-at">同期完了：— / データ: docs/charts/*</div>
 
-    <section class="grid" id="cards">
-      <!-- ここにJSでカードを描画 -->
-    </section>
+    <main class="grid" id="cards"></main>
 
     <footer>
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
+      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指標リポの自動生成スナップショットと同期しています。<br>
       ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
       © <span id="y"></span> 桜Index
     </footer>
   </div>
 
   <script>
-  // ====== ここからJS ======
+    // ====== インデックス定義 ======
+    const INDEXES = [
+      { id: 'ASTRA4', title: 'Astra4',   badge: '宇宙ベンチャー', desc: '宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+      { id: 'R-BANK9', title: 'R-BANK9', badge: '地方銀行',       desc: '地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+      { id: 'AIN-10',  title: 'AIN-10',  badge: 'AI関連10',       desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
+      { id: 'S-COIN+', title: 'S-COIN+', badge: '仮想資産関連',   desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+    ];
 
-  // 1) 表示対象（必要なら並び順・文言を編集）
-  const INDEXES = [
-    {
-      id: 'ASTRA4',
-      title: 'Astra4',
-      badge: '宇宙ベンチャー',
-      desc: '宇宙関連銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。',
-    },
-    {
-      id: 'R-BANK9',
-      title: 'R-BANK9',
-      badge: '地方銀行',
-      desc: '地方銀行9銘柄の等ウェイト指数。日中は％、長期はレベル推移を表示。',
-    },
-    {
-      id: 'AIN-10',
-      title: 'AIN-10',
-      badge: 'AI関連10',
-      desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。',
-    },
-    {
-      id: 'S-COIN+',
-      title: 'S-COIN+',
-      badge: '仮想資産関連',
-      desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。',
-    },
-  ];
+    // ====== ルート自動検出（charts/ or docs/charts/） ======
+    const baseDir = window.location.pathname.replace(/\/[^/]*$/, ''); // index.html の親
+    let CHARTS_ROOT = null; // 例) /<repo>/charts or /<repo>/docs/charts
 
-  // 2) パス作成（フォルダ名に + や 空白があるので encode）
-  const baseCharts = (id) => `/charts/${encodeURIComponent(id)}`;
-  const pathJson  = (id) => `${baseCharts(id)}/stats.json`;
-  const pathIntraday = (id) => `${baseCharts(id)}/intraday.png`;
-  const pathAm       = (id) => `${baseCharts(id)}/intraday_am.png`; // あれば使う
-
-  // 3) 騰落率の計算（stats.json の不揃いに完全対応）
-  function pickDeltaPct(stats) {
-    // 優先順位:
-    //  (A) delta_level + scale=percent -> delta_level * 100
-    //  (B) pct_intraday -> *100
-    //  (C) pct_id       -> *100 だが外れ値（±30%超）は破棄
-    if (stats && typeof stats.delta_level === 'number' && (stats.scale === 'percent' || stats.value_type === 'percent')) {
-      return stats.delta_level * 100;
+    async function pathExists(url) {
+      try { const r = await fetch(url, { method: 'HEAD', cache: 'no-store' }); return r.ok; }
+      catch { return false; }
     }
-    if (stats && typeof stats.pct_intraday === 'number') {
-      return stats.pct_intraday * 100;
-    }
-    if (stats && typeof stats.pct_id === 'number') {
-      const v = stats.pct_id * 100;
-      // 取り扱い注意: 明らかな外れ値は採用しない（過去の AIN-10 対策）
-      if (Math.abs(v) <= 30) return v;
-    }
-    return null; // 不明
-  }
-  const fmt = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 
-  // 4) 画像のフォールバック（intraday.png → intraday_am.png）
-  async function resolveImage(id) {
-    async function exists(url) {
-      try {
-        const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        return r.ok;
-      } catch { return false; }
+    async function decideChartsRoot() {
+      // まず charts/ を試し、ダメなら docs/charts/
+      const cand1 = `${baseDir}/charts/${INDEXES[0].id}/stats.json`;
+      if (await pathExists(cand1)) { CHARTS_ROOT = `${baseDir}/charts`; return; }
+      const cand2 = `${baseDir}/docs/charts/${INDEXES[0].id}/stats.json`;
+      if (await pathExists(cand2)) { CHARTS_ROOT = `${baseDir}/docs/charts`; return; }
+      // 最後の保険（存在しなくても進む）
+      CHARTS_ROOT = `${baseDir}/charts`;
     }
-    const a = pathIntraday(id);
-    if (await exists(a)) return a;
-    const b = pathAm(id);
-    if (await exists(b)) return b;
-    return null;
-  }
 
-  // 5) 1枚のカードを描画
-  function renderCardSkeleton({ id, title, badge, desc }) {
-    const col = document.createElement('article');
-    col.className = 'col-6';
-    col.innerHTML = `
-      <div class="card" id="card-${id}">
+    // ====== URL ヘルパ ======
+    const jsonPath      = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/stats.json`;
+    const intradayPath  = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday.png`;
+    const intradayAmPath= (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday_am.png`;
+
+    // ====== 騰落率の抽出（複数フォーマット対応） ======
+    function pickDeltaPct(stats) {
+      // AIN-10 など: delta_level + (scale|value_type)=percent
+      if (stats && typeof stats.delta_level === 'number' &&
+          (stats.scale === 'percent' || stats.value_type === 'percent')) {
+        return stats.delta_level * 100;
+      }
+      // ASTRA4/R-BANK9/S-COIN+ など: pct_intraday
+      if (stats && typeof stats.pct_intraday === 'number') {
+        return stats.pct_intraday * 100;
+      }
+      // 互換: pct_id（異常値は弾く）
+      if (stats && typeof stats.pct_id === 'number') {
+        const v = stats.pct_id * 100;
+        if (Math.abs(v) <= 30) return v;
+      }
+      return null;
+    }
+    const fmt = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+
+    // ====== 画像フォールバック解決 ======
+    async function resolveImage(id) {
+      const a = intradayPath(id);
+      if (await pathExists(a)) return a;
+      const b = intradayAmPath(id);
+      if (await pathExists(b)) return b;
+      return null;
+    }
+
+    // ====== カード描画 ======
+    function renderCard({ id, title, badge, desc }) {
+      const el = document.createElement('section');
+      el.className = 'card';
+      el.innerHTML = `
         <div class="head">
           <div class="title">${title}</div>
           <span class="badge">${badge}</span>
           <div class="delta na" id="delta-${id}">N/A</div>
         </div>
         <div class="desc">${desc}</div>
-        <div class="media">
-          <img id="img-${id}" alt="${title} chart" src="" loading="lazy" />
-        </div>
+        <div class="media"><img id="img-${id}" alt="${title} chart" loading="lazy"></div>
         <div class="tabs">
           <span class="chip">Intraday</span>
           <span class="chip">前場(AM)</span>
@@ -160,60 +140,64 @@
           <span class="chip">1ヶ月</span>
           <span class="chip">1年</span>
         </div>
-      </div>
-    `;
-    return col;
-  }
+      `;
+      return el;
+    }
 
-  // 6) 全体描画
-  async function boot() {
-    // 年
-    document.getElementById('y').textContent = new Date().getFullYear();
-    // 同期時刻（ローカル表示でOK）
-    const dt = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    const label = `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
-    document.getElementById('synced-at').textContent = `同期完了：${label} / データ: docs/charts/*`;
+    // ====== 起動 ======
+    async function boot() {
+      // 年号
+      document.getElementById('y').textContent = new Date().getFullYear();
 
-    const host = document.getElementById('cards');
+      // ルート決定
+      await decideChartsRoot();
 
-    // スケルトン配置
-    INDEXES.forEach(cfg => host.appendChild(renderCardSkeleton(cfg)));
+      // ヘッダの表示（見やすいよう、どちらを使ったかを表示）
+      const n = new Date(); const pad=(x)=>String(x).padStart(2,'0');
+      const stamp = `${n.getFullYear()}/${pad(n.getMonth()+1)}/${pad(n.getDate())} ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+      const pathLabel = CHARTS_ROOT.includes('/docs/') ? 'docs/charts/*' : 'charts/*';
+      document.getElementById('synced-at').textContent = `同期完了：${stamp} ／ データ: ${pathLabel}`;
 
-    // データ投入
-    for (const idx of INDEXES) {
-      const $delta = document.getElementById(`delta-${idx.id}`);
-      const $img   = document.getElementById(`img-${idx.id}`);
-
-      // 画像
-      resolveImage(idx.id).then(src => {
-        if (src) $img.src = src; else $img.style.display = 'none';
+      // カード配置
+      const grid = document.getElementById('cards');
+      INDEXES.forEach(cfg => {
+        const col = document.createElement('div');
+        col.className = 'col';
+        col.appendChild(renderCard(cfg));
+        grid.appendChild(col);
       });
 
-      // stats.json
-      try {
-        const r = await fetch(pathJson(idx.id), { cache: 'no-store' });
-        if (!r.ok) throw new Error(`${idx.id} stats.json not found`);
-        const stats = await r.json();
+      // 各カードにデータ投入
+      for (const idx of INDEXES) {
+        const $img   = document.getElementById(`img-${idx.id}`);
+        const $delta = document.getElementById(`delta-${idx.id}`);
 
-        const v = pickDeltaPct(stats);
-        if (v === null || Number.isNaN(v)) {
+        // 画像
+        resolveImage(idx.id).then(src => {
+          if (src) $img.src = src; else $img.style.display = 'none';
+        });
+
+        // JSON → 騰落率
+        try {
+          const res = await fetch(jsonPath(idx.id), { cache: 'no-store' });
+          if (!res.ok) throw new Error('json not found');
+          const stats = await res.json();
+          const v = pickDeltaPct(stats);
+          if (v === null || Number.isNaN(v)) {
+            $delta.textContent = 'N/A';
+            $delta.className = 'delta na';
+          } else {
+            $delta.textContent = fmt(v);
+            $delta.className = 'delta ' + (v > 0 ? 'pos' : (v < 0 ? 'neg' : 'na'));
+          }
+        } catch {
           $delta.textContent = 'N/A';
           $delta.className = 'delta na';
-        } else {
-          $delta.textContent = fmt(v);
-          $delta.className = 'delta ' + (v>0?'pos':(v<0?'neg':'na'));
         }
-      } catch (e) {
-        $delta.textContent = 'N/A';
-        $delta.className = 'delta na';
-        // console.debug(e);
       }
     }
-  }
 
-  boot();
-  // ====== ここまでJS ======
+    boot();
   </script>
 </body>
 </html>
