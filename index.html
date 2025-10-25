@@ -8,82 +8,94 @@ layout: null
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-  body{background:#0b1119;color:#dfe7ff;font-family:-apple-system,system-ui,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;line-height:1.6}
-  .container{max-width:1180px;margin:32px auto;padding:0 16px}
-  .sitehead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
-  .sitename{font-weight:800;font-size:22px}
-  .sub{color:#8ea3c9;font-size:12px}
-  .actions{display:flex;gap:8px;margin-top:4px}
-  .btn{font-size:12px;color:#c6d1ee;background:#0f1520;border:1px solid #25314a;padding:.45rem .7rem;border-radius:10px;text-decoration:none}
-  .grid{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
-  .foot{color:#98a8c9;font-size:12px;text-align:center;margin:24px 0 16px}
+  :root{
+    --bg:#0b1119;
+    --panel:#0e1522;
+    --panel2:#101a2b;
+    --br:#1f2a40;
+    --fg:#dfe7ff;
+    --muted:#93a4c8;
+    --accent:#78e7ff;
+    --good:#36d399;
+    --bad:#ff6b6b;
+    --chip:#0f1726;
+  }
+  html,body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.55}
+  .container{max-width:1200px;margin:28px auto;padding:0 16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .title{font-weight:800;font-size:22px}
+  .sub{font-size:12px;color:var(--muted)}
+  .btns{display:flex;gap:8px}
+  .btn{font-size:12px;line-height:1;color:#cdddff;text-decoration:none;background:var(--panel2);border:1px solid var(--br);padding:.45rem .7rem;border-radius:12px}
+  .grid{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin:28px 0}
 </style>
 
 <div class="container">
-  <div class="sitehead">
+  <div class="top">
     <div>
-      <div class="sitename">🌸 桜Index - 公式サイト</div>
+      <div class="title">🌸 桜Index - 公式サイト</div>
       <div class="sub">同期完了： {{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
     </div>
-    <div class="actions">
+    <div class="btns">
       <a class="btn" href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
       <a class="btn" href="https://note.com/" target="_blank" rel="noopener">公式note</a>
     </div>
   </div>
 
-  {% comment %}
-    各 charts/*/stats.json を個別に取り込み、文字列を各カードへ渡す
-  {% endcomment %}
-  {% capture ASTRA4_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
-  {% capture RBANK9_stats %}{% include_relative charts/R-BANK9/stats.json %}{% endcapture %}
-  {% capture AIN10_stats %}{% include_relative charts/AIN-10/stats.json %}{% endcapture %}
-  {% capture SCOIN_stats %}{% include_relative charts/S-COIN+/stats.json %}{% endcapture %}
+  {%- comment -%} 各 stats.json を文字列として取り込み {%- endcomment -%}
+  {%- capture ASTRA4_stats -%}{% include_relative charts/ASTRA4/stats.json %}{%- endcapture -%}
+  {%- capture RBANK9_stats -%}{% include_relative charts/R-BANK9/stats.json %}{%- endcapture -%}
+  {%- capture AIN10_stats  -%}{% include_relative charts/AIN-10/stats.json %}{%- endcapture -%}
+  {%- capture SCOIN_stats  -%}{% include_relative charts/S-COIN+/stats.json %}{%- endcapture -%}
 
   <div class="grid">
-    {% include components/index-card.html
-       id="ASTRA4"
-       flag="🇯🇵"
-       title="Astra4"
-       badge="宇宙ベンチャー"
-       desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-       stats_json=ASTRA4_stats
-       intraday_png="/charts/ASTRA4/intraday.png"
-       am_png="/charts/ASTRA4/intraday_am.png"
-    %}
 
-    {% include components/index-card.html
-       id="R-BANK9"
-       flag="🇯🇵"
-       title="R-BANK9"
-       badge="地方銀行"
-       desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
-       stats_json=RBANK9_stats
-       intraday_png="/charts/R-BANK9/intraday.png"
-       am_png="/charts/R-BANK9/intraday_am.png"
-    %}
+    {%- include components/index-card.html
+      id="ASTRA4"
+      flag="🇯🇵"
+      title="Astra4"
+      badge="宇宙ベンチャー"
+      desc="宇宙関連銘柄の等ウェイト指数。日中は%、 長期はレベル推移を表示。"
+      stats_json=ASTRA4_stats
+      intraday_png="/charts/ASTRA4/intraday.png"
+      am_png="/charts/ASTRA4/intraday_am.png"
+    -%}
 
-    {% include components/index-card.html
-       id="AIN-10"
-       flag="🇺🇸"
-       title="AIN-10"
-       badge="AI関連10"
-       desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-       stats_json=AIN10_stats
-       intraday_png="/charts/AIN-10/intraday.png"
-       am_png="/charts/AIN-10/intraday_am.png"
-    %}
+    {%- include components/index-card.html
+      id="R-BANK9"
+      flag="🇯🇵"
+      title="R-BANK9"
+      badge="地方銀行"
+      desc="地方銀行9銘柄の等ウェイト指数。日中は%、 長期はレベル推移を表示。"
+      stats_json=RBANK9_stats
+      intraday_png="/charts/R-BANK9/intraday.png"
+      am_png="/charts/R-BANK9/intraday_am.png"
+    -%}
 
-    {% include components/index-card.html
-       id="S-COIN+"
-       flag="🇯🇵"
-       title="S-COIN+"
-       badge="仮想資産関連"
-       desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-       stats_json=SCOIN_stats
-       intraday_png="/charts/S-COIN+/intraday.png"
-       am_png="/charts/S-COIN+/intraday_am.png"
-    %}
+    {%- include components/index-card.html
+      id="AIN-10"
+      flag="🇺🇸"
+      title="AIN-10"
+      badge="AI関連10"
+      desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+      stats_json=AIN10_stats
+      intraday_png="/charts/AIN-10/intraday.png"
+      am_png="/charts/AIN-10/intraday_am.png"
+    -%}
+
+    {%- include components/index-card.html
+      id="S-COIN+"
+      flag="🇯🇵"
+      title="S-COIN+"
+      badge="仮想資産関連"
+      desc="暗号資産関連の等ウェイト指数。日中は騰落率、 長期はレベル推移を表示。"
+      stats_json=SCOIN_stats
+      intraday_png="/charts/S-COIN+/intraday.png"
+      am_png="/charts/S-COIN+/intraday_am.png"
+    -%}
+
   </div>
 
   <div class="foot">
