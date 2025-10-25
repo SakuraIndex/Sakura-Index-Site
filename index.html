@@ -6,61 +6,184 @@ layout: null
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>桜Index - 公式サイト</title>
-  <meta name="color-scheme" content="dark light" />
-  <!-- 3枚目デザイン準拠のスタイル（存在しなくても表示はされます） -->
-  <link rel="stylesheet" href="{{ site.baseurl }}/assets/site.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌸 桜Index - 公式サイト</title>
+
+  <style>
+    /* ====== Reset / Base ====== */
+    :root{
+      --bg:#0c1220;
+      --panel:#131b2e;
+      --panel-2:#0f1728;
+      --text:#dbe7ff;
+      --muted:#93a4c4;
+      --accent:#2dd4bf;
+      --good:#2dd4bf;
+      --bad:#f87171;
+      --chip:#1f2b46;
+      --chip-2:#1a2540;
+      --ring:#233155;
+      --border:#223154;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:radial-gradient(60% 120% at 50% -10%, #16213c 0%, var(--bg) 50%) no-repeat;
+      color:var(--text);
+      font:400 15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN W3","Yu Gothic UI","游ゴシック体","YuGothic","メイリオ",Meiryo,Arial,"Apple Color Emoji","Segoe UI Emoji";
+      letter-spacing:.02em;
+    }
+
+    a.btn {
+      display:inline-flex;align-items:center;gap:.5rem;
+      padding:.5rem .9rem;border-radius:9999px;
+      background:var(--chip);border:1px solid var(--border);
+      color:var(--text);text-decoration:none;font-weight:600;
+      box-shadow:0 0 0 1px transparent;
+    }
+    a.btn:hover{background:var(--chip-2)}
+    .wrap{max-width:1150px;margin:28px auto 72px;padding:0 16px}
+
+    header .headline{
+      font-size:26px;font-weight:800;letter-spacing:.03em;
+      display:flex;align-items:center;gap:.55rem;margin:0 0 12px;
+    }
+    header .meta{
+      color:var(--muted);font-size:13px;margin:2px 0 18px;
+    }
+    header .actions{display:flex;gap:.6rem;margin:10px 0 20px}
+
+    /* ====== Card ====== */
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:980px){.grid{grid-template-columns:1fr 1fr}}
+    .card{
+      background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);
+      border:1px solid var(--border);
+      border-radius:16px;padding:14px 14px 12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    .card-head{display:flex;align-items:center;gap:.7rem;margin:2px 2px 8px}
+    .flag{font-size:18px}
+    .title{font-weight:800}
+    .badge{
+      font-size:12px;line-height:1;color:var(--muted);
+      padding:.35rem .55rem;border-radius:9999px;
+      background:var(--chip);border:1px solid var(--border);
+    }
+    .desc{font-size:13px;color:var(--muted);margin:2px 0 10px}
+    .delta{
+      margin-left:auto;font-weight:800;
+      padding:.35rem .55rem;border-radius:8px;border:1px solid var(--border);
+      background:var(--chip);min-width:78px;text-align:center
+    }
+    .delta.good{color:var(--good);border-color:#174e4a;background:#0b1f26}
+    .delta.bad{color:var(--bad);border-color:#4e1725;background:#210b12}
+
+    .chart-box{
+      background:#0b1324;border:1px solid var(--ring);
+      border-radius:12px;height:300px;display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+    }
+    .chart-box img{display:block;width:100%;height:100%;object-fit:contain}
+
+    .tabrow{display:flex;gap:.5rem;margin:12px 2px 4px}
+    .chipbtn{
+      padding:.45rem .8rem;border-radius:9999px;font-weight:700;
+      background:var(--chip);border:1px solid var(--border);color:var(--text);
+      font-size:13px;cursor:pointer;user-select:none
+    }
+    .chipbtn.active{outline:2px solid #1b355b}
+    .footnote{
+      margin-top:22px;color:var(--muted);font-size:12px;
+      border-top:1px dashed var(--border);padding-top:12px
+    }
+  </style>
 </head>
+
 <body>
+  <main class="wrap">
+    <header>
+      <h1 class="headline">🌸 桜Index - 公式サイト</h1>
+      <div class="meta">
+        同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
+        <a class="btn" href="https://note.com" target="_blank" rel="noopener">公式note</a>
+      </div>
+    </header>
 
-  <!-- ヘッダー -->
-  <header class="site-header">
-    <div class="site-title">🌸 桜Index - 公式サイト</div>
-    <div class="site-meta">
-      同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*
-    </div>
-    <nav class="links">
-      <a href="https://x.com/sakuraindex" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a href="https://note.com/sakuraindex" target="_blank" rel="noopener">公式note</a>
-    </nav>
-  </header>
+    <!-- ===== grid ===== -->
+    <section class="grid">
 
-  <!-- 指数カード（2カラム レスポンシブ） -->
-  <main class="grid">
+      {% include components/index-card.html
+         id="ASTRA4"
+         flag="🇯🇵"
+         title="Astra4"
+         badge="宇宙ベンチャー"
+         desc="宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+         json_path="/charts/ASTRA4/stats.json"
+         intraday_png="/charts/ASTRA4/intraday.png"
+         am_png="/charts/ASTRA4/intraday_am.png"
+      %}
 
-    {%- comment -%} 表示する指数の定義 {%- endcomment -%}
-    {%- assign indices = "" | split: "" -%}
-    {%- assign indices = indices | push:
-      {"id":"ASTRA4","title":"Astra4","flag":"🇯🇵","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"}
-    -%}
-    {%- assign indices = indices | push:
-      {"id":"R-BANK9","title":"R-BANK9","flag":"🇯🇵","badge":"地方銀行","desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"}
-    -%}
-    {%- assign indices = indices | push:
-      {"id":"AIN-10","title":"AIN-10","flag":"🇺🇸","badge":"AI関連10","desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"}
-    -%}
-    {%- assign indices = indices | push:
-      {"id":"S-COIN+","title":"S-COIN+","flag":"🇯🇵","badge":"仮想資産関連","desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"}
-    -%}
+      {% include components/index-card.html
+         id="R-BANK9"
+         flag="🇯🇵"
+         title="R-BANK9"
+         badge="地方銀行"
+         desc="地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"
+         json_path="/charts/R-BANK9/stats.json"
+         intraday_png="/charts/R-BANK9/intraday.png"
+         am_png="/charts/R-BANK9/intraday_am.png"
+      %}
 
-    {%- for idx in indices -%}
-      {%- include components/index-card.html
-          id=idx.id title=idx.title flag=idx.flag badge=idx.badge desc=idx.desc -%}
-    {%- endfor -%}
+      {% include components/index-card.html
+         id="AIN-10"
+         flag="🇺🇸"
+         title="AIN-10"
+         badge="AI関連10"
+         desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
+         json_path="/charts/AIN-10/stats.json"
+         intraday_png="/charts/AIN-10/intraday.png"
+         am_png="/charts/AIN-10/intraday_am.png"
+      %}
 
-  </main>
+      {% include components/index-card.html
+         id="S-COIN+"
+         flag="🇯🇵"
+         title="S-COIN+"
+         badge="仮想資産関連"
+         desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
+         json_path="/charts/S-COIN+/stats.json"
+         intraday_png="/charts/S-COIN+/intraday.png"
+         am_png="/charts/S-COIN+/intraday_am.png"
+      %}
 
-  <!-- フッター（免責） -->
-  <footer class="footer">
-    <p>
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポの自動生成スナップショットと同期しています。<br />
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br />
+    </section>
+
+    <p class="footnote">
+      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポジトリの自動生成スナップショットと同期しています。<br/>
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br/>
       © {{ site.time | date: "%Y" }} 桜Index
     </p>
-  </footer>
+  </main>
 
-  <!-- 画像切替＆フォールバック（存在しなくても可） -->
-  <script src="{{ site.baseurl }}/assets/site.js" defer></script>
+  <script>
+    // 画像タブ切替（Intraday / 前場AM）。7日/1ヶ月/1年は今後の拡張を考慮してDOMだけ残します。
+    document.querySelectorAll('[data-card]').forEach(card=>{
+      const img = card.querySelector('img[data-chart]');
+      const srcs = JSON.parse(card.dataset.srcs);
+      card.querySelectorAll('[data-tab]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          card.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          const key = btn.dataset.tab; // intraday / am
+          if(srcs[key]) img.src = srcs[key];
+        });
+      });
+    });
+  </script>
 </body>
 </html>
