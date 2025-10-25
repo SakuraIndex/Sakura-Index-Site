@@ -1,95 +1,42 @@
-{%- comment -%}
-汎用インデックスカード（stats.json構造対応版）
-対応形式：
-- ASTRA4, R-BANK9: pct_intraday (ratio)
-- S-COIN+, AIN-10: delta_level / scale (percent)
-{%- endcomment -%}
-
-{%- assign stats = nil -%}
-{%- capture _stats_json -%}
-  {%- include_relative ..{{ include.json_path }} -%}
-{%- endcapture -%}
-
-{%- if _stats_json and _stats_json != '' and _stats_json != '---' -%}
-  {%- assign stats = _stats_json | strip_newlines | replace: '	',' ' | replace: '  ',' ' | jsonify | parse_json -%}
-{%- endif -%}
-
-{%- assign delta_raw = nil -%}
-{%- assign delta_pct = nil -%}
-{%- assign vt = 'ratio' -%}
-
-{%- comment -%}
-優先順位:
-1. delta_level + scale (AIN-10)
-2. pct_intraday (ASTRA4, R-BANK9, S-COIN+)
-{%- endcomment -%}
-
-{%- if stats.delta_level -%}
-  {%- assign delta_raw = stats.delta_level -%}
-  {%- assign vt = stats.scale | default: 'percent' -%}
-{%- elsif stats.pct_intraday -%}
-  {%- assign delta_raw = stats.pct_intraday -%}
-  {%- assign vt = stats.scale | default: 'ratio' -%}
-{%- endif -%}
-
-{%- if delta_raw -%}
-  {%- if vt == 'ratio' -%}
-    {%- assign delta_pct = delta_raw | times: 100 -%}
-  {%- else -%}
-    {%- assign delta_pct = delta_raw -%}
-  {%- endif -%}
-{%- endif -%}
-
-{%- assign updated_at = stats.updated_at | default: '' -%}
-{%- assign signClass = 'text-green-400' -%}
-{%- if delta_pct and delta_pct < 0 -%}{%- assign signClass = 'text-red-400' -%}{%- endif -%}
-
-<div class="card shadow-md rounded-2xl border border-slate-700 bg-slate-900/50 overflow-hidden">
-  <div class="flex items-center justify-between px-5 pt-4">
-    <div class="flex items-center gap-2">
-      <span class="text-base font-semibold">{{ include.title }}</span>
-      {%- if include.badge %}
-        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-200">{{ include.badge }}</span>
-      {%- endif %}
+<!-- _includes/components/index-card.html -->
+<div class="card">
+  <div class="card-head">
+    <div class="left">
+      <span class="title">{{ include.title }}</span>
+      {% if include.badge %}
+      <span class="badge">{{ include.badge }}</span>
+      {% endif %}
     </div>
-
-    <div class="text-sm font-semibold">
-      {%- if delta_pct != nil -%}
-        <span class="{{ signClass }}">
-          {{ delta_pct | round: 2 }}%
-        </span>
-      {%- else -%}
-        <span class="text-slate-400">N/A</span>
-      {%- endif -%}
+    <div class="right">
+      <span
+        class="delta"
+        id="delta-{{ include.id }}"
+        data-json="{{ include.json_path }}"
+        data-scale="auto"
+        >N/A</span>
     </div>
   </div>
 
-  <p class="text-sm text-slate-300 px-5 pt-2">
-    {{ include.description }}
-  </p>
+  {% if include.description %}
+  <p class="desc">{{ include.description }}</p>
+  {% endif %}
 
-  <div class="px-3 pt-3">
-    <div class="rounded-xl bg-slate-800/50 border border-slate-700 overflow-hidden">
-      <img
-        src="{{ include.intraday_png }}"
-        alt="{{ include.title }} chart"
-        class="w-full block"
-        onerror="this.onerror=null;this.src='{{ include.am_png }}';"
+  <div class="chart">
+    <img
+      class="chart-img"
+      id="img-{{ include.id }}"
+      alt="{{ include.title }} chart"
+      data-png="{{ include.intraday_png }}"
+      {% if include.am_png %}data-am="{{ include.am_png }}"{% endif %}
+      data-placeholder="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='1200' height='540'><rect width='100%' height='100%' fill='%23222'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-family='system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' font-size='20'>No image</text></svg>"
       />
-    </div>
   </div>
 
-  <div class="flex items-center gap-2 px-5 py-3">
-    <button class="px-3 py-1 rounded-full bg-slate-700/70 text-slate-100 text-sm">Intraday</button>
-    <button class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-sm">前場(AM)</button>
-    <button class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-sm">7日</button>
-    <button class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-sm">1ヶ月</button>
-    <button class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-sm">1年</button>
-
-    <span class="ml-auto text-xs text-slate-400">
-      {%- if updated_at and updated_at != '' -%}
-        更新: {{ updated_at }}
-      {%- endif -%}
-    </span>
+  <div class="tabs">
+    <button class="tab is-active">Intraday</button>
+    <button class="tab" disabled>前場(AM)</button>
+    <button class="tab" disabled>7日</button>
+    <button class="tab" disabled>1ヶ月</button>
+    <button class="tab" disabled>1年</button>
   </div>
 </div>
