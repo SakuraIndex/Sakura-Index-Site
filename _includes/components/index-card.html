@@ -1,13 +1,9 @@
 {%- comment -%}
-カード部品（完全版）
-props:
-  id, title, flag, badge, desc, stats_json, intraday_png
+カード部品（IDだけ受け取り、パス解決は JS 側で行う）
+props: id, title, flag, badge, desc
 {%- endcomment -%}
 
-{% assign stats_attr = stats_json  | uri_escape | relative_url %}
-{% assign img_src   = intraday_png | uri_escape | relative_url %}
-
-<div class="idx-card" data-stats="{{ stats_attr }}">
+<div class="idx-card" data-id="{{ id | escape }}">
   <div class="idx-head">
     <div class="idx-title">
       <span class="idx-flag">{{ flag }}</span>
@@ -20,8 +16,8 @@ props:
   <p class="idx-desc">{{ desc }}</p>
 
   <div class="chart-wrap">
-    <img class="chart-img" alt="{{ id }} chart" src="{{ img_src }}" loading="lazy" decoding="async"
-      onerror="this.style.display='none'; this.closest('.chart-wrap').insertAdjacentHTML('beforeend','<div class=&quot;img-fallback&quot;>画像が見つかりません</div>')">
+    <img class="chart-img" alt="{{ id }} chart" loading="lazy" decoding="async">
+    <div class="img-fallback" style="display:none">画像が見つかりません</div>
   </div>
 
   <div class="idx-tabs">
