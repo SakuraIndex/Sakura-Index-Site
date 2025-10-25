@@ -3,40 +3,137 @@ layout: null
 title: 桜Index - 公式サイト
 ---
 
-<!— ページ全体スタイル（“良かった方”に寄せる） —>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>桜Index - 公式サイト</title>
 <style>
-  body{background:#0a0f1a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
-  .wrap{max-width:1100px;margin:40px auto;padding:0 16px;}
-  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .title{font-size:28px;font-weight:800;display:flex;gap:8px;align-items:center;}
-  .meta{color:#94a3b8;font-size:12px;margin-bottom:18px;}
-  .grid{display:grid;grid-template-columns:1fr;gap:18px;}
-  @media(min-width:980px){ .grid{grid-template-columns:1fr 1fr;}}
-  .links a{margin-left:8px;border:1px solid #223045;background:#0f172a;color:#cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;text-decoration:none;}
-  footer{margin:22px 0;color:#94a3b8;text-align:center;font-size:12px;}
-</style>
+  :root{
+    --bg:#0b1220;
+    --panel:#111a2b;
+    --panel2:#0f172a;
+    --line:#1c2a44;
+    --text:#e2e8f0;
+    --muted:#9aa7b5;
+    --teal:#14b8a6;
+    --green:#22c55e;
+    --red:#ef4444;
+  }
+  html,body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue","Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+    line-height:1.6;
+  }
+  .wrap{
+    max-width:1180px;
+    margin:28px auto 80px;
+    padding:0 16px;
+  }
+  .header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .brand{
+    font-size:24px;
+    font-weight:800;
+    letter-spacing:.5px;
+  }
+  .sync{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .links{ margin-left:auto; display:flex; gap:8px; }
+  .links a{
+    display:inline-block;
+    border:1px solid #223045;
+    background:var(--panel2);
+    color:#cbd5e1;
+    border-radius:999px;
+    padding:8px 12px;    /* ← 少しだけ大きく */
+    font-size:13px;      /* ← 少しだけ大きく */
+    text-decoration:none;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:18px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px 16px;
+    box-shadow:0 6px 18px rgba(0,0,0,.25) inset, 0 1px 0 rgba(255,255,255,.02);
+  }
+  .card-hd{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    margin-bottom:6px;
+  }
+  .title{ display:flex; align-items:center; gap:10px; }
+  .flag{ font-size:18px; }
+  .name{ font-size:20px; font-weight:800; letter-spacing:.2px; }
+  .badge{
+    font-size:12px; color:#aab8c5; background:#0c1527; border:1px solid #1e2a3f;
+    padding:2px 8px; border-radius:999px;
+  }
+  .pct{ font-weight:800; font-size:16px; letter-spacing:.2px; }
+  .pct-up   { color:var(--green); }
+  .pct-down { color:var(--red); }
+  .pct-zero { color:#93c5fd; }
+  .pct-na   { color:#94a3b8; }
 
+  .desc{ margin:8px 0 10px; color:#c8d1dc; font-size:13px; }
+  .chart-wrap{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:6px;
+  }
+  .chart{ width:100%; height:auto; display:block; border-radius:6px; }
+  .btns{ display:flex; gap:8px; margin-top:12px; }
+  .btn{
+    font-size:12px; color:#cbd5e1; border:1px solid #223045; background:#0c1527;
+    padding:6px 10px; border-radius:999px;
+  }
+  .btn-active{ background:#0e1a31; color:#e2e8f0; border-color:#2b3b57; }
+  .note{
+    margin:30px 0 8px; padding-top:4px; color:#aab3bf; font-size:12px; text-align:center;
+  }
+  .copy{ color:#8fa2b8; font-size:12px; text-align:center; }
+  @media (max-width:900px){
+    .grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
 <div class="wrap">
-  <div class="head">
-    <div class="title">🌸 桜Index - 公式サイト</div>
+
+  <div class="header">
+    <div class="brand">🌸 桜Index - 公式サイト</div>
+    <div class="sync">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
     <div class="links">
-      <a href="https://twitter.com" target="_blank">公式X（Twitter）</a>
-      <a href="https://note.com" target="_blank">公式note</a>
+      <a href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a href="https://note.com" target="_blank" rel="noopener">公式note</a>
     </div>
   </div>
-  <div class="meta">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
 
   {%- comment -%}
-  ここで **リテラルパス** を capture して “中身” を渡す
+    charts/*/stats.json を取り込む
+    include_relative は引数を取らない点に注意（必ず capture で包む）
   {%- endcomment -%}
-  {%- capture ASTRA_stats -%}{% include_relative charts/ASTRA4/stats.json %}{%- endcapture -%}
-  {%- capture RBANK_stats -%}{% include_relative charts/R-BANK9/stats.json %}{%- endcapture -%}
-  {%- capture AIN10_stats -%}{% include_relative charts/AIN-10/stats.json %}{%- endcapture -%}
-  {%- capture SCOIN_stats -%}{% include_relative charts/S-COIN+/stats.json %}{%- endcapture -%}
+  {% capture ASTRA_stats %}{% include_relative charts/ASTRA4/stats.json %}{% endcapture %}
+  {% capture RBANK_stats %}{% include_relative charts/R-BANK9/stats.json %}{% endcapture %}
+  {% capture AIN10_stats %}{% include_relative charts/AIN-10/stats.json %}{% endcapture %}
+  {% capture SCOIN_stats %}{% include_relative charts/S-COIN+/stats.json %}{% endcapture %}
 
   <div class="grid">
 
-    {%- include components/index-card.html
+    {% include components/index-card.html
       id="ASTRA4"
       title="Astra4"
       badge="宇宙ベンチャー"
@@ -44,9 +141,10 @@ title: 桜Index - 公式サイト
       stats_json=ASTRA_stats
       intraday_png="/charts/ASTRA4/intraday.png"
       am_png="/charts/ASTRA4/intraday_am.png"
-    -%}
+      flag="🇯🇵"
+    %}
 
-    {%- include components/index-card.html
+    {% include components/index-card.html
       id="R-BANK9"
       title="R-BANK9"
       badge="地方銀行"
@@ -54,9 +152,10 @@ title: 桜Index - 公式サイト
       stats_json=RBANK_stats
       intraday_png="/charts/R-BANK9/intraday.png"
       am_png="/charts/R-BANK9/intraday_am.png"
-    -%}
+      flag="🇯🇵"
+    %}
 
-    {%- include components/index-card.html
+    {% include components/index-card.html
       id="AIN-10"
       title="AIN-10"
       badge="AI関連10"
@@ -64,9 +163,10 @@ title: 桜Index - 公式サイト
       stats_json=AIN10_stats
       intraday_png="/charts/AIN-10/intraday.png"
       am_png="/charts/AIN-10/intraday_am.png"
-    -%}
+      flag="🇺🇸"
+    %}
 
-    {%- include components/index-card.html
+    {% include components/index-card.html
       id="S-COIN+"
       title="S-COIN+"
       badge="仮想資産関連"
@@ -74,13 +174,17 @@ title: 桜Index - 公式サイト
       stats_json=SCOIN_stats
       intraday_png="/charts/S-COIN+/intraday.png"
       am_png="/charts/S-COIN+/intraday_am.png"
-    -%}
+      flag="🇯🇵"
+    %}
 
-  </div>
+  </div><!-- /.grid -->
 
-  <footer>
+  <div class="note">
     データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いします。<br>
-    © {{ site.time | date: "%Y" }} 桜Index
-  </footer>
-</div>
+    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。
+  </div>
+  <div class="copy">© {{ site.time | date: "%Y" }} 桜Index</div>
+
+</div><!-- /.wrap -->
+</body>
+</html>
