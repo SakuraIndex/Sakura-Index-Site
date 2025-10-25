@@ -1,42 +1,34 @@
-<!-- _includes/components/index-card.html -->
-<div class="card">
+{%- comment -%}
+共通インデックスカード（Jekyllは構造だけを出力、データはJSがfetch）
+引数:
+  id, title, badge, description, json_path, intraday_png, am_png
+{%- endcomment -%}
+<div class="card"
+     data-id="{{ include.id | escape }}"
+     data-json="{{ include.json_path | escape }}"
+     data-intraday-png="{{ include.intraday_png | escape }}"
+     data-am-png="{{ include.am_png | escape }}">
   <div class="card-head">
-    <div class="left">
-      <span class="title">{{ include.title }}</span>
-      {% if include.badge %}
-      <span class="badge">{{ include.badge }}</span>
-      {% endif %}
+    <div>
+      <div style="font-weight:700;">
+        {{ include.title | escape }}
+        <span class="badge">{{ include.badge | escape }}</span>
+      </div>
+      <div style="font-size:12px;opacity:.85;">{{ include.description | escape }}</div>
     </div>
-    <div class="right">
-      <span
-        class="delta"
-        id="delta-{{ include.id }}"
-        data-json="{{ include.json_path }}"
-        data-scale="auto"
-        >N/A</span>
-    </div>
+    <div class="delta">N/A</div>
   </div>
 
-  {% if include.description %}
-  <p class="desc">{{ include.description }}</p>
-  {% endif %}
-
-  <div class="chart">
-    <img
-      class="chart-img"
-      id="img-{{ include.id }}"
-      alt="{{ include.title }} chart"
-      data-png="{{ include.intraday_png }}"
-      {% if include.am_png %}data-am="{{ include.am_png }}"{% endif %}
-      data-placeholder="data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='1200' height='540'><rect width='100%' height='100%' fill='%23222'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23aaa' font-family='system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' font-size='20'>No image</text></svg>"
-      />
+  <div class="imgwrap">
+    <img alt="{{ include.id | escape }} chart"
+         src="{{ include.intraday_png | escape }}?v={{ site.time | date: '%s' }}">
   </div>
 
   <div class="tabs">
-    <button class="tab is-active">Intraday</button>
-    <button class="tab" disabled>前場(AM)</button>
-    <button class="tab" disabled>7日</button>
-    <button class="tab" disabled>1ヶ月</button>
-    <button class="tab" disabled>1年</button>
+    <button class="active" data-kind="intraday">Intraday</button>
+    <button data-kind="am">前場(AM)</button>
+    <button disabled>7日</button>
+    <button disabled>1ヶ月</button>
+    <button disabled>1年</button>
   </div>
 </div>
