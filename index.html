@@ -1,312 +1,68 @@
-<!DOCTYPE html>
+---
+layout: null
+---
+
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🌸 桜Index - 公式サイト</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>桜Index - 公式サイト</title>
+  <!-- デザイン（3枚目の配色・サイズ準拠） -->
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/site.css" />
   <meta name="color-scheme" content="dark light" />
-  <style>
-    :root{
-      --bg:#0f1620;
-      --panel:#151e29;
-      --panel-2:#0f1823;
-      --text:#e6eef7;
-      --muted:#9bb0c3;
-      --border:#233041;
-      --accent:#89b4ff;
-      --up:#2bd48c;
-      --down:#ff6f6f;
-      --flat:#a8b3c2;
-      --chip:#1d2734;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Kaku Gothic ProN","BIZ UDPGothic","Noto Sans JP",Meiryo,sans-serif}
-    a{color:var(--accent);text-decoration:none}
-    .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 48px}
-    header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-    .title{font-size:28px;font-weight:800;letter-spacing:.02em}
-    .header-right{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
-    .btn{padding:8px 12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text)}
-    .meta{font-size:12px;color:var(--muted);margin:12px 0 22px}
-    /* grid */
-    .grid{display:grid;grid-template-columns:1fr;gap:16px}
-    @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-    /* card */
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--border);border-radius:16px;overflow:hidden}
-    .card-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
-    .flag{font-size:16px}
-    .name{font-weight:700}
-    .badge{margin-left:6px;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--muted);border:1px solid var(--border)}
-    .desc{margin-left:8px;color:var(--muted);font-size:13px}
-    .rate{margin-left:auto;font-weight:800}
-    .rate.up{color:var(--up)} .rate.down{color:var(--down)} .rate.flat{color:var(--flat)}
-    .card-bd{padding:14px 16px}
-    .chartBox{background:#0a121a;border:1px solid var(--border);border-radius:10px;padding:8px;height:310px;display:flex;align-items:center;justify-content:center}
-    .chartBox img{max-width:100%;max-height:100%;display:block;border-radius:8px}
-    .fallback{color:var(--muted);font-size:13px}
-    .tabs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-    .tab{padding:8px 12px;border:1px solid var(--border);background:var(--chip);border-radius:999px;color:var(--text);font-size:13px}
-    .tab.active{outline:2px solid var(--accent);background:transparent}
-    footer{margin-top:28px;border-top:1px solid var(--border);padding-top:16px;font-size:12px;color:var(--muted)}
-  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="title">🌸 桜Index - 公式サイト</div>
-    <div class="header-right">
-      <a class="btn" href="https://x.com/sakuraindex" target="_blank" rel="noopener">公式X（Twitter）</a>
-      <a class="btn" href="https://note.com/sakuraindex" target="_blank" rel="noopener">公式note</a>
+
+  <!-- ヘッダー -->
+  <header class="site-header">
+    <div class="site-title">🌸 桜Index - 公式サイト</div>
+    <div class="site-meta">
+      同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*
     </div>
+    <nav class="links">
+      <a href="https://x.com/sakuraindex" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a href="https://note.com/sakuraindex" target="_blank" rel="noopener">公式note</a>
+    </nav>
   </header>
 
-  <div class="meta" id="meta-now"></div>
+  <!-- 指数カード（2カラム・レスポンシブ） -->
+  <main class="grid">
 
-  <div class="grid">
-    <!-- Astra4 -->
-    <section class="card"
-      data-id="ASTRA4"
-      data-json="/charts/ASTRA4/stats.json"
-      data-img-intraday="/charts/ASTRA4/intraday.png"
-      data-img-am="/charts/ASTRA4/intraday_am.png"
-      data-img-7d="/charts/ASTRA4/7d.png"
-      data-img-1m="/charts/ASTRA4/1m.png"
-      data-img-1y="/charts/ASTRA4/1y.png">
-      <div class="card-hd">
-        <span class="flag">🇯🇵</span>
-        <span class="name">Astra4</span>
-        <span class="badge">宇宙ベンチャー</span>
-        <span class="desc">宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。</span>
-        <span class="rate" data-rate>N/A</span>
-      </div>
-      <div class="card-bd">
-        <div class="chartBox">
-          <img alt="Astra4 chart" data-img>
-          <div class="fallback" data-fallback hidden>chart (no image)</div>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-view="intraday">Intraday</button>
-          <button class="tab" data-view="am">前場(AM)</button>
-          <button class="tab" data-view="7d">7日</button>
-          <button class="tab" data-view="1m">1ヶ月</button>
-          <button class="tab" data-view="1y">1年</button>
-        </div>
-      </div>
-    </section>
+    {%- comment -%}
+      ここで表示する指数を定義
+    {%- endcomment -%}
+    {%- assign indices =  "" | split: "" -%}
+    {%- assign indices = indices | push:
+      {"id":"ASTRA4","title":"Astra4","flag":"🇯🇵","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"}
+    -%}
+    {%- assign indices = indices | push:
+      {"id":"R-BANK9","title":"R-BANK9","flag":"🇯🇵","badge":"地方銀行","desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"}
+    -%}
+    {%- assign indices = indices | push:
+      {"id":"AIN-10","title":"AIN-10","flag":"🇺🇸","badge":"AI関連10","desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"}
+    -%}
+    {%- assign indices = indices | push:
+      {"id":"S-COIN+","title":"S-COIN+","flag":"🇯🇵","badge":"仮想資産関連","desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"}
+    -%}
 
-    <!-- R-BANK9 -->
-    <section class="card"
-      data-id="R-BANK9"
-      data-json="/charts/R-BANK9/stats.json"
-      data-img-intraday="/charts/R-BANK9/intraday.png"
-      data-img-am="/charts/R-BANK9/intraday_am.png"
-      data-img-7d="/charts/R-BANK9/7d.png"
-      data-img-1m="/charts/R-BANK9/1m.png"
-      data-img-1y="/charts/R-BANK9/1y.png">
-      <div class="card-hd">
-        <span class="flag">🇯🇵</span>
-        <span class="name">R-BANK9</span>
-        <span class="badge">地方銀行</span>
-        <span class="desc">地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。</span>
-        <span class="rate" data-rate>N/A</span>
-      </div>
-      <div class="card-bd">
-        <div class="chartBox">
-          <img alt="R-BANK9 chart" data-img>
-          <div class="fallback" data-fallback hidden>chart (no image)</div>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-view="intraday">Intraday</button>
-          <button class="tab" data-view="am">前場(AM)</button>
-          <button class="tab" data-view="7d">7日</button>
-          <button class="tab" data-view="1m">1ヶ月</button>
-          <button class="tab" data-view="1y">1年</button>
-        </div>
-      </div>
-    </section>
+    {%- for idx in indices -%}
+      {%- include components/index-card.html
+          id=idx.id title=idx.title flag=idx.flag badge=idx.badge desc=idx.desc -%}
+    {%- endfor -%}
 
-    <!-- AIN-10 -->
-    <section class="card"
-      data-id="AIN-10"
-      data-json="/charts/AIN-10/stats.json"
-      data-img-intraday="/charts/AIN-10/intraday.png"
-      data-img-am="/charts/AIN-10/intraday_am.png"
-      data-img-7d="/charts/AIN-10/7d.png"
-      data-img-1m="/charts/AIN-10/1m.png"
-      data-img-1y="/charts/AIN-10/1y.png">
-      <div class="card-hd">
-        <span class="flag">🇺🇸</span>
-        <span class="name">AIN-10</span>
-        <span class="badge">AI関連10</span>
-        <span class="desc">米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。</span>
-        <span class="rate" data-rate>N/A</span>
-      </div>
-      <div class="card-bd">
-        <div class="chartBox">
-          <img alt="AIN-10 chart" data-img>
-          <div class="fallback" data-fallback hidden>chart (no image)</div>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-view="intraday">Intraday</button>
-          <button class="tab" data-view="am">前場(AM)</button>
-          <button class="tab" data-view="7d">7日</button>
-          <button class="tab" data-view="1m">1ヶ月</button>
-          <button class="tab" data-view="1y">1年</button>
-        </div>
-      </div>
-    </section>
+  </main>
 
-    <!-- S-COIN+ -->
-    <section class="card"
-      data-id="S-COIN+"
-      data-json="/charts/S-COIN+/stats.json"
-      data-img-intraday="/charts/S-COIN+/intraday.png"
-      data-img-am="/charts/S-COIN+/intraday_am.png"
-      data-img-7d="/charts/S-COIN+/7d.png"
-      data-img-1m="/charts/S-COIN+/1m.png"
-      data-img-1y="/charts/S-COIN+/1y.png">
-      <div class="card-hd">
-        <span class="flag">🪙</span>
-        <span class="name">S-COIN+</span>
-        <span class="badge">仮想資産関連</span>
-        <span class="desc">暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。</span>
-        <span class="rate" data-rate>N/A</span>
-      </div>
-      <div class="card-bd">
-        <div class="chartBox">
-          <img alt="S-COIN+ chart" data-img>
-          <div class="fallback" data-fallback hidden>chart (no image)</div>
-        </div>
-        <div class="tabs">
-          <button class="tab active" data-view="intraday">Intraday</button>
-          <button class="tab" data-view="am">前場(AM)</button>
-          <button class="tab" data-view="7d">7日</button>
-          <button class="tab" data-view="1m">1ヶ月</button>
-          <button class="tab" data-view="1y">1年</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <footer>
-    <div>データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指標リポジトリの自動生成スナップショットと同期しています。</div>
-    <div>※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。</div>
-    <div>© <span id="year"></span> 桜Index</div>
+  <!-- フッター（免責） -->
+  <footer class="footer">
+    <p>
+      データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポの自動生成スナップショットと同期しています。<br />
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br />
+      © {{ site.time | date: "%Y" }} 桜Index
+    </p>
   </footer>
-</div>
 
-<script>
-  // ---- 設定不要：自動で stats.json を読み、騰落率と画像を描画します ----
-  const fmtTime = (d)=> {
-    const pad = (n)=> String(n).padStart(2,'0');
-    return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  };
-  document.getElementById('meta-now').textContent =
-    `同期完了： ${fmtTime(new Date())} ／ データ: charts/*`;
-  document.getElementById('year').textContent = new Date().getFullYear();
-
-  const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
-
-  // 率の文字列化
-  function formatPct(x){
-    const v = Number(x);
-    if (!isFinite(v)) return 'N/A';
-    const abs = Math.abs(v);
-    const digits = abs >= 100 ? 0 : 2;
-    const s = (v*100).toFixed(digits); // v が小数(0.0123=1.23%)の場合
-    return (v>=0?'+':'') + s + '%';
-  }
-  function formatPctRaw(x){
-    // すでに % を想定（0.2031=20.31% のように与えられる場合はこちらを使用）
-    const v = Number(x);
-    const abs = Math.abs(v);
-    const digits = abs >= 100 ? 0 : 2;
-    return (v>=0?'+':'') + v.toFixed(digits) + '%';
-  }
-  function classify(v){
-    if (!isFinite(v)) return 'flat';
-    if (v > 0) return 'up';
-    if (v < 0) return 'down';
-    return 'flat';
-  }
-
-  // カード初期化
-  $$('.card').forEach(initCard);
-
-  function initCard(card){
-    const img = card.querySelector('[data-img]');
-    const fb  = card.querySelector('[data-fallback]');
-    const rateEl = card.querySelector('[data-rate]');
-
-    // 画像切替
-    function setImage(kind){
-      const path = card.dataset['img' + (kind==='intraday' ? 'Intraday'
-                          : kind==='am' ? 'Am'
-                          : kind.toUpperCase())] || '';
-      if (!path){ showFallback(); return; }
-      img.onload = ()=> { fb.hidden = true; img.hidden = false; };
-      img.onerror = ()=> { showFallback(); };
-      img.src = path;
-    }
-    function showFallback(){ img.hidden = true; fb.hidden = false; }
-
-    // タブ
-    const tabs = card.querySelectorAll('.tab');
-    tabs.forEach(t => t.addEventListener('click', ()=>{
-      tabs.forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      setImage(t.dataset.view);
-    }));
-    // 初期画像
-    setImage('intraday');
-
-    // 騰落率 fetch
-    const jsonPath = card.dataset.json;
-    fetch(jsonPath, {cache:'no-store'})
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(stats => {
-        // 受け取り形式の差異を吸収：
-        //  1) pct_intraday  … ASTRA4/R-BANK9/S-COIN+ など (0.2031=20.31%)
-        //  2) pct_id        … 旧式の一部
-        //  3) delta_level + scale:"percent" … AIN-10 など(0.0351=3.51%)
-        let pct = null, renderAsRawPercent = false;
-
-        if (typeof stats.pct_intraday === 'number'){
-          pct = stats.pct_intraday;           // すでに % の数値として扱う
-          renderAsRawPercent = true;
-        } else if (typeof stats.pct_id === 'number'){
-          pct = stats.pct_id;                 // すでに % の数値として扱う
-          renderAsRawPercent = true;
-        } else if (typeof stats.delta_level === 'number'){
-          if (stats.scale === 'percent'){
-            pct = stats.delta_level;          // 0.035 → 3.5%
-            renderAsRawPercent = false;       // 小数を % に変換
-          } else {
-            // scale が不明: 念のためそのまま % 化
-            pct = stats.delta_level;
-            renderAsRawPercent = false;
-          }
-        }
-
-        if (pct === null){
-          rateEl.textContent = 'N/A';
-          rateEl.classList.add('flat');
-          return;
-        }
-        // 表示
-        if (renderAsRawPercent){
-          rateEl.textContent = formatPctRaw(pct);
-          rateEl.classList.add(classify(pct));
-        } else {
-          rateEl.textContent = formatPct(pct);
-          rateEl.classList.add(classify(pct));
-        }
-      })
-      .catch(() => {
-        rateEl.textContent = 'N/A';
-        rateEl.classList.add('flat');
-      });
-  }
-</script>
+  <!-- 画像切替＆フォールバック -->
+  <script src="{{ site.baseurl }}/assets/site.js" defer></script>
 </body>
 </html>
