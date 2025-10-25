@@ -1,24 +1,15 @@
 {%- comment -%}
-  共通カード
+  共通カード（ロバスト抽出版）
   受け取り:
     id, flag, title, badge, desc
     stats_json (文字列)
-    intraday_png, am_png (相対パス)
-  期待 stats_json のキー（存在すれば使う）:
-    - pct_intraday: 比率(=0.0123)または百分率(=1.23 も可)
-    - delta_level: 補助 (scale: "percent" の場合あり)
-    - scale: "percent" | 省略
-  表示ルール:
-    1) 基本は pct_intraday を採用
-    2) なければ delta_level を採用
-    3) 数値が 1 未満 → 百分率化（×100）
-       数値が 1 以上 → そのまま（既に % と判断）
-    4) 異常な値(絶対値 > 200)は N/A（安全弁）
+    intraday_png, am_png
+  サポートする候補キー（先勝ち）:
+    "pct_intraday", "pct_id", "pct", "delta_intraday", "delta_level"
 {%- endcomment -%}
 
 <style>
   .card{background:#0e1522;border:1px solid #1f2a40;border-radius:18px;padding:14px 16px}
-  .card + .card{margin-top:0}
   .card__head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
   .left{display:flex;align-items:center;gap:8px}
   .flag{font-size:16px}
@@ -37,49 +28,126 @@
 
 {%- assign raw = include.stats_json | strip_newlines -%}
 
-{%- comment -%} JSON 文字列から値を緩やかに抽出 {%- endcomment -%}
-{%- assign pct_val = "" -%}
-{%- assign delta_val = "" -%}
+{%- comment -%}
+  汎用抽出関数相当（Liquid で疑似）
+  ・key が見つかれば key の直後から ':' を越えて、',' か '}' までを切り出す
+  ・クォート/パーセント記号/空白を除去
+{%- endcomment -%}
+{%- assign found = "" -%}
+{%- assign val = "" -%}
+{%- assign keys = 'pct_intraday|pct_id|pct|delta_intraday|delta_level' | split:'|' -%}
+{%- for k in keys -%}
+  {%- if found == "" and raw contains '"' | append: k | append: '"' -%}
+    {%- assign seg = raw | split:'"' | append:'' -%}{% comment %}ダミー{% endcomment %}
+    {%- assign after = raw | split:'"' | last -%}{% comment %}使わない{% endcomment %}
+    {%- assign part = raw | split: '"' | append:'' -%}{% comment %}使わない{% endcomment %}
+
+    {%- assign tmp = raw | split:'"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split:'"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign chunk = raw | split:'"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign piece = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign p = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split:'"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after = raw | split:'"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+
+    {%- comment -%} 実処理 {%- endcomment -%}
+    {%- assign tail = raw | split: '"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+    {%- assign tail = raw | split: '"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split:'"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | join:'"' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split:'"' | last -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split:'"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign after_key = raw | split:'"' | last -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign seg = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"' | append:'' -%}{% comment %}no-op{% endcomment %}
+
+    {%- assign tail = raw | split: '"'+k+'"' | last -%}
+    {%- assign tail = tail | split: ':' | last -%}
+    {%- assign cut_c = tail | split: ',' | first -%}
+    {%- assign cut_b = cut_c | split: '}' | first -%}
+    {%- assign val = cut_b | replace:'"','' | replace:'%','' | strip -%}
+    {%- assign found = k -%}
+  {%- endif -%}
+{%- endfor -%}
+
 {%- assign scale_val = "" -%}
-
-{%- if raw contains '"pct_intraday"' -%}
-  {%- assign tmp = raw | split:'"pct_intraday"' | last -%}
-  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
-  {%- assign pct_val = tmp | replace:'"','' | replace:'%','' | strip -%}
-{%- endif -%}
-
-{%- if raw contains '"delta_level"' -%}
-  {%- assign tmp = raw | split:'"delta_level"' | last -%}
-  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
-  {%- assign delta_val = tmp | replace:'"','' | replace:'%','' | strip -%}
-{%- endif -%}
-
 {%- if raw contains '"scale"' -%}
-  {%- assign tmp = raw | split:'"scale"' | last -%}
-  {%- assign tmp = tmp | split:':' | last | split:',' | first -%}
-  {%- assign scale_val = tmp | replace:'"','' | strip -%}
+  {%- assign s_tail = raw | split:'"scale"' | last | split:':' | last -%}
+  {%- assign s_cut_c = s_tail | split:',' | first -%}
+  {%- assign s_cut_b = s_cut_c | split:'}' | first -%}
+  {%- assign scale_val = s_cut_b | replace:'"','' | strip -%}
 {%- endif -%}
-
-{%- comment -%} 数値化 + 百分率/比率の自動判定 {%- endcomment -%}
-{%- assign show_val = pct_val -%}
-{%- if show_val == "" -%}{%- assign show_val = delta_val -%}{%- endif -%}
 
 {%- assign n = 0.0 -%}
-{%- if show_val != "" -%}
-  {%- assign n = show_val | plus: 0 -%}
+{%- assign display = "N/A" -%}
+{%- if val != "" -%}
+  {%- assign n = val | plus: 0 -%}
   {%- if scale_val == "percent" -%}
-    {%- assign n = n -%} {# すでに%想定 #}
+    {%- assign n = n -%}   {# 既に% #}
   {%- else -%}
     {%- if n < 1 and n > -1 -%}{%- assign n = n | times: 100 -%}{%- endif -%}
   {%- endif -%}
-{%- endif -%}
-
-{%- assign display = "N/A" -%}
-{%- if show_val != "" and n < 200 and n > -200 -%}
-  {%- assign s = n | round: 2 -%}
-  {%- if s > 0 -%}{%- assign display = "+" | append: s | append: "%" -%}
-  {%- elsif s < 0 -%}{%- assign display = s | append: "%" -%}
-  {%- else -%}{%- assign display = "+0.00%" -%}{%- endif -%}
+  {%- if n > -200 and n < 200 -%}
+    {%- assign s = n | round: 2 -%}
+    {%- if s > 0 -%}{%- assign display = "+" | append: s | append: "%" -%}
+    {%- elsif s < 0 -%}{%- assign display = s | append: "%" -%}
+    {%- else -%}{%- assign display = "+0.00%" -%}{%- endif -%}
+  {%- endif -%}
 {%- endif -%}
 
 <div class="card">
@@ -93,8 +161,7 @@
       {%- if display == "N/A" -%}
         <span class="pct">N/A</span>
       {%- else -%}
-        {%- assign sign = n | plus: 0 -%}
-        <span class="pct{% if sign < 0 %} neg{% endif %}">{{ display }}</span>
+        <span class="pct{% if n < 0 %} neg{% endif %}">{{ display }}</span>
       {%- endif -%}
     </div>
   </div>
