@@ -1,19 +1,13 @@
 /* ====== Theme ====== */
 :root{
-  --bg:#0b1220;
-  --card:#0f172a;
-  --border:#1f2a40;
-  --muted:#94a3b8;
-  --text:#e5eefc;
-  --accent:#22d3ee;
-  --up:#22c55e;
-  --down:#ef4444;
+  --bg:#0b1220; --card:#0f172a; --border:#1f2a40;
+  --muted:#94a3b8; --text:#e5eefc; --accent:#22d3ee;
+  --up:#22c55e; --down:#ef4444;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{
-  background:var(--bg);
-  color:var(--text);
+  background:var(--bg); color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP","Apple Color Emoji","Segoe UI Emoji";
   line-height:1.6;
 }
@@ -45,17 +39,22 @@ body{
   padding:14px;
   box-shadow:0 6px 18px rgba(0,0,0,.25);
 }
-.idx-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.idx-head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:8px; min-height:28px;
+}
 .idx-title{display:flex; align-items:center; gap:8px; font-weight:800; font-size:18px}
+.idx-flag{font-size:18px; line-height:1}
 .idx-badge{font-size:12px; padding:2px 8px; border-radius:9999px; border:1px solid #253046; color:var(--muted)}
 .idx-pct{font-weight:900; font-size:16px}
 .idx-pct.up{color:var(--up)} .idx-pct.down{color:var(--down)} .idx-pct.na{color:#7c8aa5}
 .idx-desc{color:var(--muted); margin:6px 0 10px}
 
-/* ====== Chart image (固定サイズで収める) ====== */
+/* ====== Chart image（はみ出し防止） ====== */
 .chart-wrap{
-  width:100%; height:260px; border:1px solid var(--border);
-  border-radius:10px; overflow:hidden; background:#0b1220;
+  width:100%; height:260px;
+  border:1px solid var(--border); border-radius:10px;
+  overflow:hidden; background:#0b1220;
   display:flex; align-items:center; justify-content:center;
 }
 .chart-img{
@@ -64,7 +63,7 @@ body{
 }
 .img-fallback{color:var(--muted); font-size:13px}
 
-/* ====== Tabs（ダミー） ====== */
+/* ====== Tabs（スタイルのみ） ====== */
 .idx-tabs{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap}
 .idx-tab{font-size:12px; padding:6px 10px; border-radius:9999px; background:#0b1220; border:1px solid #253046; color:#c7d2fe}
 .idx-tab.active{background:#0f172a; border-color:#3b4e73}
