@@ -7,84 +7,87 @@ description: charts/*
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{ page.title }}</title>
-<style>
-  :root{
-    --bg:#0f1720; --panel:#121b27; --panel-2:#0f1720;
-    --text:#e6eef7; --muted:#9fb3c8; --cyan:#7ee7f2;
-    --up:#28d07f; --down:#ff6b6b; --ring:#1e2b3a;
-  }
-  html,body{background:var(--bg);color:var(--text);font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;margin:0}
-  .wrap{max-width:1220px;margin:0 auto;padding:20px 16px}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  header .title{font-size:22px;font-weight:800;letter-spacing:.5px}
-  header .ts{color:var(--muted);font-size:12px}
-  header .sp{flex:1}
-  .btn-link{background:var(--panel-2);border:1px solid var(--ring);color:var(--text);padding:8px 12px;border-radius:10px;font-weight:600}
-  .grid{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
-  .card{background:var(--panel);border:1px solid var(--ring);border-radius:14px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
-  .index-card .card-ttl{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-  .card-ttl__left{display:flex;align-items:center;gap:10px}
-  .flag{font-size:16px}
-  .name{font-size:18px;font-weight:800}
-  .badge{font-size:12px;color:var(--muted);background:rgba(255,255,255,.06);border:1px solid var(--ring);padding:3px 8px;border-radius:999px}
-  .right .delta{font-size:16px;font-weight:800}
-  .delta.up{color:var(--up)} .delta.down{color:var(--down)}
-  .desc{color:var(--muted);font-size:13px;margin:6px 0 8px}
-  .chart{background:var(--panel-2);border:1px solid var(--ring);border-radius:10px;overflow:hidden}
-  .chart img{display:block;width:100%;height:260px;object-fit:contain;background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0))}
-  .toolbar{display:flex;gap:8px;margin-top:10px}
-  .btn{font-size:12px;color:var(--text);background:var(--panel-2);border:1px solid var(--ring);padding:7px 12px;border-radius:999px}
-  .btn.active{background:rgba(255,255,255,.06)}
-  footer{margin:28px 0 10px;color:var(--muted);font-size:12px;text-align:center}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ page.title }}</title>
+  <style>
+    :root {
+      --bg:#0f1720;
+      --panel:#121b27;
+      --border:#1e2b3a;
+      --text:#e6eef7;
+      --muted:#9fb3c8;
+      --accent:#7ee7f2;
+      --up:#28d07f;
+      --down:#ff6b6b;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif;}
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px 16px}
+    header{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+    .title{font-size:22px;font-weight:800}
+    .ts{color:var(--muted);font-size:12px;flex:1 1 auto;}
+    .btn-link{background:var(--panel);border:1px solid var(--border);padding:8px 12px;border-radius:10px;color:var(--text);font-size:13px;}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr;}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 1fr;}}
+    .sx-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);}
+    .sx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+    .sx-head-left{display:flex;align-items:center;gap:8px;}
+    .sx-flag{font-size:16px;}
+    .sx-name{font-weight:700;font-size:16px;}
+    .sx-badge{font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:2px 8px;}
+    .sx-delta{font-weight:700;font-size:15px;color:var(--up);}
+    .sx-desc{font-size:12px;color:var(--muted);margin-bottom:8px;}
+    .sx-chart{background:#0b1118;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .sx-chart img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;}
+    .sx-tabs{display:flex;gap:8px;margin-top:10px;}
+    .sx-tab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:999px;font-size:12px;}
+    .sx-tab.is-active{background:rgba(255,255,255,.1);color:var(--text);border-color:var(--accent);}
+    footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6;}
+  </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="title">🌸 {{ page.title }}</div>
+      <div class="title">🌸 桜Index - 公式サイト</div>
       <div class="ts">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: charts/*</div>
-      <div class="sp"></div>
-      <a class="btn-link" href="https://x.com/" rel="noopener">公式X（Twitter）</a>
-      <a class="btn-link" href="https://note.com/" rel="noopener">公式note</a>
+      <a class="btn-link" href="https://x.com/" target="_blank" rel="noopener">公式X（Twitter）</a>
+      <a class="btn-link" href="https://note.com/" target="_blank" rel="noopener">公式note</a>
     </header>
 
-    <div class="grid">
+    <main class="grid">
       {%- include components/index-card.html
-         id="ASTRA4" title="Astra4" flag="🇯🇵" badge="宇宙ベンチャー"
-         description="宇宙関連銘柄の等ウェイト指数。日中は%、 長期はレベル推移を表示。"
-         json_path="/charts/ASTRA4/stats.json"
-         intraday_png="/charts/ASTRA4/intraday.png"
-         am_png="/charts/ASTRA4/intraday_am.png"
+         id="ASTRA4" flag="🇯🇵" title="Astra4" badge="宇宙ベンチャー"
+         description="宇宙関連銘柄の等ウェイト指数。日中は%。長期はレベル推移を表示。"
+         json_path="charts/ASTRA4/stats.json"
+         intraday_png="charts/ASTRA4/intraday.png"
+         am_png="charts/ASTRA4/intraday_am.png"
       -%}
 
       {%- include components/index-card.html
-         id="R-BANK9" title="R-BANK9" flag="🇯🇵" badge="地方銀行"
-         description="地方銀行9銘柄の等ウェイト指数。日中は%、 長期はレベル推移を表示。"
-         json_path="/charts/R-BANK9/stats.json"
-         intraday_png="/charts/R-BANK9/intraday.png"
-         am_png="/charts/R-BANK9/intraday_am.png"
+         id="R-BANK9" flag="🇯🇵" title="R-BANK9" badge="地方銀行"
+         description="地方銀行9銘柄の等ウェイト指数。日中は%。長期はレベル推移を表示。"
+         json_path="charts/R-BANK9/stats.json"
+         intraday_png="charts/R-BANK9/intraday.png"
+         am_png="charts/R-BANK9/intraday_am.png"
       -%}
 
       {%- include components/index-card.html
-         id="AIN-10" title="AIN-10" flag="🇺🇸" badge="AI関連10"
+         id="AIN-10" flag="🇺🇸" title="AIN-10" badge="AI関連10"
          description="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
-         json_path="/charts/AIN-10/stats.json"
-         intraday_png="/charts/AIN-10/intraday.png"
-         am_png="/charts/AIN-10/intraday_am.png"
+         json_path="charts/AIN-10/stats.json"
+         intraday_png="charts/AIN-10/intraday.png"
+         am_png="charts/AIN-10/intraday_am.png"
       -%}
 
       {%- include components/index-card.html
-         id="S-COIN+" title="S-COIN+" flag="🇯🇵" badge="仮想資産関連"
+         id="S-COIN+" flag="🇯🇵" title="S-COIN+" badge="仮想資産関連"
          description="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
-         json_path="/charts/S-COIN+/stats.json"
-         intraday_png="/charts/S-COIN+/intraday.png"
-         am_png="/charts/S-COIN+/intraday_am.png"
+         json_path="charts/S-COIN+/stats.json"
+         intraday_png="charts/S-COIN+/intraday.png"
+         am_png="charts/S-COIN+/intraday_am.png"
       -%}
-    </div>
+    </main>
 
     <footer>
       データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指数リポの自動生成スナップショットと同期しています。<br>
