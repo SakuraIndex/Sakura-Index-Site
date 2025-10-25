@@ -1,83 +1,140 @@
 {%- comment -%}
-桜Index 汎用カードコンポーネント（完全修正版）
-
-✅ 修正点：
-- Liquid構文エラー（`endcomment` → `{% endcomment %}`）を修正
-- include_relativeパス制約に対応（`charts/` 相対指定）
-- 騰落率ロジック改良（pct_intraday優先・delta_level+scale対応・N/Aフォールバック）
-- 表示フォーマット統一（+/- 付き・2桁小数）
-- チャート画像の比率・サイズ安定化
+共通カード部品（Liquidのみで動作・GitHub Pages互換）
+受け取るパラメータ：
+- id           : 例 "ASTRA4"
+- flag         : 絵文字国旗など
+- title        : 表示名
+- badge        : 小バッジ（例：宇宙ベンチャー / 地方銀行 / AI関連10 / 仮想資産関連）
+- desc         : 説明文
+- stats_json   : index.html 側で capture して渡す charts/<ID>/stats.json の文字列
+- intraday_png : intraday スナップショットの相対パス
+- am_png       : AM（前場）スナップショットの相対パス（任意）
+- d7_png / m1_png / y1_png : 将来拡張用のスナップショット（任意）
 {%- endcomment -%}
 
-{%- assign id = include.id -%}
-{%- assign title = include.title -%}
-{%- assign badge = include.badge -%}
-{%- assign desc = include.description -%}
-{%- assign flag = include.flag | default: "" -%}
-{%- assign json_path = include.json_path | remove_first:'/' -%}
-{%- assign intraday_png = include.intraday_png -%}
-{%- assign am_png = include.am_png -%}
-
-<div class="sx-card">
-  <div class="sx-head">
-    <div class="sx-head-left">
-      {% if flag != "" %}<span class="sx-flag">{{ flag }}</span>{% endif %}
-      <span class="sx-name">{{ title }}</span>
-      {% if badge %}<span class="sx-badge">{{ badge }}</span>{% endif %}
+<div class="card">
+  <div class="card__head">
+    <div class="card__title">
+      <span class="card__flag">{{ include.flag }}</span>
+      <span class="card__name">{{ include.title }}</span>
+      {% if include.badge %}
+      <span class="card__badge">{{ include.badge }}</span>
+      {% endif %}
     </div>
 
-    {%- capture _raw -%}{% include_relative {{ json_path }} %}{%- endcapture -%}
+    {%- comment -%} --- 騰落率の抽出ロジック --- {%- endcomment -%}
+    {%- assign pct_num = 0 -%}
+    {%- assign delta_num = 0 -%}
+    {%- assign scale = '' -%}
 
-    {%- assign pct = nil -%}
-    {%- assign delta = nil -%}
-    {%- assign scale = nil -%}
+    {%- if include.stats_json and include.stats_json != '' -%}
+      {%- if include.stats_json contains '"pct_intraday":' -%}
+        {%- assign _tmp = include.stats_json | split:'"pct_intraday":' | last -%}
+        {%- assign _pct_raw = _tmp | split:',' | first | strip -%}
+        {%- assign pct_num = _pct_raw | plus: 0 -%}
+      {%- endif -%}
 
-    {%- if _raw contains '"pct_intraday":' -%}
-      {%- assign tmp = _raw | split:'"pct_intraday":' | last -%}
-      {%- assign pct = tmp | split:',' | first | strip -%}
-    {%- endif -%}
+      {%- if include.stats_json contains '"delta_level":' -%}
+        {%- assign _tmpd = include.stats_json | split:'"delta_level":' | last -%}
+        {%- assign _delta_raw = _tmpd | split:',' | first | strip -%}
+        {%- assign delta_num = _delta_raw | plus: 0 -%}
+      {%- endif -%}
 
-    {%- if _raw contains '"delta_level":' -%}
-      {%- assign tmp = _raw | split:'"delta_level":' | last -%}
-      {%- assign delta = tmp | split:',' | first | strip -%}
-    {%- endif -%}
-
-    {%- if _raw contains '"scale":' -%}
-      {%- assign tmp = _raw | split:'"scale":' | last -%}
-      {%- assign scale = tmp | split:',' | first | strip | replace:'"','' -%}
-    {%- endif -%}
-
-    {%- assign val = nil -%}
-    {%- if pct and pct != '' and pct != 'null' -%}
-      {%- assign val = pct | plus: 0 -%}
-    {%- elsif delta and delta != '' and delta != 'null' -%}
-      {%- assign val = delta | plus: 0 -%}
-    {%- endif -%}
-
-    {%- assign label = 'N/A' -%}
-    {%- if val != nil -%}
-      {%- assign pct_value = val | times: 100 | round: 2 -%}
-      {%- if pct_value > 0 -%}
-        {%- assign label = '+' | append: pct_value | append: '%' -%}
-      {%- else -%}
-        {%- assign label = pct_value | append: '%' -%}
+      {%- if include.stats_json contains '"scale":' -%}
+        {%- assign _tmps = include.stats_json | split:'"scale":' | last -%}
+        {%- assign _scale_raw = _tmps | split:',' | first | replace:'"','' | strip -%}
+        {%- assign scale = _scale_raw -%}
       {%- endif -%}
     {%- endif -%}
 
-    <span class="sx-delta">{{ label }}</span>
+    {%- comment -%}
+      AIN-10 : delta_level + scale(percent) を優先
+      ASTRA4/R-BANK9/S-COIN+ : pct_intraday（比率/百分率）を優先
+    {%- endcomment -%}
+    {%- assign show_val = pct_num -%}
+    {%- if include.id == 'AIN-10' -%}
+      {%- assign show_val = delta_num -%}
+    {%- endif -%}
+
+    {%- if scale == 'ratio' -%}
+      {%- assign show_val = show_val | times: 100 -%}
+    {%- endif -%}
+
+    {%- assign abs_val = show_val | abs -%}
+    {%- assign sign = '+' -%}
+    {%- if show_val < 0 -%}{%- assign sign = '-' -%}{%- endif -%}
+
+    <div class="card__change {{ sign }}">
+      {{ sign }}{{ abs_val | round: 2 }}%
+    </div>
   </div>
 
-  <div class="sx-desc">{{ desc }}</div>
-
-  <div class="sx-chart">
-    <img src="{{ intraday_png }}" alt="{{ id }} chart" loading="lazy">
+  <div class="card__desc">
+    {{ include.desc }}
   </div>
 
-  <div class="sx-tabs">
-    <button class="sx-tab is-active">Intraday</button>
-    <button class="sx-tab">前場(AM)</button>
-    <button class="sx-tab" disabled>7日</button>
-    <button class="sx-tab" disabled>1ヶ月</button>
-    <button class="sx-tab" disabled>1年</button>
+  <div class="chartwrap">
+    <img class="snapshot" alt="{{ include.id }} chart"
+         src="{{ include.intraday_png }}">
+  </div>
+
+  <div class="card__tabs">
+    <button class="tab is-active">Intraday</button>
+    <button class="tab">前場(AM)</button>
+    <button class="tab">7日</button>
+    <button class="tab">1ヶ月</button>
+    <button class="tab">1年</button>
   </div>
 </div>
+
+<style>
+  .card{
+    background:#121720;
+    border:1px solid #1e2532;
+    border-radius:16px;
+    padding:16px 16px 12px;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.02) inset;
+  }
+  .card + .card{ margin-top:16px; }
+  .card__head{
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card__title{ display:flex; align-items:center; gap:.5rem; }
+  .card__flag{ font-size:18px; }
+  .card__name{
+    font-weight:700; font-size:18px; letter-spacing:.2px;
+  }
+  .card__badge{
+    font-size:12px; padding:.2rem .5rem;
+    background:#233045; color:#a9c2ff; border-radius:999px;
+  }
+  .card__change{
+    font-weight:800; font-size:16px;
+  }
+  .card__change.+{ color:#32e6a1; }
+  .card__change.-{ color:#f26d7e; }
+  .card__desc{
+    color:#b8c2d9; font-size:13px; margin:.5rem 0 1rem;
+  }
+  .chartwrap{
+    width:100%;
+    background:#0e131b;
+    border:1px solid #1e2532;
+    border-radius:12px;
+    padding:8px;
+  }
+  .snapshot{
+    display:block;
+    width:100%;
+    height:auto;
+    max-height:280px;     /* ここで巨大画像を抑止 */
+    object-fit:contain;   /* 枠内に収める */
+  }
+  .card__tabs{ display:flex; gap:.5rem; margin-top:.8rem; }
+  .tab{
+    font-size:12px; color:#c6d1ee;
+    background:#0f1520; border:1px solid #25314a;
+    padding:.35rem .7rem; border-radius:999px;
+  }
+  .tab.is-active{ color:#10151f; background:#c6d1ee; }
+</style>
