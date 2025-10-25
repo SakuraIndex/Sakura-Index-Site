@@ -33,9 +33,9 @@
 
 {%- comment -%}
 2) scale を抜く
-{%- if _raw contains '"scale":' %}{% endcomment -%}
+{%- endcomment -%}
 {%- if _raw contains '"scale":' -%}
-  {%- assign tmp = _raw | split:'"scale":' | last -%}
+  {%- assign tmp  = _raw | split:'"scale":' | last -%}
   {%- assign scale = tmp | split:',' | first | strip | replace:'"','' -%}
 {%- endif -%}
 
