@@ -1,185 +1,177 @@
-<!DOCTYPE html>
+<!--
+  title: 桜Index - 公式サイト
+  description: docs/charts/* のスナップショットを用いた簡易ダッシュボード
+  layout: null
+-->
+
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🌸桜Index - 公式サイト</title>
-  <meta name="description" content="各種等加重指数のスナップショットダッシュボード" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌸 桜Index - 公式サイト</title>
   <style>
     :root{
-      --bg:#0f172a;--panel:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;
-      --chip:#1f2937;--pos:#10b981;--neg:#ef4444;
+      --bg:#0f172a;--panel:#0b1220;--panel2:#0e1a2b;--text:#e2e8f0;--muted:#94a3b8;
+      --accent:#38bdf8;--chip:#1f2937;--chip-border:#334155;--ok:#22c55e;--bad:#ef4444;
     }
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
-    a{color:var(--accent);text-decoration:none}
-    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-    h1{margin:0;font-size:20px;display:flex;gap:8px;align-items:center}
-    h1 .dot{font-size:20px}
-    .meta{font-size:12px;color:var(--muted)}
-    .social{display:flex;gap:8px}
-    .btn{border:1px solid #334155;background:#0b1220;color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-    @media (max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{background:var(--panel);border:1px solid #1f2937;border-radius:14px;padding:14px}
-    .head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    .flag{font-size:16px;line-height:1}
-    .title{font-weight:700}
-    .badge{background:#1f2937;border:1px solid #334155;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:11px}
-    .delta{margin-left:auto;font-weight:700}
-    .delta.pos{color:var(--pos)}
-    .delta.neg{color:var(--neg)}
-    .delta.na{color:var(--muted)}
-    .desc{font-size:12px;color:var(--muted);margin:6px 0 10px}
-    .media{background:#0b1220;border:1px solid #1f2937;border-radius:10px;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .media img{width:100%;height:100%;object-fit:contain;background:#0b1220}
-    .tabs{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-    .chip{background:var(--chip);border:1px solid #334155;color:#cbd5e1;border-radius:999px;padding:4px 10px;font-size:12px}
-    footer{margin:28px 0 8px;font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";}
+
+    .container{max-width:1200px;margin:0 auto;padding:28px 16px;}
+    .header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
+    .header h1{margin:0;font-size:20px;line-height:1.2}
+    .header .meta{font-size:12px;color:var(--muted)}
+    .btns{display:flex;gap:8px}
+    .btn{
+      padding:8px 12px;border-radius:999px;background:#111827;border:1px solid #1f2937;
+      color:#cbd5e1;text-decoration:none;font-size:12px
+    }
+    .grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
+    @media(min-width:960px){.grid{grid-template-columns:1fr 1fr}}
+    .foot{margin:28px 0 16px;color:var(--muted);font-size:12px;text-align:center}
+
+    /* fallback 画像のセンタリング用（include 内の PNG 枠が空のとき） */
+    .image-fallback{display:flex;align-items:center;justify-content:center;height:260px;color:var(--muted);font-size:13px}
+
+    /* 既存 include が .index-card, [id=delta-XXX] を描画している想定で動くようにスクリプトは多系統に対応 */
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
+  <div class="container">
+    <div class="header">
       <div>
-        <h1><span class="dot">🌸</span>桜Index - 公式サイト</h1>
-        <div class="meta" id="synced-at">同期完了：— ／ データ: charts/*</div>
+        <h1>🌸 桜Index - 公式サイト</h1>
+        <div class="meta">
+          同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: docs/charts/*
+        </div>
       </div>
-      <div class="social">
-        <a class="btn" href="https://x.com" target="_blank" rel="noreferrer">公式X（Twitter）</a>
-        <a class="btn" href="https://note.com" target="_blank" rel="noreferrer">公式note</a>
+      <div class="btns">
+        <a class="btn" href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
+        <a class="btn" href="https://note.com" target="_blank" rel="noopener">公式note</a>
       </div>
-    </header>
+    </div>
 
-    <main class="grid" id="cards"></main>
+    {%- comment -%}
+      表示する指数の定義
+      - id : charts フォルダ名
+      - title, badge, desc : 見出し
+      - json_path : /charts/<id>/stats.json
+      - intraday_png : /charts/<id>/intraday.png（存在しなければ include 内で自動フォールバック）
+      - am_png : 前場スナップ（存在しない指数もある）
+    {%- endcomment -%}
+    {%- assign indices =  [
+      {"id":"ASTRA4","title":"Astra4","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。","json_path":"/charts/ASTRA4/stats.json","intraday_png":"/charts/ASTRA4/intraday.png","am_png":"/charts/ASTRA4/intraday_am.png"},
+      {"id":"R-BANK9","title":"R-BANK9","badge":"地方銀行","desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。","json_path":"/charts/R-BANK9/stats.json","intraday_png":"/charts/R-BANK9/intraday.png","am_png":"/charts/R-BANK9/intraday_am.png"},
+      {"id":"AIN-10","title":"AIN-10","badge":"AI関連10","desc":"米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。","json_path":"/charts/AIN-10/stats.json","intraday_png":"/charts/AIN-10/intraday.png","am_png":"/charts/AIN-10/intraday_am.png"},
+      {"id":"S-COIN+","title":"S-COIN+","badge":"仮想資産関連","desc":"暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。","json_path":"/charts/S-COIN+/stats.json","intraday_png":"/charts/S-COIN+/intraday.png","am_png":"/charts/S-COIN+/intraday_am.png"}
+    ] -%}
 
-    <footer>
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／ 画像は各指標リポの自動生成スナップショットと同期しています。<br>
-      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br>
-      © <span id="y"></span> 桜Index
-    </footer>
+    <div class="grid">
+      {%- for idx in indices -%}
+        {%- include components/index-card.html
+            id=idx.id
+            title=idx.title
+            badge=idx.badge
+            description=idx.desc
+            json_path=idx.json_path
+            intraday_png=idx.intraday_png
+            am_png=idx.am_png
+        -%}
+      {%- endfor -%}
+    </div>
+
+    <div class="foot">
+      データ：各指数は等加重指数（仕様は各リポジトリ参照） ／ 画像は各指数リポジトリの自動生成スナップショットと同期しています。<br />
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。<br />
+      © {{ "now" | date: "%Y" }} 桜Index
+    </div>
   </div>
 
   <script>
-    // ====== 各指数の定義 ======
-    const INDEXES = [
-      { id: 'ASTRA4', title: 'Astra4', flag: '🇯🇵', badge: '宇宙ベンチャー', desc: '宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-      { id: 'R-BANK9', title: 'R-BANK9', flag: '🇯🇵', badge: '地方銀行', desc: '地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-      { id: 'AIN-10', title: 'AIN-10', flag: '🇺🇸', badge: 'AI関連10', desc: '米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-      { id: 'S-COIN+', title: 'S-COIN+', flag: '🌐', badge: '仮想資産関連', desc: '暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+    /**
+     * JSON の数値から、そのまま「%」として解釈して良いかどうかを判定。
+     * - 明示的に scale/value_type が percent なら true
+     * - 指定が無い場合でも「絶対値 ≦ 3.5」程度なら % と見なす（指数の当日変動として現実的な範囲）
+     */
+    function isPercentLike(stats, value){
+      const hinted =
+        (typeof stats?.scale === 'string' && stats.scale.toLowerCase() === 'percent') ||
+        (typeof stats?.value_type === 'string' && stats.value_type.toLowerCase() === 'percent');
+      if (hinted) return true;
+      return Math.abs(value) <= 3.5;
+    }
+
+    /**
+     * 騰落率の優先順位と単位判定
+     *  1) pct_intraday
+     *  2) pct_id            … AIN-10 などで採用されることが多い
+     *  3) delta_level(%)    … scale/value_type が percent のときのみ % とみなす
+     * 単位判定:
+     *  - percent ヒントがある or 数値が小さい(≦3.5) → そのまま %
+     *  - それ以外 → ratio とみなして ×100
+     */
+    function pickDeltaPct(stats){
+      const num = (x)=> typeof x === 'number' && Number.isFinite(x);
+      let v = null;
+
+      if (num(stats?.pct_intraday)) {
+        v = stats.pct_intraday;
+      } else if (num(stats?.pct_id)) {
+        v = stats.pct_id;
+      } else if (num(stats?.delta_level)) {
+        // delta_level は % で供給されることが多い（scale/value_type に percent 指定が無い場合は小ささで判定）
+        v = stats.delta_level;
+      }
+
+      if (!num(v)) return null;
+
+      if (isPercentLike(stats, v)) {
+        return v;           // すでに %
+      }
+      return v * 100;       // ratio → %
+    }
+
+    function fmtPct(x){
+      // 大きさに応じて小数点を調整（見やすさ重視）
+      const abs = Math.abs(x);
+      const dp = abs >= 10 ? 2 : abs >= 1 ? 2 : 2; // 統一 2桁
+      return (x>=0?'+':'') + x.toFixed(dp) + '%';
+    }
+
+    // 既知の ID/パス（include 引数と同一）
+    const INDICES = [
+      { id: 'ASTRA4', json: '/charts/ASTRA4/stats.json' },
+      { id: 'R-BANK9', json: '/charts/R-BANK9/stats.json' },
+      { id: 'AIN-10',  json: '/charts/AIN-10/stats.json'  },
+      { id: 'S-COIN+', json: '/charts/S-COIN+/stats.json'}
     ];
 
-    // ====== ルート検出 ======
-    const baseDir = window.location.pathname.replace(/\/[^/]*$/, '');
-    let CHARTS_ROOT = null;
+    async function updateOne({id, json}){
+      try{
+        const res = await fetch(json, {cache:'no-store'});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const stats = await res.json();
 
-    async function pathExists(url) {
-      try { const r = await fetch(url, { method: 'HEAD', cache: 'no-store' }); return r.ok; }
-      catch { return false; }
-    }
+        const pct = pickDeltaPct(stats);
+        const text = (pct==null)? 'N/A' : fmtPct(pct);
 
-    async function decideChartsRoot() {
-      const cand1 = `${baseDir}/charts/${INDEXES[0].id}/stats.json`;
-      if (await pathExists(cand1)) { CHARTS_ROOT = `${baseDir}/charts`; return; }
-      const cand2 = `${baseDir}/docs/charts/${INDEXES[0].id}/stats.json`;
-      if (await pathExists(cand2)) { CHARTS_ROOT = `${baseDir}/docs/charts`; return; }
-      CHARTS_ROOT = `${baseDir}/charts`;
-    }
+        // 1) id が #delta-<ID> の要素（前回の include が出力している想定）
+        const el1 = document.getElementById(`delta-${id}`);
+        if (el1) el1.textContent = text;
 
-    const jsonPath      = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/stats.json`;
-    const intradayPath  = (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday.png`;
-    const intradayAmPath= (id) => `${CHARTS_ROOT}/${encodeURIComponent(id)}/intraday_am.png`;
+        // 2) data-delta-for="<ID>" でも拾う（将来互換）
+        document.querySelectorAll(`[data-delta-for="${CSS.escape(id)}"]`).forEach(e=>e.textContent=text);
 
-    // ====== 騰落率抽出 ======
-    function pickDeltaPct(stats) {
-      if (!stats) return null;
-
-      // 値がすでに percent 表示の場合（例: 1.23 = 1.23%）
-      if (stats.scale === 'percent' || stats.value_type === 'percent') {
-        if (typeof stats.delta_level === 'number') return stats.delta_level;
-        if (typeof stats.pct_intraday === 'number') return stats.pct_intraday;
-      }
-
-      // 値が ratio（例: 0.0123 = 1.23%）の場合
-      if (typeof stats.delta_level === 'number') return stats.delta_level * 100;
-      if (typeof stats.pct_intraday === 'number') return stats.pct_intraday * 100;
-      if (typeof stats.pct_id === 'number') {
-        const v = stats.pct_id * 100;
-        if (Math.abs(v) <= 30) return v;
-      }
-      return null;
-    }
-    const fmt = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
-
-    // ====== 画像解決 ======
-    async function resolveImage(id) {
-      const a = intradayPath(id);
-      if (await pathExists(a)) return a;
-      const b = intradayAmPath(id);
-      if (await pathExists(b)) return b;
-      return null;
-    }
-
-    // ====== カード描画 ======
-    function renderCard({ id, title, flag, badge, desc }) {
-      const el = document.createElement('section');
-      el.className = 'card';
-      el.innerHTML = `
-        <div class="head">
-          <span class="flag">${flag}</span>
-          <div class="title">${title}</div>
-          <span class="badge">${badge}</span>
-          <div class="delta na" id="delta-${id}">N/A</div>
-        </div>
-        <div class="desc">${desc}</div>
-        <div class="media"><img id="img-${id}" alt="${title} chart" loading="lazy"></div>
-        <div class="tabs">
-          <span class="chip">Intraday</span>
-          <span class="chip">前場(AM)</span>
-          <span class="chip">7日</span>
-          <span class="chip">1ヶ月</span>
-          <span class="chip">1年</span>
-        </div>
-      `;
-      return el;
-    }
-
-    async function boot() {
-      document.getElementById('y').textContent = new Date().getFullYear();
-      await decideChartsRoot();
-
-      const n = new Date();
-      const pad = (x)=>String(x).padStart(2,'0');
-      const stamp = `${n.getFullYear()}/${pad(n.getMonth()+1)}/${pad(n.getDate())} ${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
-      const pathLabel = CHARTS_ROOT.includes('/docs/') ? 'docs/charts/*' : 'charts/*';
-      document.getElementById('synced-at').textContent = `同期完了：${stamp} ／ データ: ${pathLabel}`;
-
-      const grid = document.getElementById('cards');
-      INDEXES.forEach(cfg => grid.appendChild(renderCard(cfg)));
-
-      for (const idx of INDEXES) {
-        const $img   = document.getElementById(`img-${idx.id}`);
-        const $delta = document.getElementById(`delta-${idx.id}`);
-
-        resolveImage(idx.id).then(src => { if (src) $img.src = src; else $img.style.display='none'; });
-
-        try {
-          const res = await fetch(jsonPath(idx.id), { cache: 'no-store' });
-          if (!res.ok) throw new Error('json not found');
-          const stats = await res.json();
-          const v = pickDeltaPct(stats);
-          if (v === null || Number.isNaN(v)) {
-            $delta.textContent = 'N/A'; $delta.className='delta na';
-          } else {
-            $delta.textContent = fmt(v);
-            $delta.className = 'delta ' + (v>0?'pos':(v<0?'neg':'na'));
-          }
-        } catch {
-          $delta.textContent = 'N/A'; $delta.className='delta na';
-        }
+        // 3) .index-card[data-id="<ID>"] 内の .delta でも拾う（保険）
+        document.querySelectorAll(`.index-card[data-id="${CSS.escape(id)}"] .delta`).forEach(e=>e.textContent=text);
+      }catch(e){
+        console.warn('delta update failed for', id, e);
       }
     }
-    boot();
+
+    (async ()=>{
+      await Promise.all(INDICES.map(updateOne));
+    })();
   </script>
 </body>
 </html>
