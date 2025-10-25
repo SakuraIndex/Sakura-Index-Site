@@ -12,7 +12,6 @@ layout: null
 </head>
 <body>
 
-  <!-- ヘッダ（サイト名＋ボタン） -->
   <header class="site-head">
     <div class="site-title">🌸 桜Index - 公式サイト</div>
     <div class="top-actions">
@@ -31,7 +30,7 @@ layout: null
          badge="宇宙ベンチャー"
          desc="宇宙関連銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
          stats_json="/charts/ASTRA4/stats.json"
-         intraday_png="/charts/ASTRA4/intraday.png"
+         intraday_png="/charts/ASTRA4/intraday_am.png"
       %}
 
       {% include components/index-card.html
@@ -41,7 +40,7 @@ layout: null
          badge="地方銀行"
          desc="地方銀行9銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
          stats_json="/charts/R-BANK9/stats.json"
-         intraday_png="/charts/R-BANK9/intraday.png"
+         intraday_png="/charts/R-BANK9/intraday_am.png"
       %}
 
       {% include components/index-card.html
@@ -51,7 +50,7 @@ layout: null
          badge="AI関連10"
          desc="米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。"
          stats_json="/charts/AIN-10/stats.json"
-         intraday_png="/charts/AIN-10/intraday.png"
+         intraday_png="/charts/AIN-10/intraday_am.png"
       %}
 
       {% include components/index-card.html
@@ -61,7 +60,7 @@ layout: null
          badge="仮想資産関連"
          desc="暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。"
          stats_json="/charts/S-COIN+/stats.json"
-         intraday_png="/charts/S-COIN+/intraday.png"
+         intraday_png="/charts/S-COIN+/intraday_am.png"
       %}
 
     </div>
@@ -73,39 +72,32 @@ layout: null
     </p>
   </main>
 
-  <!-- 騰落率の自動更新（stats.json を fetch） -->
+  <!-- 騰落率更新 -->
   <script>
   (function () {
     function setPct(el, raw) {
       const classes = ['up','down','na']; el.classList.remove(...classes);
       if (raw === null || raw === undefined || raw === '' || Number.isNaN(+raw)) {
         el.textContent = 'N/A'; el.classList.add('na'); return;
-        }
-      let v = typeof raw === 'string' ? parseFloat(raw) : raw;   // 0.0123（=1.23%）を想定
-      // 値が 1.23 など既に%の可能性を自動補正（> 1なら%とみなす）
-      if (Math.abs(v) > 1.0) v = v / 100.0;
+      }
+      let v = typeof raw === 'string' ? parseFloat(raw) : raw;   // 0.0123 or 1.23
+      if (Math.abs(v) > 1.0) v = v / 100.0;                      // 自動補正
       const pct = v * 100.0;
       const txt = (pct > 0 ? '+' : (pct < 0 ? '' : '')) + pct.toFixed(2) + '%';
       el.textContent = txt;
       el.classList.add(pct > 0 ? 'up' : (pct < 0 ? 'down' : 'na'));
     }
-
     function pickValue(json){
-      // よくあるキー名を優先順に試す
-      const keys = ['pct_intraday','pct','pct_id','delta','delta_level','change'];
-      for (const k of keys){
-        if (json && json[k] !== undefined) return json[k];
-      }
+      const keys = ['pct_intraday','pct','delta','delta_level','am_pct','intraday_pct','change'];
+      for (const k of keys){ if (json && json[k] !== undefined) return json[k]; }
       return null;
     }
-
     document.addEventListener('DOMContentLoaded', ()=>{
       document.querySelectorAll('.idx-card').forEach(card=>{
         const url = card.getAttribute('data-stats');
         const pctEl = card.querySelector('.idx-pct');
         if (!url || !pctEl) return;
-
-        fetch(url, { cache: 'no-cache' })
+        fetch(url, { cache:'no-cache' })
           .then(r => r.ok ? r.json() : Promise.reject())
           .then(j => setPct(pctEl, pickValue(j)))
           .catch(()=> setPct(pctEl, null));
