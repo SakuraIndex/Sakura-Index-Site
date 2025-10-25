@@ -1,14 +1,14 @@
-<!--
-  title: 桜Index - 公式サイト
-  description: docs/charts/* のスナップショットを用いた簡易ダッシュボード
-  layout: null
--->
+---
+title: 桜Index - 公式サイト
+layout: null
+---
 
 <!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="docs/charts/* のスナップショットを用いた簡易ダッシュボード" />
   <title>🌸 桜Index - 公式サイト</title>
   <style>
     :root{
@@ -22,18 +22,11 @@
     .header h1{margin:0;font-size:20px;line-height:1.2}
     .header .meta{font-size:12px;color:var(--muted)}
     .btns{display:flex;gap:8px}
-    .btn{
-      padding:8px 12px;border-radius:999px;background:#111827;border:1px solid #1f2937;
-      color:#cbd5e1;text-decoration:none;font-size:12px
-    }
+    .btn{padding:8px 12px;border-radius:999px;background:#111827;border:1px solid #1f2937;color:#cbd5e1;text-decoration:none;font-size:12px}
     .grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
     @media(min-width:960px){.grid{grid-template-columns:1fr 1fr}}
     .foot{margin:28px 0 16px;color:var(--muted);font-size:12px;text-align:center}
-
-    /* fallback 画像のセンタリング用（include 内の PNG 枠が空のとき） */
     .image-fallback{display:flex;align-items:center;justify-content:center;height:260px;color:var(--muted);font-size:13px}
-
-    /* 既存 include が .index-card, [id=delta-XXX] を描画している想定で動くようにスクリプトは多系統に対応 */
   </style>
 </head>
 <body>
@@ -41,9 +34,7 @@
     <div class="header">
       <div>
         <h1>🌸 桜Index - 公式サイト</h1>
-        <div class="meta">
-          同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: docs/charts/*
-        </div>
+        <div class="meta">同期完了：{{ site.time | date: "%Y/%m/%d %H:%M:%S" }} ／ データ: docs/charts/*</div>
       </div>
       <div class="btns">
         <a class="btn" href="https://x.com" target="_blank" rel="noopener">公式X（Twitter）</a>
@@ -51,14 +42,6 @@
       </div>
     </div>
 
-    {%- comment -%}
-      表示する指数の定義
-      - id : charts フォルダ名
-      - title, badge, desc : 見出し
-      - json_path : /charts/<id>/stats.json
-      - intraday_png : /charts/<id>/intraday.png（存在しなければ include 内で自動フォールバック）
-      - am_png : 前場スナップ（存在しない指数もある）
-    {%- endcomment -%}
     {%- assign indices =  [
       {"id":"ASTRA4","title":"Astra4","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。","json_path":"/charts/ASTRA4/stats.json","intraday_png":"/charts/ASTRA4/intraday.png","am_png":"/charts/ASTRA4/intraday_am.png"},
       {"id":"R-BANK9","title":"R-BANK9","badge":"地方銀行","desc":"地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。","json_path":"/charts/R-BANK9/stats.json","intraday_png":"/charts/R-BANK9/intraday.png","am_png":"/charts/R-BANK9/intraday_am.png"},
@@ -88,11 +71,6 @@
   </div>
 
   <script>
-    /**
-     * JSON の数値から、そのまま「%」として解釈して良いかどうかを判定。
-     * - 明示的に scale/value_type が percent なら true
-     * - 指定が無い場合でも「絶対値 ≦ 3.5」程度なら % と見なす（指数の当日変動として現実的な範囲）
-     */
     function isPercentLike(stats, value){
       const hinted =
         (typeof stats?.scale === 'string' && stats.scale.toLowerCase() === 'percent') ||
@@ -100,78 +78,45 @@
       if (hinted) return true;
       return Math.abs(value) <= 3.5;
     }
-
-    /**
-     * 騰落率の優先順位と単位判定
-     *  1) pct_intraday
-     *  2) pct_id            … AIN-10 などで採用されることが多い
-     *  3) delta_level(%)    … scale/value_type が percent のときのみ % とみなす
-     * 単位判定:
-     *  - percent ヒントがある or 数値が小さい(≦3.5) → そのまま %
-     *  - それ以外 → ratio とみなして ×100
-     */
     function pickDeltaPct(stats){
       const num = (x)=> typeof x === 'number' && Number.isFinite(x);
       let v = null;
-
       if (num(stats?.pct_intraday)) {
         v = stats.pct_intraday;
       } else if (num(stats?.pct_id)) {
         v = stats.pct_id;
       } else if (num(stats?.delta_level)) {
-        // delta_level は % で供給されることが多い（scale/value_type に percent 指定が無い場合は小ささで判定）
         v = stats.delta_level;
       }
-
       if (!num(v)) return null;
-
-      if (isPercentLike(stats, v)) {
-        return v;           // すでに %
-      }
-      return v * 100;       // ratio → %
+      if (isPercentLike(stats, v)) return v;
+      return v * 100;
     }
-
     function fmtPct(x){
-      // 大きさに応じて小数点を調整（見やすさ重視）
       const abs = Math.abs(x);
-      const dp = abs >= 10 ? 2 : abs >= 1 ? 2 : 2; // 統一 2桁
+      const dp = abs >= 10 ? 2 : abs >= 1 ? 2 : 2;
       return (x>=0?'+':'') + x.toFixed(dp) + '%';
     }
-
-    // 既知の ID/パス（include 引数と同一）
     const INDICES = [
       { id: 'ASTRA4', json: '/charts/ASTRA4/stats.json' },
       { id: 'R-BANK9', json: '/charts/R-BANK9/stats.json' },
       { id: 'AIN-10',  json: '/charts/AIN-10/stats.json'  },
       { id: 'S-COIN+', json: '/charts/S-COIN+/stats.json'}
     ];
-
     async function updateOne({id, json}){
       try{
         const res = await fetch(json, {cache:'no-store'});
         if(!res.ok) throw new Error('HTTP '+res.status);
         const stats = await res.json();
-
         const pct = pickDeltaPct(stats);
         const text = (pct==null)? 'N/A' : fmtPct(pct);
-
-        // 1) id が #delta-<ID> の要素（前回の include が出力している想定）
         const el1 = document.getElementById(`delta-${id}`);
         if (el1) el1.textContent = text;
-
-        // 2) data-delta-for="<ID>" でも拾う（将来互換）
         document.querySelectorAll(`[data-delta-for="${CSS.escape(id)}"]`).forEach(e=>e.textContent=text);
-
-        // 3) .index-card[data-id="<ID>"] 内の .delta でも拾う（保険）
         document.querySelectorAll(`.index-card[data-id="${CSS.escape(id)}"] .delta`).forEach(e=>e.textContent=text);
-      }catch(e){
-        console.warn('delta update failed for', id, e);
-      }
+      }catch(e){ console.warn('delta update failed for', id, e); }
     }
-
-    (async ()=>{
-      await Promise.all(INDICES.map(updateOne));
-    })();
+    (async ()=>{ await Promise.all(INDICES.map(updateOne)); })();
   </script>
 </body>
 </html>
