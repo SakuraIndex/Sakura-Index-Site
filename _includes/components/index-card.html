@@ -1,168 +1,78 @@
-<!-- _includes/components/index-card.html -->
-<div class="si-card" id="card-{{ include.id | escape }}">
-  <div class="si-card__head">
-    <div class="si-card__left">
-      <span class="si-flag">
-        {%- assign _id = include.id | upcase -%}
-        {%- if _id == "AIN-10" -%}🇺🇸{%- else -%}🇯🇵{%- endif -%}
-      </span>
-      <span class="si-title">{{ include.title }}</span>
-      {%- if include.badge -%}<span class="si-badge">{{ include.badge }}</span>{%- endif -%}
-    </div>
-    <div class="si-card__right"><span class="si-delta" data-delta="N/A">N/A</span></div>
+{%- comment -%}
+  汎用インデックスカード（完全版）
+  - 引数:
+    id         : フォルダ名（例 "ASTRA4", "R-BANK9", "AIN-10", "S-COIN+"）
+    title      : 表示名
+    desc       : 説明文
+    flag       : 絵文字国旗
+    badge      : 小バッジ
+{%- endcomment -%}
+
+{%- assign base = site.baseurl | default: '' -%}
+{%- assign folder = include.id | uri_escape -%}
+
+{%- comment -%} charts/*/stats.json を読む {%- endcomment -%}
+{%- capture _stats_json -%}
+  { "missing": true }
+{%- endcapture -%}
+{%- capture _path -%}{{ base }}/charts/{{ folder }}/stats.json{%- endcapture -%}
+{%- capture stats_raw -%}{% include_relative {{ _path | remove_first: base | remove_first: '/' }} %}{%- endcapture -%}
+{%- if stats_raw and stats_raw != '' and stats_raw contains '{' -%}
+  {%- assign stats = stats_raw | strip_newlines | replace: ',,', ',' | jsonify | parse_json -%}
+{%- else -%}
+  {%- assign stats = nil -%}
+{%- endif -%}
+
+{%- comment -%} 騰落率ロジック（ASTRA4/R-BANK9/S-COIN+ は pct_intraday、AIN-10 は delta_level×scale） {%- endcomment -%}
+{%- assign delta_txt = 'N/A' -%}
+{%- assign delta_cls = 'na' -%}
+{%- if stats and stats.pct_intraday != nil -%}
+  {%- assign v = stats.pct_intraday | times:100.0 -%}
+  {%- assign s = v | round: 2 -%}
+  {%- if s > 0 -%}{%- assign delta_cls = 'up' -%}{%- elsif s < 0 -%}{%- assign delta_cls = 'down' -%}{%- endif -%}
+  {%- assign sign = s > 0 | default: false -%}
+  {%- assign delta_txt = s | abs | append:'%' -%}
+  {%- if s > 0 -%}{%- assign delta_txt = '+' | append: delta_txt -%}{%- endif -%}
+{%- elsif stats and stats.delta_level != nil -%}
+  {%- assign s = stats.delta_level -%}
+  {%- if stats.scale == 'percent' -%}{%- assign s = s | times: 100.0 -%}{%- endif -%}
+  {%- assign s = s | round: 2 -%}
+  {%- if s > 0 -%}{%- assign delta_cls = 'up' -%}{%- elsif s < 0 -%}{%- assign delta_cls = 'down' -%}{%- endif -%}
+  {%- assign delta_txt = s | abs | append:'%' -%}
+  {%- if s > 0 -%}{%- assign delta_txt = '+' | append: delta_txt -%}{%- endif -%}
+{%- endif -%}
+
+{%- comment -%} 画像パス（intraday / intraday_am まで。残りは必要あれば追加） {%- endcomment -%}
+{%- assign src_intraday   = base | append: '/charts/' | append: folder | append: '/intraday.png' -%}
+{%- assign src_am         = base | append: '/charts/' | append: folder | append: '/intraday_am.png' -%}
+{%- assign src_7d         = base | append: '/charts/' | append: folder | append: '/7d.png' -%}
+{%- assign src_1m         = base | append: '/charts/' | append: folder | append: '/1m.png' -%}
+{%- assign src_1y         = base | append: '/charts/' | append: folder | append: '/1y.png' -%}
+
+<div class="card" data-chart>
+  <div class="card-head">
+    <span class="flag">{{ include.flag }}</span>
+    <span class="title">{{ include.title }}</span>
+    <span class="badge">{{ include.badge }}</span>
+    <span class="desc">{{ include.desc }}</span>
+    <span class="delta {{ delta_cls }}">{{ delta_txt }}</span>
   </div>
 
-  <p class="si-desc">{{ include.description }}</p>
-
-  <div class="si-chart">
+  <div class="chart-wrap">
     <img
-      class="si-chart__img"
-      alt="{{ include.id }} chart"
-      src=""
-      data-src-intraday="{{ include.intraday_png }}"
-      data-src-am="{{ include.am_png }}"
-      data-src-7d="{{ include.seven_png }}"
-      data-src-1m="{{ include.one_month_png }}"
-      data-src-1y="{{ include.one_year_png }}"
-      onerror="this.dataset.error='1'; this.alt='chart (no image)';"
+      class="chart"
+      alt="{{ include.title }} chart"
+      loading="lazy"
+      src="{{ src_intraday }}"
+      data-fallback="{{ src_am }}"
     />
   </div>
 
-  <div class="si-toolbar">
-    <button class="si-btn" data-view="intraday">Intraday</button>
-    <button class="si-btn" data-view="am">前場(AM)</button>
-    <button class="si-btn" data-view="7d">7日</button>
-    <button class="si-btn" data-view="1m">1ヶ月</button>
-    <button class="si-btn" data-view="1y">1年</button>
+  <div class="card-foot">
+    <button class="btn active" data-src="{{ src_intraday }}">Intraday</button>
+    <button class="btn" data-src="{{ src_am }}">前場(AM)</button>
+    <button class="btn" data-src="{{ src_7d }}">7日</button>
+    <button class="btn" data-src="{{ src_1m }}">1ヶ月</button>
+    <button class="btn" data-src="{{ src_1y }}">1年</button>
   </div>
 </div>
-
-<script>
-(() => {
-  const root = document.currentScript.closest('.si-card');
-  if (!root) return;
-  const baseurl = "{{ site.baseurl | default: '' }}"; // リポジトリ配信時は '/リポ名'
-
-  // ---- URL 解決（先頭 / なら baseurl を挿す） ----
-  const resolve = (p) => {
-    if (!p) return "";
-    try {
-      if (p.startsWith("/")) return (baseurl + p).replace(/\/{2,}/g, "/");
-      return p;
-    } catch(e){ return p; }
-  };
-
-  const img = root.querySelector('.si-chart__img');
-  const deltaEl = root.querySelector('.si-delta');
-  const buttons = Array.from(root.querySelectorAll('.si-btn'));
-  const jsonPath = resolve("{{ include.json_path | escape }}");
-
-  // 画像候補を取得（未指定なら intraday から 7d/1m/1y を推測して試す）
-  const srcs = {
-    intraday: resolve(img.dataset.srcIntraday || ""),
-    am:       resolve(img.dataset.srcAm || ""),
-    d7:       resolve(img.dataset.src7d || ""),
-    m1:       resolve(img.dataset.src1m || ""),
-    y1:       resolve(img.dataset.src1y || ""),
-  };
-  if (!srcs.d7 || !srcs.m1 || !srcs.y1) {
-    const seed = srcs.intraday || srcs.am || "";
-    if (seed) {
-      const guess = (r, v) => seed.replace(/(intraday(_am)?)(\.png)$/i, v);
-      if (!srcs.d7) srcs.d7 = resolve(guess("$1","7d.png"));
-      if (!srcs.m1) srcs.m1 = resolve(guess("$1","1m.png"));
-      if (!srcs.y1) srcs.y1 = resolve(guess("$1","1y.png"));
-    }
-  }
-
-  // 実体化
-  img.dataset.srcIntraday = srcs.intraday;
-  img.dataset.srcAm = srcs.am;
-  img.dataset.src7d = srcs.d7;
-  img.dataset.src1m = srcs.m1;
-  img.dataset.src1y = srcs.y1;
-
-  // ---- ボタン活性化（URLが空なら隠す） ----
-  const labelMap = {intraday: "srcIntraday", am:"srcAm", "7d":"src7d", "1m":"src1m", "1y":"src1y"};
-  let firstView = null;
-  buttons.forEach(b => {
-    const key = labelMap[b.dataset.view];
-    const has = !!img.dataset[key];
-    b.style.display = has ? "" : "none";
-    if (has && !firstView) firstView = b.dataset.view;
-  });
-  if (!firstView) { // 何も無い場合は visible だけ確保
-    buttons.forEach(b => b.style.display = "none");
-  }
-
-  // ---- 画像切替 ----
-  function setView(view){
-    buttons.forEach(b => b.classList.toggle('is-active', b.dataset.view === view));
-    const k = labelMap[view];
-    const src = k ? img.dataset[k] : "";
-    if (src) img.src = src;
-  }
-  if (firstView) setView(firstView);
-
-  // クリック
-  buttons.forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
-
-  // ---- 騰落率（stats.json） ----
-  function formatPct(x) {
-    if (typeof x !== 'number' || !isFinite(x)) return null;
-    if (Math.abs(x) > 100) return null;            // 安全側にクリップ
-    return (x >= 0 ? '+' : '') + x.toFixed(2) + '%';
-  }
-  function computeDisplay(obj) {
-    try {
-      if (!obj || typeof obj !== 'object') return null;
-      if (typeof obj.pct_intraday === 'number') return obj.pct_intraday * 100;
-      if (typeof obj.pct_id === 'number')       return obj.pct_id       * 100;
-      if (typeof obj.delta_level === 'number') {
-        const vt = (obj.value_type || obj.scale || '').toString().toLowerCase();
-        if (vt.includes('percent')) {
-          const v = Math.abs(obj.delta_level) < 10 ? obj.delta_level * 100 : obj.delta_level;
-          return v;
-        }
-        return obj.delta_level * 100;
-      }
-      return null;
-    } catch(e){ return null; }
-  }
-  function paintDelta(vPct) {
-    const text = formatPct(vPct);
-    deltaEl.textContent = text ?? 'N/A';
-    deltaEl.dataset.delta = text ?? 'N/A';
-    deltaEl.classList.toggle('is-up',  (text && vPct >  0.0001));
-    deltaEl.classList.toggle('is-down',(text && vPct < -0.0001));
-  }
-
-  if (jsonPath) {
-    fetch(jsonPath, { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : null)
-      .then(j => paintDelta(computeDisplay(j)))
-      .catch(() => paintDelta(null));
-  } else {
-    paintDelta(null);
-  }
-})();
-</script>
-
-<style>
-.si-card{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin:18px 0;background:rgba(255,255,255,.02)}
-.si-card__head{display:flex;align-items:center;justify-content:space-between}
-.si-card__left{display:flex;align-items:center;gap:.5rem}
-.si-flag{font-size:1.05rem}
-.si-title{font-weight:700}
-.si-badge{font-size:.8rem;padding:.1rem .5rem;border:1px solid rgba(255,255,255,.12);border-radius:999px}
-.si-card__right{font-variant-numeric:tabular-nums}
-.si-delta{font-weight:700}
-.si-delta.is-up{color:#32d296}
-.si-delta.is-down{color:#ff6b6b}
-.si-desc{opacity:.85;margin:.35rem 0 .6rem}
-.si-chart{text-align:center;background:rgba(255,255,255,.03);border-radius:10px;padding:6px}
-.si-chart__img{max-width:100%;height:auto;border-radius:6px}
-.si-toolbar{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap}
-.si-btn{padding:.25rem .65rem;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer}
-.si-btn.is-active{background:rgba(255,255,255,.09)}
-</style>
