@@ -8,9 +8,9 @@ layout: null
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>桜Index - 公式サイト</title>
-  <!-- デザイン（3枚目の配色・サイズ準拠） -->
-  <link rel="stylesheet" href="{{ site.baseurl }}/assets/site.css" />
   <meta name="color-scheme" content="dark light" />
+  <!-- 3枚目デザイン準拠のスタイル（存在しなくても表示はされます） -->
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/site.css" />
 </head>
 <body>
 
@@ -26,13 +26,11 @@ layout: null
     </nav>
   </header>
 
-  <!-- 指数カード（2カラム・レスポンシブ） -->
+  <!-- 指数カード（2カラム レスポンシブ） -->
   <main class="grid">
 
-    {%- comment -%}
-      ここで表示する指数を定義
-    {%- endcomment -%}
-    {%- assign indices =  "" | split: "" -%}
+    {%- comment -%} 表示する指数の定義 {%- endcomment -%}
+    {%- assign indices = "" | split: "" -%}
     {%- assign indices = indices | push:
       {"id":"ASTRA4","title":"Astra4","flag":"🇯🇵","badge":"宇宙ベンチャー","desc":"宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。"}
     -%}
@@ -62,7 +60,7 @@ layout: null
     </p>
   </footer>
 
-  <!-- 画像切替＆フォールバック -->
+  <!-- 画像切替＆フォールバック（存在しなくても可） -->
   <script src="{{ site.baseurl }}/assets/site.js" defer></script>
 </body>
 </html>
