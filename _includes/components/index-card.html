@@ -1,233 +1,147 @@
-{%- comment -%}
-  共通インデックスカード
-  入力: include.index（辞書）
-    - id            例: "ASTRA4"
-    - title         例: "Astra4"
-    - badge         例: "宇宙ベンチャー"
-    - desc          例: "……"
-    - json_path     例: "/charts/ASTRA4/stats.json"
-    - intraday_png  例: "/charts/ASTRA4/intraday.png"
-    - am_png        例: "/charts/ASTRA4/intraday_am.png"
-{%- endcomment -%}
-
-{%- assign idx = include.index -%}
-{%- assign id = idx.id -%}
-{%- assign title = idx.title -%}
-{%- assign badge = idx.badge -%}
-{%- assign desc = idx.desc -%}
-{%- assign json_path = idx.json_path -%}
-{%- assign intraday_png = idx.intraday_png -%}
-{%- assign am_png = idx.am_png -%}
-
-{%- comment -%}
-  旗アイコン（簡易マッピング）
-  日本: ASTRA4, R-BANK9, S-COIN+
-  米国: AIN-10
-{%- endcomment -%}
-{%- assign flag = "🇯🇵" -%}
-{%- if id == "AIN-10" -%}
-  {%- assign flag = "🇺🇸" -%}
-{%- endif -%}
-
-<section class="index-card" data-index-id="{{ id | escape }}">
-  <div class="card-head">
-    <div class="card-title">
-      <span class="flag">{{ flag }}</span>
-      <strong>{{ title }}</strong>
-      <span class="badge">{{ badge }}</span>
+<!-- _includes/components/index-card.html -->
+<div class="si-card" id="card-{{ include.id | escape }}">
+  <div class="si-card__head">
+    <div class="si-card__left">
+      <span class="si-flag">
+        {%- assign _id = include.id | upcase -%}
+        {%- if _id == "AIN-10" -%}🇺🇸
+        {%- else -%}🇯🇵
+        {%- endif -%}
+      </span>
+      <span class="si-title">{{ include.title }}</span>
+      {%- if include.badge -%}
+      <span class="si-badge">{{ include.badge }}</span>
+      {%- endif -%}
     </div>
-    <div class="card-delta">
-      <span class="delta-value" data-delta="pending">N/A</span>
+    <div class="si-card__right">
+      <span class="si-delta" data-delta="N/A">N/A</span>
     </div>
   </div>
 
-  <p class="card-desc">{{ desc }}</p>
+  <p class="si-desc">{{ include.description }}</p>
 
-  <div class="card-chart">
+  <div class="si-chart">
     <img
-      class="chart-img"
-      src="{{ intraday_png | escape }}"
-      alt="{{ id }} chart"
-      loading="lazy"
-      onerror="this.onerror=null; this.src='{{ am_png | escape }}';"
+      class="si-chart__img"
+      alt="{{ include.id }} chart"
+      src="{{ include.intraday_png | default: include.am_png }}"
+      data-src-intraday="{{ include.intraday_png }}"
+      data-src-am="{{ include.am_png }}"
+      onerror="this.dataset.error='1'; this.alt='chart (no image)';"
     />
   </div>
 
-  <div class="card-actions">
-    <button type="button" class="ghost">Intraday</button>
-    <button type="button" class="ghost">前場(AM)</button>
-    <button type="button" class="ghost">7日</button>
-    <button type="button" class="ghost">1ヶ月</button>
-    <button type="button" class="ghost">1年</button>
+  <div class="si-toolbar">
+    <button class="si-btn is-active" data-view="intraday">Intraday</button>
+    <button class="si-btn" data-view="am">前場(AM)</button>
   </div>
+</div>
 
-  {%- comment -%} データ取得に必要なパスを data 属性で埋め込む {%- endcomment -%}
-  <template class="stats-source" data-json="{{ json_path | escape }}"></template>
-</section>
-
-{%- comment -%}
-  --- 最小JS（重複ロード防止） ---
-  ・各カードの <template.stats-source> から JSON パスを取り出して fetch
-  ・表示値の決定ロジック:
-      1) JSON に value_type があればそれに従う
-         - "percent" なら delta_level をそのまま%表示
-         - "ratio"    なら pct_intraday を 100倍して%表示
-      2) 無ければヒューリスティック:
-         - scale === "percent" かつ delta_level が数値 -> delta_level を%表示
-         - pct_intraday が数値 -> 値が ±1.5 未満なら 100倍（比率と推定）、それ以外はそのまま%とみなす
-  ・正負に応じて class を付与（positive / negative / zero）
-{%- endcomment -%}
 <script>
-(function () {
-  if (window.__sakuraIndexCardLoaded) return;
-  window.__sakuraIndexCardLoaded = true;
+(() => {
+  const root = document.currentScript.closest('.si-card');
+  if (!root) return;
 
-  function fmtPct(v) {
-    if (!isFinite(v)) return 'N/A';
-    const sign = v > 0 ? '+' : (v < 0 ? '' : '');
-    // 小数2桁固定
-    return sign + v.toFixed(2) + '%';
+  const img = root.querySelector('.si-chart__img');
+  const deltaEl = root.querySelector('.si-delta');
+  const buttons = root.querySelectorAll('.si-btn');
+  const jsonPath = "{{ include.json_path | escape }}";
+
+  // --- ボタンで画像切替（PNGが無い場合は自動でフォールバックしない仕様） ---
+  function setView(view){
+    buttons.forEach(b => b.classList.toggle('is-active', b.dataset.view === view));
+    const src = view === 'am' ? img.dataset.srcAm : img.dataset.srcIntraday;
+    if (src) img.src = src;
+  }
+  buttons.forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  setView('intraday');
+
+  // --- 騰落率の表示ロジック（stats.jsonの差異を吸収） ---
+  // 取りうる形：
+  // - { "pct_intraday": 0.0123, ... }
+  // - { "pct_id": 0.0123, ... }
+  // - { "delta_level": 0.0123, "scale": "percent" } または "value_type": "percent"
+  // 既知の異常：巨大値（+100超など）。想定しない値は安全に "N/A" 表示。
+  function formatPct(x) {
+    if (typeof x !== 'number' || !isFinite(x)) return null;
+    // [-100, +100] % 以内だけ許可（安全側）
+    if (Math.abs(x) > 100) return null;
+    const s = (x >= 0 ? '+' : '') + x.toFixed(2) + '%';
+    return s;
   }
 
-  function decideDelta(stats) {
-    if (!stats || typeof stats !== 'object') return { text: 'N/A', className: '' };
-
-    // 1) 明示の value_type を優先
-    if (typeof stats.value_type === 'string') {
-      const vt = stats.value_type.toLowerCase();
-      if (vt === 'percent' && typeof stats.delta_level === 'number') {
-        return decorate(stats.delta_level);
-      }
-      if (vt === 'ratio' && typeof stats.pct_intraday === 'number') {
-        return decorate(stats.pct_intraday * 100);
-      }
-    }
-
-    // 2) 暫定ヒューリスティック
-    // AIN-10 など: scale == "percent" かつ delta_level がパーセント → そのまま
-    if (stats.scale === 'percent' && typeof stats.delta_level === 'number') {
-      return decorate(stats.delta_level);
-    }
-
-    // 多くの指数: pct_intraday があれば使う
-    if (typeof stats.pct_intraday === 'number') {
-      let v = stats.pct_intraday;
-      // 値が小さい(±1.5未満)→比率と推定して×100、大きい→既に％とみなす
-      if (Math.abs(v) < 1.5) v = v * 100;
-      return decorate(v);
-    }
-
-    return { text: 'N/A', className: '' };
-  }
-
-  function decorate(valuePct) {
-    const text = fmtPct(valuePct);
-    const className =
-      valuePct > 0 ? 'positive' :
-      valuePct < 0 ? 'negative' : 'zero';
-    return { text, className };
-  }
-
-  async function loadOneCard(card) {
-    const tpl = card.querySelector('template.stats-source');
-    if (!tpl) return;
-
-    const url = tpl.dataset.json;
-    const out = card.querySelector('[data-delta]');
-    if (!out) return;
-
+  function computeDisplay(obj) {
     try {
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) throw new Error(res.status + ' ' + url);
-      const stats = await res.json();
+      if (!obj || typeof obj !== 'object') return null;
 
-      const picked = decideDelta(stats);
-      out.textContent = picked.text;
-      out.classList.remove('positive', 'negative', 'zero');
-      if (picked.className) out.classList.add(picked.className);
-      out.dataset.delta = 'done';
-    } catch (e) {
-      out.textContent = 'N/A';
-      out.dataset.delta = 'error';
-      // console.warn('stats load failed:', url, e);
+      // 1) 率そのもの
+      if (typeof obj.pct_intraday === 'number') {
+        return obj.pct_intraday * 100;
+      }
+      if (typeof obj.pct_id === 'number') {
+        return obj.pct_id * 100;
+      }
+
+      // 2) レベル差 + スケール
+      if (typeof obj.delta_level === 'number') {
+        const vt = (obj.value_type || obj.scale || '').toString().toLowerCase();
+        // "percent" のとき：delta_level が 0.0123 なら 1.23% 表示に
+        if (vt.includes('percent')) {
+          const v = Math.abs(obj.delta_level) < 10 ? obj.delta_level * 100 : obj.delta_level;
+          return v;
+        }
+        // それ以外は比率とみなす
+        return obj.delta_level * 100;
+      }
+
+      return null;
+    } catch(e) { return null; }
+  }
+
+  function paintDelta(vPct) {
+    const text = formatPct(vPct);
+    if (text === null) {
+      deltaEl.textContent = 'N/A';
+      deltaEl.dataset.delta = 'N/A';
+      deltaEl.classList.remove('is-up','is-down');
+      return;
     }
+    deltaEl.textContent = text;
+    deltaEl.dataset.delta = text;
+    deltaEl.classList.toggle('is-up',  vPct >  0.0001);
+    deltaEl.classList.toggle('is-down',vPct < -0.0001);
   }
 
-  function boot() {
-    document.querySelectorAll('.index-card').forEach(loadOneCard);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  // フェッチして delta を描画
+  if (jsonPath) {
+    fetch(jsonPath, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => {
+        const vPct = computeDisplay(j);
+        paintDelta(vPct);
+      })
+      .catch(() => paintDelta(null));
   } else {
-    boot();
+    paintDelta(null);
   }
 })();
 </script>
 
 <style>
-/* 軽量スタイル（必要なら調整） */
-.index-card {
-  display: grid;
-  gap: .6rem;
-  padding: 1rem;
-  border-radius: .9rem;
-  background: rgba(255,255,255,0.03);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
-}
-.index-card .card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.index-card .card-title {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  font-size: 1.05rem;
-}
-.index-card .flag { font-size: 1.15rem; }
-.index-card .badge {
-  font-size: .75rem;
-  padding: .12rem .5rem;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-}
-.index-card .card-delta .delta-value {
-  font-weight: 700;
-}
-.index-card .card-delta .positive { color: #27d17f; }
-.index-card .card-delta .negative { color: #ff6b6b; }
-.index-card .card-delta .zero { color: #c7c7c7; }
-
-.index-card .card-desc {
-  margin: 0;
-  opacity: .85;
-  font-size: .92rem;
-}
-
-.index-card .card-chart {
-  background: rgba(255,255,255,0.02);
-  border-radius: .6rem;
-  overflow: hidden;
-}
-.index-card .chart-img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.index-card .card-actions {
-  display: flex;
-  gap: .5rem;
-}
-.index-card .card-actions .ghost {
-  padding: .35rem .7rem;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  border: none;
-  color: inherit;
-  font: inherit;
-  cursor: default;
-}
+.si-card{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin:18px 0;background:rgba(255,255,255,.02)}
+.si-card__head{display:flex;align-items:center;justify-content:space-between}
+.si-card__left{display:flex;align-items:center;gap:.5rem}
+.si-flag{font-size:1.1rem}
+.si-title{font-weight:700}
+.si-badge{font-size:.8rem;padding:.1rem .5rem;border:1px solid rgba(255,255,255,.12);border-radius:999px}
+.si-card__right{font-variant-numeric:tabular-nums}
+.si-delta{font-weight:700}
+.si-delta.is-up{color:#32d296}
+.si-delta.is-down{color:#ff6b6b}
+.si-desc{opacity:.8;margin:.35rem 0 .6rem}
+.si-chart{text-align:center;background:rgba(255,255,255,.03);border-radius:10px;padding:6px}
+.si-chart__img{max-width:100%;height:auto;border-radius:6px}
+.si-toolbar{display:flex;gap:.5rem;margin-top:.5rem}
+.si-btn{padding:.25rem .65rem;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer}
+.si-btn.is-active{background:rgba(255,255,255,.09)}
 </style>
