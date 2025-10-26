@@ -6,19 +6,9 @@
 <title>🌸 桜Index - 公式サイト</title>
 <style>
   :root{
-    /* 指定デザイン寄せ（深い藍＋シアン） */
-    --bg:#0b1420;
-    --panel:#0f1b28;
-    --panel2:#0d1826;
-    --border:#1b2a3d;
-    --text:#d6e9f7;
-    --muted:#91a8ba;
-    --chip:#0b2233;
-
-    --brand:#93c5fd;
-    --accent:#22d3ee;
-    --up:#34d399;
-    --down:#fb7185;
+    --bg:#0b1420; --panel:#0f1b28; --panel2:#0d1826; --border:#1b2a3d;
+    --text:#d6e9f7; --muted:#91a8ba; --chip:#0b2233;
+    --brand:#93c5fd; --accent:#22d3ee; --up:#34d399; --down:#fb7185;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text);
@@ -47,7 +37,6 @@
     padding:4px 8px;border-radius:999px}
   .pct{position:absolute;right:12px;top:10px;font-weight:800}
   .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
-
   .desc{color:var(--muted);font-size:12px;margin:4px 0 10px 28px}
 
   .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
@@ -86,99 +75,71 @@
 </div>
 
 <script>
-/* =========================================================
-    1) インデックス定義
-   ========================================================= */
+/* ===== 1) インデックス定義（repo とファイル名 stem を明示） ===== */
 const INDICES = [
   { id:'ASTRA4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー',
-    desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' ,
-    repo:'3_Sakura_Space',    // 画像・stats の置き場
+    desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。',
+    repo:'3_Sakura_Space', stem:'astra4'
   },
   { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',
-    desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' ,
-    repo:'R-BANK9',
+    desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。',
+    repo:'R-BANK9', stem:'rbank9'
   },
   { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',
-    desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' ,
-    repo:'AIN-10',
+    desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。',
+    repo:'AIN-10', stem:'ain10'
   },
   { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',
-    desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' ,
-    repo:'S-COIN-',
+    desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。',
+    repo:'S-COIN-', stem:'scoin_plus'
   },
 ];
 
-/* =========================================================
-    2) GitHub Raw のベース
-      画像・stats は  docs/outputs/ 以下にあります
-   ========================================================= */
-function rawBase(repo){
-  // 例: https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs/
-  return `https://raw.githubusercontent.com/SakuraIndex/${repo}/main/docs/outputs/`;
-}
+/* ===== 2) GitHub Raw ベース ===== */
+const rawBase = repo => `https://raw.githubusercontent.com/SakuraIndex/${repo}/main/docs/outputs/`;
 
-/* =========================================================
-    3) ファイル名の正規化
-      id をファイル名に寄せ、 *_intraday.png 等を組む
-   ========================================================= */
-function normName(id){
-  // 例) "R-BANK9" -> "rbank9", "S-COIN+" -> "scoin_plus"
-  return id.toLowerCase()
-           .replace(/\+/g,'_plus')
-           .replace(/[^a-z0-9]+/g,'_')
-           .replace(/^_+|_+$/g,'');
-}
-const TIME_SUFFIX = {
-  intraday: ['intraday','intraday_am'], // AM 代替も探す
-  '7d'     : ['7d'],
-  '1m'     : ['1m','30d'],              // 予備名があれば入れる
-  '1y'     : ['1y']
+/* ===== 3) タイムフレームとファイル名 ===== */
+const TIMEFILES = {
+  intraday: ['intraday','intraday_am'], // 代替も試す
+  am:       ['intraday_am','intraday'],
+  '7d':     ['7d'],
+  '1m':     ['1m'],
+  '1y':     ['1y'],
 };
 function chartCandidates(idx, tf){
   const base = rawBase(idx.repo);
-  const n = normName(idx.id);
-  const suf = TIME_SUFFIX[tf] || ['intraday'];
-  return suf.map(s => `${base}${n}_${s}.png`);
+  return (TIMEFILES[tf]||['intraday']).map(s => `${base}${idx.stem}_${s}.png`);
 }
 function statsUrl(idx){
-  const base = rawBase(idx.repo);
-  const n = normName(idx.id);
-  return `${base}${n}_stats.json`;
+  return `${rawBase(idx.repo)}${idx.stem}_stats.json`;
 }
 
-/* =========================================================
-    4) ％値の抽出ルール
-      各リポの stats.json がバラつくため、優先順で拾う
-   ========================================================= */
+/* ===== 4) % 値の抽出（％そのまま） ===== */
 const TF_FIELDS = {
-  intraday:['pct_intraday','pct_1d','pct','delta_pct'],
+  intraday:['pct_intraday','pct_1d','pct'],
   am       :['pct_intraday','pct_1d','pct'],
   '7d'     :['pct_7d','pct'],
   '1m'     :['pct_1m','pct'],
   '1y'     :['pct_1y','pct'],
 };
-function getPctFor(tf, stats){
+function pickPct(stats, tf){
   if(!stats) return null;
   for(const k of (TF_FIELDS[tf]||[])){
     if(typeof stats[k] !== 'undefined'){
       const v = Number(stats[k]);
-      if(!Number.isNaN(v)) return v; // ％値そのままを返す（小数で来る設計にしない）
+      if(!Number.isNaN(v)) return v;  // ％値の想定
     }
   }
-  // level系のみ（Astra4の delta_level 等）は％換算の母数が分からないので表示しない
   return null;
 }
-function fmtPctNumber(p){
-  if(p==null || Number.isNaN(p)) return {text:'N/A', cls:'na'};
-  // p は“％値そのまま”を想定（20.31 なら +20.31%）
+function fmtPct(p){
+  if(p==null || Number.isNaN(p)) return {text:'N/A',cls:'na'};
   const s = (p>=0?'+':'') + (Math.round(p*100)/100).toFixed(2) + '%';
   return {text:s, cls:p>0?'up':p<0?'down':'na'};
 }
 
-/* =========================================================
-    5) 画像ロード（cache-bust）
-   ========================================================= */
-async function loadFirstImage(img, urlList, bust){
+/* ===== 5) 画像ロード（cache-bust 付与） ===== */
+async function setFirstImage(img, urlList, bust){
   for(const base of urlList){
     const u = `${base}${base.includes('?')?'&':'?'}t=${encodeURIComponent(bust||Date.now())}`;
     const ok = await new Promise(res=>{
@@ -188,15 +149,13 @@ async function loadFirstImage(img, urlList, bust){
       t.referrerPolicy='no-referrer';
       t.src=u;
     });
-    if(ok) return u;
+    if(ok) return true;
   }
   img.alt='画像が見つかりません';
-  return null;
+  return false;
 }
 
-/* =========================================================
-    6) UI レンダリング
-   ========================================================= */
+/* ===== 6) カード描画 ===== */
 const $ = (s,el=document)=>el.querySelector(s);
 
 function renderCard(idx){
@@ -219,62 +178,50 @@ function renderCard(idx){
       <span class="chip" data-tf="1y">1年</span>
     </div>
   `;
-  const img = node.querySelector('img');
-  const pctEl = node.querySelector(`#pct-${idx.id}`);
-  let statsCache = null;
+  const img  = node.querySelector('img');
+  const pctE = node.querySelector(`#pct-${idx.id}`);
 
+  let stats = null;
   async function ensureStats(){
-    if(statsCache) return statsCache;
+    if(stats) return stats;
     try{
       const r = await fetch(statsUrl(idx), {cache:'no-store',mode:'cors'});
-      if(r.ok) statsCache = await r.json();
-    }catch(_){}
-    return statsCache;
+      if(r.ok) stats = await r.json();
+    }catch(e){}
+    return stats;
   }
 
   async function update(tf){
-    // 見た目トグル
-    node.querySelectorAll('.chip').forEach(c=>{
-      c.classList.toggle('active', c.dataset.tf===tf);
-    });
+    node.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.tf===tf));
 
-    // 画像
-    img.src=''; // クリアしてリロードを明確化
     const s = await ensureStats();
-    // cache-bustには updated_at を使い、無ければ現在時刻
     const bust = s && s.updated_at ? s.updated_at : Date.now();
 
-    await loadFirstImage(img, chartCandidates(idx, tf==='am'?'intraday':tf), bust);
+    await setFirstImage(img, chartCandidates(idx, tf), bust);
 
-    // ％
-    const pctRaw = getPctFor(tf==='am'?'intraday':tf, s);
-    const {text, cls} = fmtPctNumber(pctRaw);
-    pctEl.textContent = text;
-    pctEl.className = `pct ${cls}`;
+    const pct = pickPct(s, tf==='am'?'intraday':tf);  // AMはintraday％で表示
+    const {text, cls} = fmtPct(pct);
+    pctE.textContent = text;
+    pctE.className = `pct ${cls}`;
   }
 
-  // クリック
   node.querySelectorAll('.chip').forEach(c=>{
     c.addEventListener('click', ()=> update(c.dataset.tf));
   });
 
-  // 初期表示
   update('intraday');
-
   return node;
 }
 
-/* =========================================================
-    7) 起動
-   ========================================================= */
+/* ===== 7) 起動 ===== */
 (function init(){
   $('#y').textContent = new Date().getFullYear();
   $('#syncMeta').textContent = `同期完了：${
     new Date().toLocaleString('ja-JP',{hour12:false})
   } ／ データ: charts/*`;
 
-  const wrap = $('#cards');
-  INDICES.forEach(idx => wrap.appendChild(renderCard(idx)));
+  const root = $('#cards');
+  INDICES.forEach(i => root.appendChild(renderCard(i)));
 })();
 </script>
 </body>
