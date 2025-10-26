@@ -73,24 +73,31 @@
   </div>
 
 <script>
-/* ============ 参照先（raw GitHub） ============ */
-const EXTERNAL_ORIGINS = {
-  'Astra4' :  'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9':  'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10' :  'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+':  'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+/* ================= ソース定義 ================= */
+// 1) 公式サイト（第一候補）
+const SITE_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+
+// 2) 旧・各指数リポの /docs/outputs（フォールバック）
+const LEGACY_OUTPUTS = {
+  'Astra4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 
-/* ⚠ ％は「intradayのみ」採用（フォールバック禁止） */
+// サイト側ディレクトリ名（AIN-10 → AIN10 のような差異を吸収）
+const SITE_DIR = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
+
+/* “intraday%” のみ表示対象（無ければ N/A） */
 const FIELD_PREF = { 'Astra4':['pct_intraday'], 'R-BANK9':['pct_intraday'], 'AIN-10':['pct_intraday'], 'S-COIN+':['pct_intraday'] };
 
-/* 時間軸 → 実ファイル候補 */
+/* 時間軸 → 候補（サイトの intraday は標準名 / 旧はファイル名バリエーション） */
 const FILEMAP = {
-  intraday:  (slug)=>[ `${slug}_intraday.png`, `${slug}_intraday_am.png`, `${slug}_intraday_post.png` ],
-  am:        (slug)=>[ `${slug}_intraday_am.png`, `${slug}_intraday.png` ],
-  '7d':      (slug)=>[ `${slug}_7d.png` ],
-  '1m':      (slug)=>[ `${slug}_1m.png`, `${slug}_30d.png` ],
-  '1y':      (slug)=>[ `${slug}_1y.png` ],
+  intraday: (slug)=>[ `intraday.png`, `${slug}_intraday.png`, `${slug}_intraday_post.png`, `${slug}_intraday_am.png` ],
+  am:       (slug)=>[ `${slug}_intraday_am.png`, `${slug}_intraday.png` ],
+  '7d':     (slug)=>[ `${slug}_7d.png` ],
+  '1m':     (slug)=>[ `${slug}_1m.png`, `${slug}_30d.png` ],
+  '1y':     (slug)=>[ `${slug}_1y.png` ],
 };
 
 const INDICES = [
@@ -100,11 +107,23 @@ const INDICES = [
   { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
-/* ============ util ============ */
+/* ================= util ================= */
 const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
+// 最初に成功した fetch を返す
+async function fetchFirst(urls, opts = {}) {
+  for (const u of urls) {
+    try {
+      const res = await fetch(u, { cache: 'no-store', ...opts });
+      if (res.ok) return res;
+    } catch(e) {}
+  }
+  throw new Error('all candidates failed: ' + urls.join(', '));
+}
+
+// 画像を最初に成功した URL で表示
 async function loadFirstImage(img, urlList){
   for(const u of urlList){
     const ok = await new Promise(res=>{
@@ -119,16 +138,8 @@ async function loadFirstImage(img, urlList){
   img.alt='画像が見つかりません';
   return null;
 }
-async function fetchFirstJson(urlList){
-  for(const u of urlList){
-    try{
-      const r=await fetch(u,{mode:'cors',cache:'no-store'});
-      if(!r.ok) continue;
-      return await r.json();
-    }catch(e){}
-  }
-  return null;
-}
+
+// ％テキスト整形（ratio小数にも対応）
 function fmtPctText(val){
   if(val==null || Number.isNaN(val)) return {text:'N/A', cls:'na'};
   const abs=Math.abs(val);
@@ -138,7 +149,33 @@ function fmtPctText(val){
 }
 const statFieldOrder = id => FIELD_PREF[id] || ['pct_intraday'];
 
-/* ============ 描画 ============ */
+/* ================= データパスを構築 ================= */
+function buildPaths(indexId){
+  const dir = SITE_DIR[indexId];
+  const siteDir = `${SITE_BASE}/${dir}`;
+
+  const legacyBase = LEGACY_OUTPUTS[indexId];
+  const slug = toSlug(indexId);
+
+  // JSON（標準名→旧名の順）
+  const statsCandidates = [
+    `${siteDir}/stats.json`,
+    `${legacyBase}/${slug}_stats.json`,
+    `${legacyBase}/${indexId.toLowerCase()}_stats.json`,
+  ];
+
+  // PNG intraday（サイト標準名→旧名）
+  const intradayPngCandidates = [
+    `${siteDir}/intraday.png`,
+    `${legacyBase}/${slug}_intraday.png`,
+    `${legacyBase}/${slug}_intraday_post.png`,
+    `${legacyBase}/${slug}_intraday_am.png`,
+  ];
+
+  return { siteDir, legacyBase, slug, statsCandidates, intradayPngCandidates };
+}
+
+/* ================= カード描画 ================= */
 function renderCard(idx){
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
@@ -160,9 +197,10 @@ function renderCard(idx){
     .map(([key,label],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${key}">${label}</span>`).join('');
   card.appendChild(acts);
 
+  // 初期ロード
   (async()=>{
     await switchTimeframe(idx, img, 'intraday');
-    await applyStats(idx, card);
+    await applyStats(idx, card, img);
   })();
 
   acts.addEventListener('click', async (e)=>{
@@ -176,17 +214,30 @@ function renderCard(idx){
 }
 
 async function switchTimeframe(idx, img, tf){
-  const base = EXTERNAL_ORIGINS[idx.id] || '';
-  const slug = toSlug(idx.id);
-  const candidates = (FILEMAP[tf] ? FILEMAP[tf](slug) : FILEMAP['intraday'](slug)).map(fn => `${base}/${fn}`);
+  const { siteDir, legacyBase, slug } = buildPaths(idx.id);
+
+  // intraday はまずサイト、他の時間軸は旧 outputs を優先
+  let candidates = [];
+  if(tf === 'intraday'){
+    candidates = FILEMAP[tf](slug).map(fn => `${siteDir}/${fn}`).concat(
+      FILEMAP[tf](slug).map(fn => `${legacyBase}/${fn}`)
+    );
+  }else{
+    candidates = FILEMAP[tf](slug).map(fn => `${legacyBase}/${fn}`);
+  }
   await loadFirstImage(img, candidates);
 }
 
-async function applyStats(idx, card){
-  const base = EXTERNAL_ORIGINS[idx.id] || '';
-  const slug = toSlug(idx.id);
-  const statUrls = [ `${base}/${slug}_stats.json`, `${base}/${idx.id.toLowerCase()}_stats.json` ];
-  const stats = await fetchFirstJson(statUrls);
+async function applyStats(idx, card, imgEl){
+  const { statsCandidates, intradayPngCandidates } = buildPaths(idx.id);
+
+  // 1) stats.json を先頭から探す
+  let stats=null, lastUsedUrl=null;
+  try{
+    const res = await fetchFirst(statsCandidates, { cache:'no-store' });
+    lastUsedUrl = res.url;
+    stats = await res.json();
+  }catch(_){}
 
   const pctEl = document.getElementById(`pct-${idx.id}`);
   const updEl = document.getElementById(`upd-${idx.id}`);
@@ -198,7 +249,7 @@ async function applyStats(idx, card){
     return;
   }
 
-  // intraday のみ採用（なければ N/A）
+  // 2) % の抽出（ratioにも対応）
   const fields = statFieldOrder(idx.id);
   let raw = null;
   for(const k of fields){
@@ -206,19 +257,13 @@ async function applyStats(idx, card){
       raw = Number(stats[k]); break;
     }
   }
-  if(raw==null || Number.isNaN(raw)){
-    pctEl.textContent='N/A'; pctEl.className='pct na';
-    updEl.textContent = stats.updated_at ? `as of ${new Date(stats.updated_at).toLocaleString('ja-JP')}` : '';
-    card.classList.remove('pos','neg');
-    return;
-  }
-
   const v = fmtPctText(raw);
   pctEl.textContent = v.text;
   pctEl.className = `pct ${v.cls}`;
   card.classList.toggle('pos', v.cls==='up');
   card.classList.toggle('neg', v.cls==='down');
 
+  // 3) 更新時刻表示
   if(stats.updated_at){
     try{
       const d=new Date(stats.updated_at);
@@ -227,8 +272,23 @@ async function applyStats(idx, card){
   }else{
     updEl.textContent='';
   }
+
+  // 4) intraday画像のキャッシュバスター（stats の updated_at を付与）
+  if(imgEl && imgEl.src){
+    const t = encodeURIComponent(stats.updated_at || Date.now());
+    if(!imgEl.src.includes('?v=')){
+      // 同じファイル名でも更新が反映されるように
+      imgEl.src = imgEl.src + `?v=${t}`;
+    }
+  }else{
+    // 念のため画像が未取得ならここでも試す
+    const t = encodeURIComponent(stats.updated_at || Date.now());
+    const list = intradayPngCandidates.map(u => `${u}?v=${t}`);
+    await loadFirstImage(document.querySelector(`#cards img`), list);
+  }
 }
 
+/* ================= init ================= */
 (function init(){
   document.getElementById('year').textContent=(new Date()).getFullYear();
   document.getElementById('syncMeta').textContent=`同期完了：${nowString()} ／ データ: charts/*`;
