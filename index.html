@@ -88,10 +88,10 @@ const LEGACY_OUTPUTS = {
 // サイト側ディレクトリ名（AIN-10 → AIN10 のような差異を吸収）
 const SITE_DIR = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
 
-/* “intraday%” のみ表示対象（無ければ N/A） */
+/* intraday% のみ表示（無ければ N/A） */
 const FIELD_PREF = { 'Astra4':['pct_intraday'], 'R-BANK9':['pct_intraday'], 'AIN-10':['pct_intraday'], 'S-COIN+':['pct_intraday'] };
 
-/* 時間軸 → 候補（サイトの intraday は標準名 / 旧はファイル名バリエーション） */
+/* 時間軸 → 候補（サイト標準名→旧名） */
 const FILEMAP = {
   intraday: (slug)=>[ `intraday.png`, `${slug}_intraday.png`, `${slug}_intraday_post.png`, `${slug}_intraday_am.png` ],
   am:       (slug)=>[ `${slug}_intraday_am.png`, `${slug}_intraday.png` ],
@@ -112,18 +112,18 @@ const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
-// 最初に成功した fetch を返す
+// 最初に成功した fetch を返す（どの URL が当たったかを返す）
 async function fetchFirst(urls, opts = {}) {
   for (const u of urls) {
     try {
       const res = await fetch(u, { cache: 'no-store', ...opts });
-      if (res.ok) return res;
+      if (res.ok) { res._usedUrl = u; return res; }
     } catch(e) {}
   }
   throw new Error('all candidates failed: ' + urls.join(', '));
 }
 
-// 画像を最初に成功した URL で表示
+// 画像（最初に成功した URL で表示）
 async function loadFirstImage(img, urlList){
   for(const u of urlList){
     const ok = await new Promise(res=>{
@@ -139,32 +139,28 @@ async function loadFirstImage(img, urlList){
   return null;
 }
 
-// ％テキスト整形（ratio小数にも対応）
-function fmtPctText(val){
-  if(val==null || Number.isNaN(val)) return {text:'N/A', cls:'na'};
-  const abs=Math.abs(val);
-  const pct=(abs>0 && abs<1)? val*100 : val;
-  const s=(pct>=0?'+':'') + (Math.round(pct*100)/100).toFixed(2) + '%';
-  return {text:s, cls:pct>0?'up':pct<0?'down':'na'};
+// 表示文字列だけ整形（％値を受け取る想定）
+function fmtPctTextFromPercent(pctVal){
+  if(pctVal==null || Number.isNaN(pctVal)) return {text:'N/A', cls:'na'};
+  const s=(pctVal>=0?'+':'') + (Math.round(pctVal*100)/100).toFixed(2) + '%';
+  return {text:s, cls:pctVal>0?'up':pctVal<0?'down':'na'};
 }
+
 const statFieldOrder = id => FIELD_PREF[id] || ['pct_intraday'];
 
-/* ================= データパスを構築 ================= */
+/* ================= パス構築 ================= */
 function buildPaths(indexId){
   const dir = SITE_DIR[indexId];
   const siteDir = `${SITE_BASE}/${dir}`;
-
   const legacyBase = LEGACY_OUTPUTS[indexId];
   const slug = toSlug(indexId);
 
-  // JSON（標準名→旧名の順）
   const statsCandidates = [
-    `${siteDir}/stats.json`,
-    `${legacyBase}/${slug}_stats.json`,
-    `${legacyBase}/${indexId.toLowerCase()}_stats.json`,
+    `${siteDir}/stats.json`,                                 // 新: ratio
+    `${legacyBase}/${slug}_stats.json`,                      // 旧: percent
+    `${legacyBase}/${indexId.toLowerCase()}_stats.json`,     // 旧: percent（別名）
   ];
 
-  // PNG intraday（サイト標準名→旧名）
   const intradayPngCandidates = [
     `${siteDir}/intraday.png`,
     `${legacyBase}/${slug}_intraday.png`,
@@ -197,7 +193,6 @@ function renderCard(idx){
     .map(([key,label],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${key}">${label}</span>`).join('');
   card.appendChild(acts);
 
-  // 初期ロード
   (async()=>{
     await switchTimeframe(idx, img, 'intraday');
     await applyStats(idx, card, img);
@@ -215,8 +210,6 @@ function renderCard(idx){
 
 async function switchTimeframe(idx, img, tf){
   const { siteDir, legacyBase, slug } = buildPaths(idx.id);
-
-  // intraday はまずサイト、他の時間軸は旧 outputs を優先
   let candidates = [];
   if(tf === 'intraday'){
     candidates = FILEMAP[tf](slug).map(fn => `${siteDir}/${fn}`).concat(
@@ -229,13 +222,12 @@ async function switchTimeframe(idx, img, tf){
 }
 
 async function applyStats(idx, card, imgEl){
-  const { statsCandidates, intradayPngCandidates } = buildPaths(idx.id);
+  const { statsCandidates } = buildPaths(idx.id);
 
-  // 1) stats.json を先頭から探す
-  let stats=null, lastUsedUrl=null;
+  let stats=null, usedUrl=null;
   try{
     const res = await fetchFirst(statsCandidates, { cache:'no-store' });
-    lastUsedUrl = res.url;
+    usedUrl = res._usedUrl || res.url;
     stats = await res.json();
   }catch(_){}
 
@@ -249,7 +241,7 @@ async function applyStats(idx, card, imgEl){
     return;
   }
 
-  // 2) % の抽出（ratioにも対応）
+  // 値の取り出し
   const fields = statFieldOrder(idx.id);
   let raw = null;
   for(const k of fields){
@@ -257,13 +249,24 @@ async function applyStats(idx, card, imgEl){
       raw = Number(stats[k]); break;
     }
   }
-  const v = fmtPctText(raw);
+  if(raw==null || Number.isNaN(raw)){
+    pctEl.textContent='N/A'; pctEl.className='pct na';
+    updEl.textContent = stats.updated_at ? `as of ${new Date(stats.updated_at).toLocaleString('ja-JP')}` : '';
+    card.classList.remove('pos','neg');
+    return;
+  }
+
+  // ---- ここが重要：単位の決定 ----
+  // サイト配下なら ratio（要×100）、/docs/outputs 配下なら percent（そのまま）
+  const isSite = usedUrl && usedUrl.includes('Sakura-Index-Site/');
+  const percentVal = isSite ? raw * 100 : raw;
+
+  const v = fmtPctTextFromPercent(percentVal);
   pctEl.textContent = v.text;
   pctEl.className = `pct ${v.cls}`;
   card.classList.toggle('pos', v.cls==='up');
   card.classList.toggle('neg', v.cls==='down');
 
-  // 3) 更新時刻表示
   if(stats.updated_at){
     try{
       const d=new Date(stats.updated_at);
@@ -273,18 +276,15 @@ async function applyStats(idx, card, imgEl){
     updEl.textContent='';
   }
 
-  // 4) intraday画像のキャッシュバスター（stats の updated_at を付与）
+  // 画像キャッシュバスター
   if(imgEl && imgEl.src){
     const t = encodeURIComponent(stats.updated_at || Date.now());
     if(!imgEl.src.includes('?v=')){
-      // 同じファイル名でも更新が反映されるように
       imgEl.src = imgEl.src + `?v=${t}`;
+    }else{
+      // 既に付いている場合も更新トリガにしたい時はコメントアウト解除
+      // imgEl.src = imgEl.src.replace(/(\?v=).*$/, `?v=${t}`);
     }
-  }else{
-    // 念のため画像が未取得ならここでも試す
-    const t = encodeURIComponent(stats.updated_at || Date.now());
-    const list = intradayPngCandidates.map(u => `${u}?v=${t}`);
-    await loadFirstImage(document.querySelector(`#cards img`), list);
   }
 }
 
