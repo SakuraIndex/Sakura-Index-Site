@@ -1,268 +1,292 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🌸 桜Index - 公式サイト</title>
-<style>
-:root{
-  --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
-  --text:#d4e9f7; --sub:#9fb6c7; --muted:#7890a0; --brand:#93c5fd;
-  --up:#34d399; --down:#fb7185; --chip:#0b2233;
-}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
-a{color:var(--brand);text-decoration:none}
-.wrap{max-width:1160px;margin:32px auto;padding:0 16px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.title{display:flex;gap:12px;align-items:center}
-.title h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.2px}
-.meta{color:var(--muted);font-size:12px;margin-top:4px}
-.btns{display:flex;gap:10px}
-.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:11px 16px;border-radius:12px;
-  font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;transition:all .15s ease}
-.btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌸 桜Index - 公式サイト</title>
+  <style>
+    :root{
+      --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
+      --text:#d4e9f7; --sub:#9fb6c7; --muted:#7890a0; --brand:#93c5fd;
+      --accent:#22d3ee; --up:#34d399; --down:#fb7185; --chip:#0b2233;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+    a{color:var(--brand);text-decoration:none}
+    .wrap{max-width:1160px;margin:32px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .title{display:flex;gap:12px;align-items:center}
+    .title h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.2px}
+    .meta{color:var(--muted);font-size:12px;margin-top:4px}
+    .btns{display:flex;gap:10px}
+    .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+      padding:11px 16px;border-radius:12px;font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;transition:all .15s ease}
+    .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
 
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-@media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
-.card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
-  border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative}
-.card.pos{ box-shadow:0 0 0 2px #34d39933 inset }
-.card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
+    .card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
+      border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px 14px;position:relative}
+    .card.pos{ box-shadow:0 0 0 2px #34d39933 inset }
+    .card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
 
-.head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.flag{font-size:18px;line-height:1}
-.name{font-size:18px;font-weight:700;letter-spacing:.2px}
-.badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);
-  padding:4px 8px;border-radius:999px}
-.desc{color:var(--sub);font-size:12px;margin:2px 0 8px 28px}
-.pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
-.pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
-.updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
+    .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .flag{font-size:18px;line-height:1}
+    .name{font-size:18px;font-weight:700;letter-spacing:.2px}
+    .badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);padding:4px 8px;border-radius:999px}
+    .desc{color:var(--sub);font-size:12px;margin:2px 0 8px 28px}
+    .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
+    .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
+    .updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
 
-.chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
-  background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.chart img{display:block;width:100%;height:100%;object-fit:contain}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
-  padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
-.chipbtn.active{outline:2px solid var(--brand)}
-.hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
-footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
-
-/* 右下に簡易エラー表示 */
-#errtoast{position:fixed;right:14px;bottom:14px;background:#1a2633;color:#ffb4b4;
-  border:1px solid #3b4a5a;border-radius:10px;padding:10px 12px;font-size:12px;max-width:60ch;display:none;z-index:9999;white-space:pre-wrap}
-</style>
+    .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
+      background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .chart img{display:block;width:100%;height:100%;object-fit:contain}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
+      padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
+    .chipbtn.active{outline:2px solid var(--brand)}
+    .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
+    footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
-      <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
-    </div>
-    <div class="btns">
-      <a class="btn" href="https://x.com" rel="noopener">公式X（Twitter）</a>
-      <a class="btn" href="https://note.com" rel="noopener">公式note</a>
-    </div>
-  </header>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">
+          <div style="font-size:22px">🌸</div>
+          <h1>桜Index - 公式サイト</h1>
+        </div>
+        <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
+      </div>
+      <div class="btns">
+        <a class="btn" href="https://x.com"  rel="noopener">公式X（Twitter）</a>
+        <a class="btn" href="https://note.com" rel="noopener">公式note</a>
+      </div>
+    </header>
 
-  <section class="grid" id="cards"></section>
+    <section class="grid" id="cards"></section>
 
-  <div class="hint">
-    データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポジトリの自動生成スナップショットと同期しています。<br>
-    ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。
+    <div class="hint">
+      データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポジトリの自動生成スナップショットと同期しています。<br>
+      ※本サイトは投資助言ではありません。投資判断はご自身の責任（自己責任）でお願いいたします。
+    </div>
+    <footer>© <span id="year"></span> 桜Index</footer>
   </div>
-  <footer>© <span id="year"></span> 桜Index</footer>
-</div>
-<div id="errtoast"></div>
 
 <script>
-(function(){
-  "use strict";
+/* ============ 参照先 ============ */
+// 公開サイト（静的配信）の charts ディレクトリ
+const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+// index → サイト内フォルダ名
+const SITE_FOLDER = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
 
-  /* ===== データの所在 =====
-     1) 公式サイト：Sakura-Index-Site/docs/charts/*（JSONは ratio）
-     2) 旧 outputs：各指数リポの docs/outputs（JSONは percent）
-  */
-  var SITE_ROOT = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-  var LEGACY = {
-    'Astra4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-    'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-    'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-    'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs'
-  };
-  var SITE_FOLDER = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
+// 各指数リポ（legacy outputs のフォールバック）
+const EXTERNAL_ORIGINS = {
+  'Astra4' :  'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'R-BANK9':  'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  'AIN-10' :  'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'S-COIN+':  'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+};
 
-  var INDICES = [
-    { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-    { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-    { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',       desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-    { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' }
-  ];
+// ％は intraday のみ（フォールバックで長期値を流用しない）
+const FIELD_PREF = { 'Astra4':['pct_intraday'], 'R-BANK9':['pct_intraday'], 'AIN-10':['pct_intraday'], 'S-COIN+':['pct_intraday'] };
 
-  function toast(msg){
-    try{
-      var box=document.getElementById('errtoast');
-      box.textContent=String(msg);
-      box.style.display='block';
-      clearTimeout(box._t);
-      box._t=setTimeout(function(){box.style.display='none';},7000);
-    }catch(_){}
-  }
+/* 時間軸 → 実ファイル候補（先にサイト、無ければ legacy） */
+const FILEMAP = {
+  intraday:  (slug, id)=>[
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_post.png`
+  ],
+  am:        (slug, id)=>[
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`
+  ],
+  '7d':      (slug, id)=>[ `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png` ],
+  '1m':      (slug, id)=>[
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1m.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`
+  ],
+  '1y':      (slug, id)=>[ `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png` ],
+};
 
-  function toSlug(id){ return id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,''); }
+const INDICES = [
+  { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+  { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
+  { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',       desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
+  { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+];
 
-  function imageCandidates(id){
-    try{
-      var folder = encodeURIComponent(SITE_FOLDER[id] || '');
-      var site = SITE_ROOT + '/' + folder + '/intraday.png';
-      var slug = toSlug(id);
-      var legacy = LEGACY[id] || '';
-      return [
-        site,
-        legacy + '/' + slug + '_intraday.png',
-        legacy + '/' + slug + '_intraday_am.png',
-        legacy + '/' + slug + '_intraday_post.png'
-      ];
-    }catch(e){ toast('imageCandidates: '+e.message); return []; }
-  }
+/* ============ util ============ */
+const $ = (s,el=document)=>el.querySelector(s);
+const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
-  function statsCandidates(id){
-    try{
-      var folder = encodeURIComponent(SITE_FOLDER[id] || '');
-      var site = SITE_ROOT + '/' + folder + '/stats.json'; // ratio
-      var slug = toSlug(id);
-      var legacy = LEGACY[id] || '';
-      return [
-        site,
-        legacy + '/' + slug + '_stats.json',
-        legacy + '/' + id.toLowerCase() + '_stats.json'
-      ];
-    }catch(e){ toast('statsCandidates: '+e.message); return []; }
-  }
-
-  function normalizePctFromSource(raw, fromSite){
-    if(raw==null || isNaN(raw)) return null;
-    var v = Number(raw);
-    if(fromSite){ return v*100.0; }        // ratio→%
-    var a = Math.abs(v);
-    if(a<=50) return v;                    // 既に％
-    return Math.sign(v)*50;                // フェイルセーフ
-  }
-
-  function fmtPct(val){
-    if(val==null || isNaN(val)) return {text:'N/A', cls:'na'};
-    var s = (val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
-    return {text:s, cls:val>0?'up':val<0?'down':'na'};
-  }
-
-  function el(tag, cls){ var x=document.createElement(tag); if(cls) x.className=cls; return x; }
-
-  function renderCard(idx){
-    var card=el('article','card');
-    var head=el('div','head');
-    head.innerHTML='<div class="flag">'+(idx.flag||'🏳️')+'</div>'
-      +'<div class="name">'+idx.title+'</div>'
-      +'<div class="badge">'+(idx.badge||'')+'</div>'
-      +'<div class="pct na" id="pct-'+idx.id+'">N/A</div>'
-      +'<div class="updatedAt" id="upd-'+idx.id+'"></div>';
-    card.appendChild(head);
-
-    var desc=el('div','desc'); desc.textContent=idx.desc||''; card.appendChild(desc);
-
-    var chart=el('div','chart'); var img=el('img'); img.loading='lazy'; img.referrerPolicy='no-referrer';
-    img.alt='画像が見つかりません'; chart.appendChild(img); card.appendChild(chart);
-
-    // まずカードを返して描画 → その後に非同期ロード
-    setTimeout(function(){ loadFirstImage(img, imageCandidates(idx.id)); },0);
-    setTimeout(function(){ applyStats(idx, card, img); },0);
-
-    return card;
-  }
-
-  function loadFirstImage(img, urls){
-    (function tryNext(i){
-      if(i>=urls.length){ img.alt='画像が見つかりません'; return; }
-      var t=new Image();
-      t.onload=function(){ img.src=urls[i]; };
-      t.onerror=function(){ tryNext(i+1); };
-      t.referrerPolicy='no-referrer';
-      t.src=urls[i];
-    })(0);
-  }
-
-  function fetchJson(u, cb){
-    try{
-      var xhr=new XMLHttpRequest();
-      xhr.open('GET', u, true);
-      xhr.responseType='json';
-      xhr.onreadystatechange=function(){
-        if(xhr.readyState===4){
-          if(xhr.status>=200 && xhr.status<300){
-            cb(null, xhr.response || JSON.parse(xhr.responseText||'null'));
-          }else{ cb(new Error('HTTP '+xhr.status)); }
-        }
-      };
-      xhr.send();
-    }catch(e){ cb(e); }
-  }
-
-  function applyStats(idx, card, img){
-    var pctEl=document.getElementById('pct-'+idx.id);
-    var updEl=document.getElementById('upd-'+idx.id);
-    var urls=statsCandidates(idx.id);
-
-    (function tryNext(i){
-      if(i>=urls.length){
-        pctEl.textContent='N/A'; pctEl.className='pct na'; card.classList.remove('pos','neg'); return;
-      }
-      var url=urls[i];
-      fetchJson(url, function(err, json){
-        if(err || !json){ tryNext(i+1); return; }
-        try{
-          var raw = (json.pct_intraday!=null)? Number(json.pct_intraday) : null;
-          var fromSite = url.indexOf('/docs/charts/')>=0;
-          var pct = normalizePctFromSource(raw, fromSite);
-          var v = fmtPct(pct);
-          pctEl.textContent=v.text;
-          pctEl.className='pct '+v.cls;
-          card.classList.toggle('pos', v.cls==='up');
-          card.classList.toggle('neg', v.cls==='down');
-
-          var ts = json.updated_at||'';
-          if(ts){
-            try{
-              updEl.textContent='as of '+(new Date(ts)).toLocaleString('ja-JP');
-              if(img && img.src){
-                var base = img.src.split('?')[0];
-                img.src = base + '?v=' + encodeURIComponent(ts);
-              }
-            }catch(_){}
-          }
-        }catch(e){ toast('applyStats: '+e.message); }
+function loadFirstImage(img, urlList){
+  return new Promise(async (resolve)=>{
+    for(const u of urlList){
+      const ok = await new Promise(res=>{
+        const t=new Image();
+        t.onload=()=>{img.src=u; res(true)}
+        t.onerror=()=>res(false);
+        t.referrerPolicy='no-referrer';
+        t.src=u + (u.includes('?')?'&':'?') + 't=' + Date.now(); // 強制ノーキャッシュ
       });
-    })(0);
+      if(ok) return resolve(u);
+    }
+    img.alt='画像が見つかりません'; resolve(null);
+  });
+}
+
+function fetchJson(url, cb){
+  fetch(url,{mode:'cors',cache:'no-store'}).then(r=>{
+    if(!r.ok) throw new Error(r.status);
+    return r.json();
+  }).then(j=>cb(null,j)).catch(e=>cb(e||new Error('fetch failed')));
+}
+
+function statsCandidates(id){
+  const base = EXTERNAL_ORIGINS[id] || '';
+  const slug = toSlug(id);
+  const site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}`;
+  // 1) サイトの stats.json（正規）
+  // 2) legacy outputs の *_stats.json
+  // 3) 念のため id ベースの *_stats.json も見る
+  return [
+    `${site}/stats.json`,
+    `${base}/${slug}_stats.json`,
+    `${base}/${id.toLowerCase()}_stats.json`,
+  ];
+}
+
+function fmtPctText(val){
+  if(val==null || Number.isNaN(val)) return {text:'N/A', cls:'na'};
+  const s=(val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
+  return {text:s, cls:val>0?'up':val<0?'down':'na'};
+}
+
+/* ---- 単位判定＆正規化（ratio→% / percent→%） ---- */
+function normalizePct(jsonObj) {
+  if (!jsonObj || jsonObj.pct_intraday == null) return null;
+  var v = Number(jsonObj.pct_intraday);
+  if (!isFinite(v)) return null;
+
+  // unit があればそれに従う
+  var unit = (jsonObj.unit || '').toLowerCase();
+  if (unit === 'ratio')  v = v * 100.0;
+  else if (unit === 'percent' || unit === '%') v = v;
+  else {
+    // ヒューリスティック：|v|<=1.2 は ratio とみなす（≒ 0.5% 未満が多い系列）
+    v = (Math.abs(v) <= 1.2) ? v * 100.0 : v;
   }
 
-  function init(){
-    try{
-      document.getElementById('syncMeta').textContent='同期完了：' + new Date().toLocaleString('ja-JP') + ' ／ データ: charts/*';
-      document.getElementById('year').textContent=(new Date()).getFullYear();
-      var grid=document.getElementById('cards');
-      for(var i=0;i<INDICES.length;i++){
-        grid.appendChild(renderCard(INDICES[i]));
-      }
-    }catch(e){
-      toast('init: '+e.message);
+  // フェイルセーフ：非常識な数値は丸めて捨てない
+  if (!isFinite(v)) return null;
+  if (Math.abs(v) > 50) v = Math.sign(v) * 50; // ±50% 超は異常データ扱い
+
+  return v;
+}
+
+/* ============ 描画 ============ */
+function renderCard(idx){
+  const card=document.createElement('article');card.className='card';
+  const head=document.createElement('div');head.className='head';
+  head.innerHTML=`<div class="flag">${idx.flag||'🏳️'}</div>
+    <div class="name">${idx.title}</div>
+    <div class="badge">${idx.badge||''}</div>
+    <div class="pct na" id="pct-${idx.id}">N/A</div>
+    <div class="updatedAt" id="upd-${idx.id}"></div>`;
+  card.appendChild(head);
+
+  const desc=document.createElement('div');desc.className='desc';desc.textContent=idx.desc||'';card.appendChild(desc);
+
+  const chart=document.createElement('div');chart.className='chart';
+  const img=document.createElement('img');img.loading='lazy';img.referrerPolicy='no-referrer';img.alt='画像が見つかりません';
+  chart.appendChild(img);card.appendChild(chart);
+
+  const acts=document.createElement('div');acts.className='actions';
+  acts.innerHTML=[['intraday','Intraday'],['am','前場(AM)'],['7d','7日'],['1m','1ヶ月'],['1y','1年']]
+    .map(([key,label],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${key}">${label}</span>`).join('');
+  card.appendChild(acts);
+
+  (async()=>{
+    await switchTimeframe(idx, img, 'intraday');
+    applyStats(idx, card, img);
+  })();
+
+  acts.addEventListener('click', async (e)=>{
+    const b=e.target.closest('.chipbtn'); if(!b) return;
+    acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    await switchTimeframe(idx, img, b.dataset.tf);
+  });
+
+  return card;
+}
+
+async function switchTimeframe(idx, img, tf){
+  const slug = toSlug(idx.id);
+  const maker = FILEMAP[tf] ? FILEMAP[tf] : FILEMAP['intraday'];
+  const candidates = maker(slug, idx.id);
+  await loadFirstImage(img, candidates);
+}
+
+/* ---- 異常値を避ける採用ロジック（複数ソースを突合） ---- */
+function applyStats(idx, card, img){
+  const pctEl=document.getElementById('pct-'+idx.id);
+  const updEl=document.getElementById('upd-'+idx.id);
+  const urls=statsCandidates(idx.id);
+
+  let done = 0, best = null, bestAbs = Infinity, bestTs = '';
+
+  function consider(json){
+    const p = normalizePct(json);
+    if (p != null && Math.abs(p) < bestAbs) {
+      best = p; bestAbs = Math.abs(p);
+      bestTs = json && json.updated_at ? json.updated_at : bestTs;
     }
   }
 
-  // 起動
-  try{ init(); }catch(e){ toast('fatal: '+e.message); }
+  urls.forEach((u)=>{
+    fetchJson(u, (err, j)=>{ if(!err && j) consider(j); if(++done===urls.length) finalize(); });
+  });
+
+  function finalize(){
+    if (best == null){
+      pctEl.textContent='N/A'; pctEl.className='pct na';
+      updEl.textContent=''; card.classList.remove('pos','neg'); return;
+    }
+    const v = fmtPctText(best);
+    pctEl.textContent = v.text;
+    pctEl.className   = `pct ${v.cls}`;
+    card.classList.toggle('pos', v.cls==='up');
+    card.classList.toggle('neg', v.cls==='down');
+
+    if (bestTs){
+      try{
+        const d=new Date(bestTs);
+        updEl.textContent='as of '+d.toLocaleString('ja-JP');
+        if (img && img.src){
+          const base = img.src.split('?')[0];
+          img.src = base + '?v=' + encodeURIComponent(bestTs);
+        }
+      }catch(_){ updEl.textContent = `updated: ${bestTs}`; }
+    }else{
+      updEl.textContent='';
+    }
+  }
+}
+
+(function init(){
+  document.getElementById('year').textContent=(new Date()).getFullYear();
+  document.getElementById('syncMeta').textContent=`同期完了：${nowString()} ／ データ: charts/*`;
+  const grid=document.getElementById('cards');
+  INDICES.forEach(idx=>grid.appendChild(renderCard(idx)));
 })();
 </script>
 </body>
