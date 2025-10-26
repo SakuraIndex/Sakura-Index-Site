@@ -47,6 +47,7 @@
   .chip{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
     padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
   .chip.active{background:#15324a;border-color:#2a4a63}
+  .chip.disabled{opacity:.35;pointer-events:none}
 
   .hint{color:var(--muted);font-size:12px;text-align:center;margin:20px 0 10px}
   footer{color:var(--muted);font-size:12px;text-align:center;margin:10px 0 36px}
@@ -75,7 +76,7 @@
 </div>
 
 <script>
-/* ===== 1) インデックス定義（repo とファイル名 stem を明示） ===== */
+/* ========== 1) インデックス定義（repo と stem を固定） ========== */
 const INDICES = [
   { id:'ASTRA4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー',
     desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。',
@@ -95,26 +96,19 @@ const INDICES = [
   },
 ];
 
-/* ===== 2) GitHub Raw ベース ===== */
+/* ========== 2) GitHub Raw URL ========== */
 const rawBase = repo => `https://raw.githubusercontent.com/SakuraIndex/${repo}/main/docs/outputs/`;
 
-/* ===== 3) タイムフレームとファイル名 ===== */
-const TIMEFILES = {
-  intraday: ['intraday','intraday_am'], // 代替も試す
+/* ========== 3) 画像候補（タイムフレームごとに複数名を試す） ========== */
+const TIME_CANDIDATES = {
+  intraday: ['intraday','intraday_am'],
   am:       ['intraday_am','intraday'],
-  '7d':     ['7d'],
-  '1m':     ['1m'],
-  '1y':     ['1y'],
+  '7d':     ['7d','1w'],
+  '1m':     ['1m','30d'],
+  '1y':     ['1y','12m']
 };
-function chartCandidates(idx, tf){
-  const base = rawBase(idx.repo);
-  return (TIMEFILES[tf]||['intraday']).map(s => `${base}${idx.stem}_${s}.png`);
-}
-function statsUrl(idx){
-  return `${rawBase(idx.repo)}${idx.stem}_stats.json`;
-}
 
-/* ===== 4) % 値の抽出（％そのまま） ===== */
+/* ％フィールドの優先順（該当が無ければ順次フォールバック） */
 const TF_FIELDS = {
   intraday:['pct_intraday','pct_1d','pct'],
   am       :['pct_intraday','pct_1d','pct'],
@@ -122,42 +116,49 @@ const TF_FIELDS = {
   '1m'     :['pct_1m','pct'],
   '1y'     :['pct_1y','pct'],
 };
-function pickPct(stats, tf){
-  if(!stats) return null;
-  for(const k of (TF_FIELDS[tf]||[])){
-    if(typeof stats[k] !== 'undefined'){
-      const v = Number(stats[k]);
-      if(!Number.isNaN(v)) return v;  // ％値の想定
-    }
-  }
-  return null;
+
+function candidatesFor(idx, tf){
+  const base = rawBase(idx.repo), stem = idx.stem;
+  const names = TIME_CANDIDATES[tf] || ['intraday'];
+  return names.map(n => `${base}${stem}_${n}.png`);
 }
+
+/* ========== 4) ユーティリティ ========== */
+const $ = (s,el=document)=>el.querySelector(s);
+
 function fmtPct(p){
   if(p==null || Number.isNaN(p)) return {text:'N/A',cls:'na'};
   const s = (p>=0?'+':'') + (Math.round(p*100)/100).toFixed(2) + '%';
   return {text:s, cls:p>0?'up':p<0?'down':'na'};
 }
 
-/* ===== 5) 画像ロード（cache-bust 付与） ===== */
-async function setFirstImage(img, urlList, bust){
-  for(const base of urlList){
-    const u = `${base}${base.includes('?')?'&':'?'}t=${encodeURIComponent(bust||Date.now())}`;
+function pickPct(stats, tf){
+  if(!stats) return null;
+  for(const k of (TF_FIELDS[tf]||[])){
+    if(typeof stats[k] !== 'undefined'){
+      const v = Number(stats[k]);
+      if(!Number.isNaN(v)) return v;
+    }
+  }
+  return null;
+}
+
+async function tryLoad(img, list, bust){
+  for(const base of list){
+    const url = `${base}${base.includes('?')?'&':'?'}t=${encodeURIComponent(bust||Date.now())}`;
     const ok = await new Promise(res=>{
       const t=new Image();
-      t.onload = ()=>{ img.src=u; res(true); };
-      t.onerror= ()=> res(false);
+      t.onload = ()=>{img.src=url;res(true)}
+      t.onerror=()=>res(false);
       t.referrerPolicy='no-referrer';
-      t.src=u;
+      t.src=url;
     });
     if(ok) return true;
   }
-  img.alt='画像が見つかりません';
   return false;
 }
 
-/* ===== 6) カード描画 ===== */
-const $ = (s,el=document)=>el.querySelector(s);
-
+/* ========== 5) カード描画 ========== */
 function renderCard(idx){
   const node = document.createElement('article');
   node.className='card';
@@ -180,48 +181,76 @@ function renderCard(idx){
   `;
   const img  = node.querySelector('img');
   const pctE = node.querySelector(`#pct-${idx.id}`);
+  const chips = [...node.querySelectorAll('.chip')];
 
-  let stats = null;
-  async function ensureStats(){
+  let stats = null, bustKey = Date.now();
+
+  async function loadStats(){
     if(stats) return stats;
     try{
-      const r = await fetch(statsUrl(idx), {cache:'no-store',mode:'cors'});
-      if(r.ok) stats = await r.json();
-    }catch(e){}
+      const r = await fetch(`${rawBase(idx.repo)}${idx.stem}_stats.json`, {cache:'no-store',mode:'cors'});
+      if(r.ok){
+        stats = await r.json();
+        if(stats && stats.updated_at) bustKey = stats.updated_at;
+      }
+    }catch(_){}
     return stats;
   }
 
-  async function update(tf){
-    node.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.tf===tf));
+  async function setChartFor(tf){
+    chips.forEach(c=>{
+      c.classList.toggle('active', c.dataset.tf===tf);
+      c.classList.remove('disabled');
+    });
 
-    const s = await ensureStats();
-    const bust = s && s.updated_at ? s.updated_at : Date.now();
+    await loadStats();
+    const bust = bustKey;
 
-    await setFirstImage(img, chartCandidates(idx, tf), bust);
+    // 画像ロード（候補を順に）
+    let ok = await tryLoad(img, candidatesFor(idx, tf), bust);
 
-    const pct = pickPct(s, tf==='am'?'intraday':tf);  // AMはintraday％で表示
-    const {text, cls} = fmtPct(pct);
+    // 見つからない時は Intraday へフォールバック＆ボタン無効化
+    if(!ok && tf!=='intraday'){
+      img.alt='画像が見つかりません（Intradayへ表示を戻します）';
+      chips.find(c=>c.dataset.tf===tf)?.classList.add('disabled');
+      await tryLoad(img, candidatesFor(idx, 'intraday'), bust);
+      tf = 'intraday';
+    }
+
+    // ％値
+    const p = pickPct(stats, tf==='am'?'intraday':tf); // AMはintraday％に寄せる
+    const {text,cls} = fmtPct(p);
     pctE.textContent = text;
     pctE.className = `pct ${cls}`;
   }
 
-  node.querySelectorAll('.chip').forEach(c=>{
-    c.addEventListener('click', ()=> update(c.dataset.tf));
+  chips.forEach(c=>{
+    c.addEventListener('click', ()=> setChartFor(c.dataset.tf));
   });
 
-  update('intraday');
+  setChartFor('intraday');
   return node;
 }
 
-/* ===== 7) 起動 ===== */
+/* ========== 6) 起動（各カードは独立try/catchで描画） ========== */
 (function init(){
-  $('#y').textContent = new Date().getFullYear();
-  $('#syncMeta').textContent = `同期完了：${
-    new Date().toLocaleString('ja-JP',{hour12:false})
-  } ／ データ: charts/*`;
+  try{$('#y').textContent = new Date().getFullYear();}catch(_){}
+  try{$('#syncMeta').textContent = `同期完了：${new Date().toLocaleString('ja-JP',{hour12:false})} ／ データ: charts/*`;}catch(_){}
 
   const root = $('#cards');
-  INDICES.forEach(i => root.appendChild(renderCard(i)));
+  INDICES.forEach(idx=>{
+    try{
+      root.appendChild(renderCard(idx));
+    }catch(e){
+      // ここで落ちても他のカードには影響させない
+      console.error('card render error:', idx.id, e);
+      const failed = document.createElement('article');
+      failed.className='card';
+      failed.innerHTML = `<div class="head"><div class="name">${idx.title}</div></div>
+        <div class="desc" style="color:#ff9ea8">描画に失敗しました。</div>`;
+      root.appendChild(failed);
+    }
+  });
 })();
 </script>
 </body>
