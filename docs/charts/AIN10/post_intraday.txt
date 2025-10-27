@@ -1,3 +1,3 @@
-AIN-10 Intraday Snapshot
-+1.29%
-Session: 22:30-05:00
+AIN-10  日中スナップショット (2025/10/27 13:26)
++1.29% (基準: prev_close)
+#AIN10 #日本株
