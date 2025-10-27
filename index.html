@@ -92,8 +92,13 @@ const EXTERNAL_ORIGINS = {
   'S-COIN+':  'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 
-// ％は intraday のみ（フォールバックで長期値を流用しない）
-const FIELD_PREF = { 'Astra4':['pct_intraday'], 'R-BANK9':['pct_intraday'], 'AIN-10':['pct_intraday'], 'S-COIN+':['pct_intraday'] };
+// ％は intraday のみ（フォールバックで長期値は使わない／系列差吸収）
+const FIELD_PREF = {
+  'Astra4' : ['pct_intraday','rtn_intraday','intraday_pct'],
+  'R-BANK9': ['rtn_intraday','pct_intraday','intraday_pct'],
+  'AIN-10' : ['pct_intraday','intraday_pct','rtn_intraday'],
+  'S-COIN+': ['rtn_intraday','pct_intraday','intraday_pct'],
+};
 
 /* 時間軸 → 実ファイル候補（先にサイト、無ければ legacy） */
 const FILEMAP = {
@@ -170,24 +175,38 @@ function fmtPctText(val){
   return {text:s, cls:val>0?'up':val<0?'down':'na'};
 }
 
-/* ---- 単位判定＆正規化（ratio→% / percent→%） ---- */
-function normalizePct(jsonObj) {
-  if (!jsonObj || jsonObj.pct_intraday == null) return null;
-  var v = Number(jsonObj.pct_intraday);
-  if (!isFinite(v)) return null;
+/* ---- 単位判定＆正規化（ratio→% / percent→%）＋多フィールド対応 ---- */
+function getPctFromJson(jsonObj, id){
+  if (!jsonObj) return null;
 
-  // unit があればそれに従う
-  var unit = (jsonObj.unit || '').toLowerCase();
-  if (unit === 'ratio')  v = v * 100.0;
+  // 指数ごとの優先フィールド
+  const fields = (FIELD_PREF[id] || []).concat([
+    'pct', 'pct_today', 'change_pct', 'change_percent', 'intraday', 'rtn_pct'
+  ]);
+
+  // 最初に見つかった数値を採用
+  let raw = null;
+  for (const f of fields){
+    if (jsonObj[f] == null) continue;
+    const n = Number(jsonObj[f]);
+    if (Number.isFinite(n)){ raw = n; break; }
+  }
+  if (raw == null) return null;
+
+  // 単位の正規化
+  let v = raw;
+  const unit = String(jsonObj.unit || '').toLowerCase();
+  if (unit === 'ratio') v = v * 100.0;
   else if (unit === 'percent' || unit === '%') v = v;
   else {
-    // ヒューリスティック：|v|<=1.2 は ratio とみなす（≒ 0.5% 未満が多い系列）
+    // ヒューリスティック：|v|<=1.2 は ratio 扱い（≒%表示で0.5%未満が多い系列）
     v = (Math.abs(v) <= 1.2) ? v * 100.0 : v;
   }
 
-  // フェイルセーフ：非常識な数値は丸めて捨てない
-  if (!isFinite(v)) return null;
-  if (Math.abs(v) > 50) v = Math.sign(v) * 50; // ±50% 超は異常データ扱い
+  // フェイルセーフ
+  if (!Number.isFinite(v)) return null;
+  // ±50% は異常とみなしてクリップ（API誤値の視覚ノイズ防止）
+  if (Math.abs(v) > 50) v = Math.sign(v) * 50;
 
   return v;
 }
@@ -236,48 +255,76 @@ async function switchTimeframe(idx, img, tf){
   await loadFirstImage(img, candidates);
 }
 
-/* ---- 異常値を避ける採用ロジック（複数ソースを突合） ---- */
+/* ---- “最新&公式ソース優先”＋外れ値ガード ---- */
 function applyStats(idx, card, img){
-  const pctEl=document.getElementById('pct-'+idx.id);
-  const updEl=document.getElementById('upd-'+idx.id);
-  const urls=statsCandidates(idx.id);
+  const pctEl = document.getElementById('pct-'+idx.id);
+  const updEl = document.getElementById('upd-'+idx.id);
+  const urls  = statsCandidates(idx.id); // 先頭=公式サイト、その後=レガシー
 
-  let done = 0, best = null, bestAbs = Infinity, bestTs = '';
+  const results = [];
+  let done = 0;
 
-  function consider(json){
-    const p = normalizePct(json);
-    if (p != null && Math.abs(p) < bestAbs) {
-      best = p; bestAbs = Math.abs(p);
-      bestTs = json && json.updated_at ? json.updated_at : bestTs;
-    }
-  }
-
-  urls.forEach((u)=>{
-    fetchJson(u, (err, j)=>{ if(!err && j) consider(j); if(++done===urls.length) finalize(); });
+  urls.forEach((u, order)=>{
+    fetchJson(u, (err, j)=>{
+      if (!err && j){
+        const v = getPctFromJson(j, idx.id);
+        if (v != null){
+          let ts = 0;
+          try { ts = j.updated_at ? Date.parse(j.updated_at) : 0; } catch(_){}
+          results.push({ order, ts, v, raw: j });
+        }
+      }
+      if (++done === urls.length) finalize();
+    });
   });
 
   function finalize(){
-    if (best == null){
-      pctEl.textContent='N/A'; pctEl.className='pct na';
-      updEl.textContent=''; card.classList.remove('pos','neg'); return;
+    if (results.length === 0){
+      pctEl.textContent = 'N/A';
+      pctEl.className   = 'pct na';
+      updEl.textContent = '';
+      card.classList.remove('pos','neg');
+      return;
     }
-    const v = fmtPctText(best);
-    pctEl.textContent = v.text;
-    pctEl.className   = `pct ${v.cls}`;
-    card.classList.toggle('pos', v.cls==='up');
-    card.classList.toggle('neg', v.cls==='down');
 
-    if (bestTs){
+    // --- 外れ値ガード：中央値からの乖離が大きいものを弾く ---
+    const vs = results.map(r=>r.v).slice().sort((a,b)=>a-b);
+    const median = vs.length%2 ? vs[(vs.length-1)/2] : (vs[vs.length/2-1]+vs[vs.length/2])/2;
+    const filtered = results.filter(r=>{
+      const tooLarge = Math.abs(r.v) > 20;            // ±20%超はまず弾く
+      const tooFar   = Math.abs(r.v - median) > 7;    // 中央値から7pt超乖離は弾く
+      return !(tooLarge || tooFar) || results.length === 1;
+    });
+    const pool = filtered.length ? filtered : results; // 全部弾けたら元集合
+
+    // --- 採用基準：updated_at が最新 → 同時刻なら order（公式→レガシー） ---
+    pool.sort((a,b)=>{
+      if (b.ts !== a.ts) return b.ts - a.ts;
+      return a.order - b.order;
+    });
+    const best = pool[0];
+
+    const vinfo = fmtPctText(best.v);
+    pctEl.textContent = vinfo.text;
+    pctEl.className   = `pct ${vinfo.cls}`;
+    card.classList.toggle('pos', vinfo.cls === 'up');
+    card.classList.toggle('neg', vinfo.cls === 'down');
+
+    // タイムスタンプ表記 & 画像キャッシュバスト
+    const tsStr = best.raw && best.raw.updated_at ? best.raw.updated_at : null;
+    if (tsStr){
       try{
-        const d=new Date(bestTs);
-        updEl.textContent='as of '+d.toLocaleString('ja-JP');
+        const d = new Date(tsStr);
+        updEl.textContent = 'as of ' + d.toLocaleString('ja-JP');
         if (img && img.src){
           const base = img.src.split('?')[0];
-          img.src = base + '?v=' + encodeURIComponent(bestTs);
+          img.src = `${base}?v=${encodeURIComponent(tsStr)}`;
         }
-      }catch(_){ updEl.textContent = `updated: ${bestTs}`; }
+      }catch(_){
+        updEl.textContent = `updated: ${tsStr}`;
+      }
     }else{
-      updEl.textContent='';
+      updEl.textContent = '';
     }
   }
 }
