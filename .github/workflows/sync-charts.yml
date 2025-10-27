@@ -1,92 +1,79 @@
-name: Sync charts & stats to site
+name: Sync charts to site (intraday + 7d/1m/1y + stats)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # 毎時。必要に応じて調整
+    - cron: '10 * * * *'  # 毎時10分にサイトへ取り込み（必要に応じて調整）
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout site repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare folders
-        run: mkdir -p docs/charts
-
-      - name: Download latest from sub-repos
+      - name: Pull latest charts from index repos
         shell: bash
         run: |
           set -euo pipefail
 
-          declare -A REPOS=(
-            ["astra4"]="SakuraIndex/3_Sakura_Space"
-            ["scoin_plus"]="SakuraIndex/S-COIN-"
-            ["rbank9"]="SakuraIndex/R-BANK9"
-            ["ain10"]="SakuraIndex/AIN-10"
-          )
+          # dst
+          d_ast="docs/charts/ASTRA4"
+          d_rbk="docs/charts/R_BANK9"
+          d_ain="docs/charts/AIN10"
+          d_scp="docs/charts/S-COIN+"
+          mkdir -p "$d_ast" "$d_rbk" "$d_ain" "$d_scp"
 
-          FILES=("1d.png" "7d.png" "1m.png" "1y.png" "intraday.png" "post_intraday.txt" "history.csv" "stats.json")
+          fetch(){ url="$1"; out="$2"; echo "-> $out <= $url"; curl -fsSL "$url" -o "$out" || true; }
 
-          total=0; success=0
-          for key in "${!REPOS[@]}"; do
-            repo="${REPOS[$key]}"
-            for suffix in "${FILES[@]}"; do
-              total=$((total+1))
-              src="https://raw.githubusercontent.com/${repo}/main/docs/outputs/${key}_${suffix}"
-              dst="docs/charts/${key}_${suffix}"
-              echo "Fetching: $src"
-              if curl -fsSL --retry 3 --retry-delay 2 "$src" -o "$dst"; then
-                echo "  ✅ saved -> $dst"
-                success=$((success+1))
-              else
-                echo "  ❌ missing -> $src"
-                rm -f "$dst" || true
-              fi
-            done
-          done
+          # src
+          b_ast="https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs"
+          b_rbk="https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs"
+          b_ain="https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs"
+          b_scp="https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs"
 
-          echo "Downloaded $success / $total files."
+          # ASTRA4 (level)
+          fetch "$b_ast/astra4_1d.png" "$d_ast/intraday.png"
+          fetch "$b_ast/astra4_7d.png" "$d_ast/7d.png"
+          fetch "$b_ast/astra4_1m.png" "$d_ast/1m.png"
+          fetch "$b_ast/astra4_1y.png" "$d_ast/1y.png"
+          fetch "$b_ast/astra4_stats.json" "$d_ast/stats.json"
 
-      - name: Detect changes
-        id: changes
-        shell: bash
-        run: |
-          if git status --porcelain | grep -q '^.. docs/charts/'; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
+          # R-BANK9 (%)
+          fetch "$b_rbk/rbank9_1d.png" "$d_rbk/intraday.png"
+          fetch "$b_rbk/rbank9_7d.png" "$d_rbk/7d.png"
+          fetch "$b_rbk/rbank9_1m.png" "$d_rbk/1m.png"
+          fetch "$b_rbk/rbank9_1y.png" "$d_rbk/1y.png"
+          fetch "$b_rbk/rbank9_stats.json" "$d_rbk/stats.json"
 
-      - name: Commit & push if changed
-        if: steps.changes.outputs.changed == 'true'
-        run: |
+          # AIN-10 (%)
+          fetch "$b_ain/ain10_1d.png" "$d_ain/intraday.png"
+          fetch "$b_ain/ain10_7d.png" "$d_ain/7d.png"
+          fetch "$b_ain/ain10_1m.png" "$d_ain/1m.png"
+          fetch "$b_ain/ain10_1y.png" "$d_ain/1y.png"
+          fetch "$b_ain/ain10_stats.json" "$d_ain/stats.json"
+
+          # S-COIN+ (%)
+          fetch "$b_scp/scoin_plus_1d.png" "$d_scp/intraday.png"
+          fetch "$b_scp/scoin_plus_7d.png" "$d_scp/7d.png"
+          fetch "$b_scp/scoin_plus_1m.png" "$d_scp/1m.png"
+          fetch "$b_scp/scoin_plus_1y.png" "$d_scp/1y.png"
+          fetch "$b_scp/scoin_plus_stats.json" "$d_scp/stats.json"
+
+          # 旧配置の掃除（任意）
+          git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
+
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/charts
-          git commit -m "chore(sync): update charts & stats"
-          git push
-
-      - name: No changes
-        if: steps.changes.outputs.changed != 'true'
-        run: echo "No chart/stat changes."
-
-      # 👇 ここが repository_dispatch（常に打ってOK）
-      - name: Trigger Pages deploy (repository_dispatch)
-        if: always()
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: SakuraIndex/Sakura-Index-Site
-          event-type: sync-complete
+          git add docs/charts/**/*
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats"
+            git push
+          fi
