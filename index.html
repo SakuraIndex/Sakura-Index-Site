@@ -236,58 +236,70 @@ async function switchTimeframe(idx, img, tf){
   await loadFirstImage(img, candidates);
 }
 
-/* ---- 異常値を避ける採用ロジック（複数ソースを突合） ---- */
+/* ---- “最新&公式ソース優先” ロジック ---- */
 function applyStats(idx, card, img){
-  const pctEl=document.getElementById('pct-'+idx.id);
-  const updEl=document.getElementById('upd-'+idx.id);
-  const urls=statsCandidates(idx.id);
+  const pctEl = document.getElementById('pct-'+idx.id);
+  const updEl = document.getElementById('upd-'+idx.id);
+  const urls  = statsCandidates(idx.id);
 
-  let done = 0, best = null, bestAbs = Infinity, bestTs = '';
+  // 結果を溜める（order は候補の並び順：0=サイト、以降=レガシー）
+  const results = [];
+  let done = 0;
 
-  function consider(json){
-    const p = normalizePct(json);
-    if (p != null && Math.abs(p) < bestAbs) {
-      best = p; bestAbs = Math.abs(p);
-      bestTs = json && json.updated_at ? json.updated_at : bestTs;
-    }
-  }
-
-  urls.forEach((u)=>{
-    fetchJson(u, (err, j)=>{ if(!err && j) consider(j); if(++done===urls.length) finalize(); });
+  urls.forEach((u, order)=>{
+    fetchJson(u, (err, j)=>{
+      if (!err && j){
+        const v = normalizePct(j);
+        if (v != null){
+          let ts = 0;
+          try { ts = j.updated_at ? Date.parse(j.updated_at) : 0; } catch(_){}
+          results.push({ order, ts, v, raw: j });
+        }
+      }
+      if (++done === urls.length) finalize();
+    });
   });
 
   function finalize(){
-    if (best == null){
-      pctEl.textContent='N/A'; pctEl.className='pct na';
-      updEl.textContent=''; card.classList.remove('pos','neg'); return;
+    if (results.length === 0){
+      pctEl.textContent = 'N/A';
+      pctEl.className   = 'pct na';
+      updEl.textContent = '';
+      card.classList.remove('pos','neg');
+      return;
     }
-    const v = fmtPctText(best);
-    pctEl.textContent = v.text;
-    pctEl.className   = `pct ${v.cls}`;
-    card.classList.toggle('pos', v.cls==='up');
-    card.classList.toggle('neg', v.cls==='down');
 
-    if (bestTs){
+    // ① updated_at が最新のものを採用
+    // ② 同時刻なら order（=候補の並び順）で昇順 → サイト charts/* を最優先
+    results.sort((a,b)=>{
+      if (b.ts !== a.ts) return b.ts - a.ts;
+      return a.order - b.order;
+    });
+    const best = results[0];
+
+    const vinfo = fmtPctText(best.v);
+    pctEl.textContent = vinfo.text;
+    pctEl.className   = `pct ${vinfo.cls}`;
+    card.classList.toggle('pos', vinfo.cls === 'up');
+    card.classList.toggle('neg', vinfo.cls === 'down');
+
+    if (best.raw && best.raw.updated_at){
       try{
-        const d=new Date(bestTs);
-        updEl.textContent='as of '+d.toLocaleString('ja-JP');
+        const d = new Date(best.raw.updated_at);
+        updEl.textContent = 'as of ' + d.toLocaleString('ja-JP');
+        // 画像キャッシュを同じタイムスタンプでブレイク
         if (img && img.src){
           const base = img.src.split('?')[0];
-          img.src = base + '?v=' + encodeURIComponent(bestTs);
+          img.src = `${base}?v=${encodeURIComponent(best.raw.updated_at)}`;
         }
-      }catch(_){ updEl.textContent = `updated: ${bestTs}`; }
+      }catch(_){
+        updEl.textContent = `updated: ${best.raw.updated_at}`;
+      }
     }else{
-      updEl.textContent='';
+      updEl.textContent = '';
     }
   }
 }
-
-(function init(){
-  document.getElementById('year').textContent=(new Date()).getFullYear();
-  document.getElementById('syncMeta').textContent=`同期完了：${nowString()} ／ データ: charts/*`;
-  const grid=document.getElementById('cards');
-  INDICES.forEach(idx=>grid.appendChild(renderCard(idx)));
-})();
 </script>
 </body>
 </html>
