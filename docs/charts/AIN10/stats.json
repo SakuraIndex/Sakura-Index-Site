@@ -1,1 +1,12 @@
-{"index_key": "AIN10", "pct_1d": 0.7031641844041701, "delta_level": 0.0351582092202085, "scale": "percent", "basis": "first_any", "updated_at": "2025-10-22T03:54:22.931249Z"}
+{
+  "index_key": "AIN-10",
+  "label": "AIN-10",
+  "pct_intraday": 0.012887,
+  "basis": "prev_close",
+  "session": {
+    "start": "22:30",
+    "end": "05:00",
+    "anchor": "22:30"
+  },
+  "updated_at": "2025-10-27T04:09:25.839946"
+}
