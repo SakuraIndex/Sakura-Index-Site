@@ -93,6 +93,8 @@ const FIELD_PREF = {
   'AIN-10' : ['pct_intraday','intraday_pct','rtn_intraday'],
   'S-COIN+': ['rtn_intraday','pct_intraday','intraday_pct'],
 };
+
+/* 時間軸 → 実ファイル候補（先にサイト、無ければ legacy） */
 const FILEMAP = {
   intraday: (slug, id)=>[
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
@@ -105,17 +107,21 @@ const FILEMAP = {
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`
   ],
   '7d': (slug, id)=>[
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/7d.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_1w.png`
   ],
   '1m': (slug, id)=>[
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1m.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_1m.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`
   ],
   '1y': (slug, id)=>[
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1y.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png`
   ],
 };
+
 const INDICES = [
   { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
@@ -123,7 +129,7 @@ const INDICES = [
   { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
-// util functions
+/* ============ util ============ */
 const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
@@ -217,6 +223,7 @@ function getPctFromJson(jsonObj, id){
   return v;
 }
 
+/* ---- 異常値を避けつつ最新を選ぶ ---- */
 function applyStats(idx, card, img){
   const pctEl = document.getElementById('pct-'+idx.id);
   const updEl = document.getElementById('upd-'+idx.id);
@@ -286,6 +293,7 @@ function applyStats(idx, card, img){
   }
 }
 
+/* ============ 描画 ============ */
 function renderCard(idx){
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
