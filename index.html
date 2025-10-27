@@ -235,7 +235,8 @@ async function switchTimeframe(idx, img, tf){
   const candidates = maker(slug, idx.id);
   await loadFirstImage(img, candidates);
 }
-
+  
+<script>
 /* ---- “最新&公式ソース優先” ロジック ---- */
 function applyStats(idx, card, img){
   const pctEl = document.getElementById('pct-'+idx.id);
