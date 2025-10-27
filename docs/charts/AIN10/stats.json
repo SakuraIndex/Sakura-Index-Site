@@ -1,12 +1,1 @@
-{
-  "index_key": "AIN-10",
-  "label": "AIN-10",
-  "pct_intraday": 0.012887,
-  "basis": "prev_close",
-  "session": {
-    "start": "22:30",
-    "end": "05:00",
-    "anchor": "22:30"
-  },
-  "updated_at": "2025-10-27T13:26:16.293594+09:00"
-}
+{"index_key": "ain10", "pct_1d": 1.288653, "scale": "pct", "updated_at": "2025-10-24T19:55:20Z"}
