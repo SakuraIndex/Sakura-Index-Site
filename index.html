@@ -63,7 +63,7 @@
         <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
       </div>
       <div class="btns">
-        <a class="btn" href="https://x.com"  rel="noopener">公式X（Twitter）</a>
+        <a class="btn" href="https://x.com" rel="noopener">公式X（Twitter）</a>
         <a class="btn" href="https://note.com" rel="noopener">公式note</a>
       </div>
     </header>
@@ -79,47 +79,43 @@
 
 <script>
 /* ============ 参照先 ============ */
-// 公開サイト（静的配信）の charts ディレクトリ
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-// index → サイト内フォルダ名
 const SITE_FOLDER = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
-
-// 各指数リポ（legacy outputs のフォールバック）
 const EXTERNAL_ORIGINS = {
   'Astra4' :  'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9':  'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
   'AIN-10' :  'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+':  'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
-
-// ％は intraday のみ（フォールバックで長期値は使わない／系列差吸収）
 const FIELD_PREF = {
   'Astra4' : ['pct_intraday','rtn_intraday','intraday_pct'],
   'R-BANK9': ['rtn_intraday','pct_intraday','intraday_pct'],
   'AIN-10' : ['pct_intraday','intraday_pct','rtn_intraday'],
   'S-COIN+': ['rtn_intraday','pct_intraday','intraday_pct'],
 };
-
-/* 時間軸 → 実ファイル候補（先にサイト、無ければ legacy） */
 const FILEMAP = {
-  intraday:  (slug, id)=>[
+  intraday: (slug, id)=>[
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_post.png`
   ],
-  am:        (slug, id)=>[
+  am: (slug, id)=>[
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`
   ],
-  '7d':      (slug, id)=>[ `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png` ],
-  '1m':      (slug, id)=>[
+  '7d': (slug, id)=>[
+    `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1w.png`
+  ],
+  '1m': (slug, id)=>[
     `${EXTERNAL_ORIGINS[id]}/${slug}_1m.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`
   ],
-  '1y':      (slug, id)=>[ `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png` ],
+  '1y': (slug, id)=>[
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png`
+  ],
 };
-
 const INDICES = [
   { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
@@ -127,25 +123,50 @@ const INDICES = [
   { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
-/* ============ util ============ */
+// util functions
 const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
-function loadFirstImage(img, urlList){
-  return new Promise(async (resolve)=>{
-    for(const u of urlList){
-      const ok = await new Promise(res=>{
-        const t=new Image();
-        t.onload=()=>{img.src=u; res(true)}
-        t.onerror=()=>res(false);
-        t.referrerPolicy='no-referrer';
-        t.src=u + (u.includes('?')?'&':'?') + 't=' + Date.now(); // 強制ノーキャッシュ
-      });
-      if(ok) return resolve(u);
-    }
-    img.alt='画像が見つかりません'; resolve(null);
-  });
+// レース対策付き画像ロード
+const IMG_REQ_SEQ = new WeakMap();
+async function loadFirstImageUrl(urlList){
+  for(const u of urlList){
+    const ok = await new Promise(res=>{
+      const t=new Image();
+      t.onload = ()=>res(true);
+      t.onerror= ()=>res(false);
+      t.referrerPolicy='no-referrer';
+      t.src = u + (u.includes('?')?'&':'?') + 't=' + Date.now();
+    });
+    if(ok) return u;
+  }
+  return null;
+}
+
+async function switchTimeframe(idx, img, tf){
+  const slug = toSlug(idx.id);
+  const maker = FILEMAP[tf] ? FILEMAP[tf] : FILEMAP['intraday'];
+  const candidates = maker(slug, idx.id);
+
+  const prev = IMG_REQ_SEQ.get(img) || 0;
+  const reqId = prev + 1;
+  IMG_REQ_SEQ.set(img, reqId);
+
+  img.style.opacity = '0.5';
+
+  const url = await loadFirstImageUrl(candidates);
+
+  if ((IMG_REQ_SEQ.get(img) || 0) !== reqId) return;
+
+  if (url){
+    img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(reqId);
+    img.alt = '';
+  } else {
+    img.removeAttribute('src');
+    img.alt = '画像が見つかりません';
+  }
+  requestAnimationFrame(()=>{ img.style.opacity = '1'; });
 }
 
 function fetchJson(url, cb){
@@ -159,9 +180,6 @@ function statsCandidates(id){
   const base = EXTERNAL_ORIGINS[id] || '';
   const slug = toSlug(id);
   const site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}`;
-  // 1) サイトの stats.json（正規）
-  // 2) legacy outputs の *_stats.json
-  // 3) 念のため id ベースの *_stats.json も見る
   return [
     `${site}/stats.json`,
     `${base}/${slug}_stats.json`,
@@ -171,47 +189,103 @@ function statsCandidates(id){
 
 function fmtPctText(val){
   if(val==null || Number.isNaN(val)) return {text:'N/A', cls:'na'};
-  const s=(val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
+  const s = (val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
   return {text:s, cls:val>0?'up':val<0?'down':'na'};
 }
 
-/* ---- 単位判定＆正規化（ratio→% / percent→%）＋多フィールド対応 ---- */
 function getPctFromJson(jsonObj, id){
   if (!jsonObj) return null;
-
-  // 指数ごとの優先フィールド
   const fields = (FIELD_PREF[id] || []).concat([
     'pct', 'pct_today', 'change_pct', 'change_percent', 'intraday', 'rtn_pct'
   ]);
-
-  // 最初に見つかった数値を採用
   let raw = null;
-  for (const f of fields){
+  for(const f of fields){
     if (jsonObj[f] == null) continue;
     const n = Number(jsonObj[f]);
     if (Number.isFinite(n)){ raw = n; break; }
   }
   if (raw == null) return null;
-
-  // 単位の正規化
   let v = raw;
   const unit = String(jsonObj.unit || '').toLowerCase();
   if (unit === 'ratio') v = v * 100.0;
   else if (unit === 'percent' || unit === '%') v = v;
   else {
-    // ヒューリスティック：|v|<=1.2 は ratio 扱い（≒%表示で0.5%未満が多い系列）
     v = (Math.abs(v) <= 1.2) ? v * 100.0 : v;
   }
-
-  // フェイルセーフ
   if (!Number.isFinite(v)) return null;
-  // ±50% は異常とみなしてクリップ（API誤値の視覚ノイズ防止）
   if (Math.abs(v) > 50) v = Math.sign(v) * 50;
-
   return v;
 }
 
-/* ============ 描画 ============ */
+function applyStats(idx, card, img){
+  const pctEl = document.getElementById('pct-'+idx.id);
+  const updEl = document.getElementById('upd-'+idx.id);
+  const urls  = statsCandidates(idx.id);
+
+  const results = [];
+  let done = 0;
+  urls.forEach((u, order)=>{
+    fetchJson(u, (err, j)=>{
+      if (!err && j){
+        const v = getPctFromJson(j, idx.id);
+        if (v != null){
+          let ts = 0;
+          try { ts = j.updated_at ? Date.parse(j.updated_at) : 0; } catch(_){}
+          results.push({ order, ts, v, raw: j });
+        }
+      }
+      if (++done === urls.length) finalize();
+    });
+  });
+
+  function finalize(){
+    if (results.length === 0){
+      pctEl.textContent = 'N/A';
+      pctEl.className   = 'pct na';
+      updEl.textContent = '';
+      card.classList.remove('pos','neg');
+      return;
+    }
+
+    const vs = results.map(r=>r.v).slice().sort((a,b)=>a-b);
+    const median = vs.length%2 ? vs[(vs.length-1)/2] : (vs[vs.length/2-1]+vs[vs.length/2])/2;
+    const filtered = results.filter(r=>{
+      const tooLarge = Math.abs(r.v) > 20;
+      const tooFar   = Math.abs(r.v - median) > 7;
+      return !(tooLarge || tooFar) || results.length === 1;
+    });
+    const pool = filtered.length ? filtered : results;
+
+    pool.sort((a,b)=>{
+      if (b.ts !== a.ts) return b.ts - a.ts;
+      return a.order - b.order;
+    });
+    const best = pool[0];
+
+    const vinfo = fmtPctText(best.v);
+    pctEl.textContent = vinfo.text;
+    pctEl.className   = `pct ${vinfo.cls}`;
+    card.classList.toggle('pos', vinfo.cls === 'up');
+    card.classList.toggle('neg', vinfo.cls === 'down');
+
+    const tsStr = best.raw && best.raw.updated_at ? best.raw.updated_at : null;
+    if (tsStr){
+      try{
+        const d = new Date(tsStr);
+        updEl.textContent='as of '+d.toLocaleString('ja-JP');
+        if (img && img.src){
+          const base = img.src.split('?')[0];
+          img.src = `${base}?v=${encodeURIComponent(tsStr)}`;
+        }
+      }catch(_){
+        updEl.textContent=`updated: ${tsStr}`;
+      }
+    } else {
+      updEl.textContent='';
+    }
+  }
+}
+
 function renderCard(idx){
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
@@ -246,87 +320,6 @@ function renderCard(idx){
   });
 
   return card;
-}
-
-async function switchTimeframe(idx, img, tf){
-  const slug = toSlug(idx.id);
-  const maker = FILEMAP[tf] ? FILEMAP[tf] : FILEMAP['intraday'];
-  const candidates = maker(slug, idx.id);
-  await loadFirstImage(img, candidates);
-}
-
-/* ---- “最新&公式ソース優先”＋外れ値ガード ---- */
-function applyStats(idx, card, img){
-  const pctEl = document.getElementById('pct-'+idx.id);
-  const updEl = document.getElementById('upd-'+idx.id);
-  const urls  = statsCandidates(idx.id); // 先頭=公式サイト、その後=レガシー
-
-  const results = [];
-  let done = 0;
-
-  urls.forEach((u, order)=>{
-    fetchJson(u, (err, j)=>{
-      if (!err && j){
-        const v = getPctFromJson(j, idx.id);
-        if (v != null){
-          let ts = 0;
-          try { ts = j.updated_at ? Date.parse(j.updated_at) : 0; } catch(_){}
-          results.push({ order, ts, v, raw: j });
-        }
-      }
-      if (++done === urls.length) finalize();
-    });
-  });
-
-  function finalize(){
-    if (results.length === 0){
-      pctEl.textContent = 'N/A';
-      pctEl.className   = 'pct na';
-      updEl.textContent = '';
-      card.classList.remove('pos','neg');
-      return;
-    }
-
-    // --- 外れ値ガード：中央値からの乖離が大きいものを弾く ---
-    const vs = results.map(r=>r.v).slice().sort((a,b)=>a-b);
-    const median = vs.length%2 ? vs[(vs.length-1)/2] : (vs[vs.length/2-1]+vs[vs.length/2])/2;
-    const filtered = results.filter(r=>{
-      const tooLarge = Math.abs(r.v) > 20;            // ±20%超はまず弾く
-      const tooFar   = Math.abs(r.v - median) > 7;    // 中央値から7pt超乖離は弾く
-      return !(tooLarge || tooFar) || results.length === 1;
-    });
-    const pool = filtered.length ? filtered : results; // 全部弾けたら元集合
-
-    // --- 採用基準：updated_at が最新 → 同時刻なら order（公式→レガシー） ---
-    pool.sort((a,b)=>{
-      if (b.ts !== a.ts) return b.ts - a.ts;
-      return a.order - b.order;
-    });
-    const best = pool[0];
-
-    const vinfo = fmtPctText(best.v);
-    pctEl.textContent = vinfo.text;
-    pctEl.className   = `pct ${vinfo.cls}`;
-    card.classList.toggle('pos', vinfo.cls === 'up');
-    card.classList.toggle('neg', vinfo.cls === 'down');
-
-    // タイムスタンプ表記 & 画像キャッシュバスト
-    const tsStr = best.raw && best.raw.updated_at ? best.raw.updated_at : null;
-    if (tsStr){
-      try{
-        const d = new Date(tsStr);
-        updEl.textContent = 'as of ' + d.toLocaleString('ja-JP');
-        if (img && img.src){
-          const base = img.src.split('?')[0];
-          img.src = `${base}?v=${encodeURIComponent(tsStr)}`;
-        }
-      }catch(_){
-        updEl.textContent = `updated: ${tsStr}`;
-      }
-    }else{
-      updEl.textContent = '';
-    }
-  }
 }
 
 (function init(){
