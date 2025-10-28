@@ -94,39 +94,68 @@ const IMG_SEQ=new WeakMap();
 async function tryLoad(url){ return await new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.referrerPolicy='no-referrer'; i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now(); }); }
 async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
 
-const LAST_RUN_CACHE=new Map();
-async function getLastRun(key){
+const LR_CACHE=new Map();
+async function getSiteLastRun(key){
   const folder=FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')];
   if(!folder) return null;
-  if(LAST_RUN_CACHE.has(folder)) return LAST_RUN_CACHE.get(folder);
-  try{
-    const r=await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`,{cache:'no-store'});
-    const t=r.ok?((await r.text()).trim()||null):null;
-    LAST_RUN_CACHE.set(folder,t); return t;
-  }catch{ LAST_RUN_CACHE.set(folder,null); return null; }
+  const k='site:'+folder;
+  if(LR_CACHE.has(k)) return LR_CACHE.get(k);
+  try{ const r=await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`,{cache:'no-store'});
+       const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;
+  }catch{ LR_CACHE.set(k,null); return null; }
+}
+async function getRepoLastRun(key){
+  const base = ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')];
+  if(!base) return null;
+  const k='repo:'+base;
+  if(LR_CACHE.has(k)) return LR_CACHE.get(k);
+  try{ const r=await fetch(`${base}/_last_run.txt`,{cache:'no-store'});
+       const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;
+  }catch{ LR_CACHE.set(k,null); return null; }
+}
+function parseTs(t){ if(!t) return 0; const d=new Date(t); const v=d.getTime(); return Number.isFinite(v)?v:0; }
+
+/* どちらが新しいかを選ぶ */
+async function chooseProvider(key){
+  const [siteLR, repoLR] = await Promise.all([getSiteLastRun(key), getRepoLastRun(key)]);
+  const s = parseTs(siteLR), r=parseTs(repoLR);
+  if (s===0 && r===0) return {prov:'site', v:null};         // どちらも不明ならサイト優先
+  if (s>=r)            return {prov:'site', v:siteLR||null};
+  return {prov:'base', v:repoLR||null};
 }
 
+/* 候補URL（provider に応じて切り替え） */
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
-/* ★ 修正：intraday は 元(post) → サイト(intraday) → 元(intraday) → 元(AM) の順 */
-function imgCandidates(tf,key){
+function imgCandidates(tf,key, prov){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
+
   if(tf==='intraday'){
-    return [
-      base?`${base}/${slug}_post_intraday.png`:null,
-      site?`${site}/intraday.png`:null,
-      base?`${base}/${slug}_intraday.png`:null,
-      base?`${base}/${slug}_intraday_am.png`:null,
-    ].filter(Boolean);
+    if (prov==='site'){
+      return [
+        site?`${site}/intraday.png`:null,
+        base?`${base}/${slug}_post_intraday.png`:null,
+        base?`${base}/${slug}_intraday.png`:null,
+        base?`${base}/${slug}_intraday_am.png`:null,
+      ].filter(Boolean);
+    } else {
+      return [
+        base?`${base}/${slug}_post_intraday.png`:null,
+        base?`${base}/${slug}_intraday.png`:null,
+        base?`${base}/${slug}_intraday_am.png`:null,
+        site?`${site}/intraday.png`:null,
+      ].filter(Boolean);
+    }
   }
   const map={'7d':'7d','1m':'1m','1y':'1y'};
   const suff=map[tf];
-  return [
-    site?`${site}/${suff}.png`:null,
-    base?`${base}/${slug}_${suff}.png`:null,
-  ].filter(Boolean);
+  if (prov==='site'){
+    return [ site?`${site}/${suff}.png`:null, base?`${base}/${slug}_${suff}.png`:null ].filter(Boolean);
+  } else {
+    return [ base?`${base}/${slug}_${suff}.png`:null, site?`${site}/${suff}.png`:null ].filter(Boolean);
+  }
 }
 
 function percentSources(key){
@@ -216,20 +245,20 @@ function renderCard(meta){
 }
 
 async function switchTf(key,img,tf){
-  const urls=imgCandidates(tf,key);
+  const {prov,v:lrPrefer} = await chooseProvider(key);
+  const urls=imgCandidates(tf,key,prov);
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
   const url=await loadFirst(urls);
   if((IMG_SEQ.get(img)||0)!==req) return;
+
   if(url){
-    let v=Date.now();
-    // サイトの画像を使う場合は last_run.txt をキャッシュバスターに
+    let v = lrPrefer || Date.now();
+    // サイト画像を使う、またはロングタームの場合も last_run を採用
     if(url.startsWith(SITE_CHARTS_BASE)){
-      const lr=await getLastRun(key);
-      if(lr) v=lr;
+      const s = await getSiteLastRun(key); if(s) v=s;
     }else if(tf!=='intraday'){
-      const lr=await getLastRun(key);
-      if(lr) v=lr;
+      const s = await getSiteLastRun(key); if(s) v=s;
     }
     img.src=url+(url.includes('?')?'&':'?')+'v='+encodeURIComponent(v);
     img.alt='';
