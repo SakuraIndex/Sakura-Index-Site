@@ -168,30 +168,35 @@ function parsePctFromText(t){
   return {v, ts};
 }
 
-/* ★ ここを強化：1日変化系のキーも対応、scaleも厳密に処理 */
-function pickPctFromStat(j){
+/* === 修正ポイント：stats から値を取るとき「1d系を最優先」に === */
+function pickPctFromStat(j, preferDaily=true){
   if(!j) return null;
-  // 候補は優先度順（intraday → 1day → generic）
-  const fields = [
-    'pct_intraday','rtn_intraday','intraday_pct',
-    'pct_1d','rtn_1d','change_1d','daily_pct',
-    'pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'
-  ];
+
+  const intradayFields = ['pct_intraday','rtn_intraday','intraday_pct'];
+  const dailyFields    = ['pct_1d','rtn_1d','change_1d','daily_pct'];
+  const genericFields  = ['pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
+
+  const order = preferDaily
+    ? [dailyFields, intradayFields, genericFields]
+    : [intradayFields, dailyFields, genericFields];
+
   let n=null;
-  for(const f of fields){
-    if(j[f]==null) continue;
-    const v = Number(j[f]);
-    if(Number.isFinite(v)){ n = v; break; }
+  for(const arr of order){
+    for(const f of arr){
+      if(j[f]==null) continue;
+      const v = Number(j[f]);
+      if(Number.isFinite(v)){ n = v; break; }
+    }
+    if(n!=null) break;
   }
   if(n==null) return null;
 
-  const unit = (j.unit||'').toLowerCase();
-  const scale = (j.scale||'').toLowerCase();
-  // 明示スケール優先
-  if(scale==='pct') { /* n は既に % */ }
-  else if(unit==='percent' || unit==='%') { /* % */ }
-  else if(scale==='ratio' || unit==='ratio') { n*=100; }
-  else if(Math.abs(n)<=1.2) { n*=100; } // 不明なときの安全側
+  const unit  = (j.unit || '').toLowerCase();
+  const scale = (j.scale|| '').toLowerCase();
+
+  if(scale==='pct' || unit==='percent' || unit==='%'){ /* すでに % */ }
+  else if(scale==='ratio' || unit==='ratio'){ n*=100; }
+  else if(Math.abs(n)<=1.2){ n*=100; } // 不明時の安全側
   return n;
 }
 
@@ -209,7 +214,7 @@ async function resolvePercent(key, market){
   const {txts, stats} = percentSources(key);
   const lastRun = await getLastRun(key);
 
-  // テキスト優先（post → intraday → orig post → orig intra）
+  // テキスト（post→intra→orig post→orig intra）
   if(txts.sitePost){
     const t = await fetchText(txts.sitePost);
     if(t){ const {v, ts} = parsePctFromText(t); if(v!=null && isPostFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts}; }
@@ -227,11 +232,11 @@ async function resolvePercent(key, market){
     if(t){ const {v, ts} = parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap), ts}; }
   }
 
-  // stats.json は鮮度±6h かつ |v|<=cap のときだけ採用
+  // ★ stats.json：±6h かつ |v|≤cap、かつ「1d優先」で採用
   for(const u of stats){
     const j = await fetchJson(u);
     if(!j) continue;
-    const v = pickPctFromStat(j);
+    const v = pickPctFromStat(j, /*preferDaily*/true);
     const ts = j.updated_at || null;
     let freshEnough = true;
     if(ts && lastRun){
