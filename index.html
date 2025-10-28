@@ -77,40 +77,31 @@
     <footer>© <span id="year"></span> 桜Index</footer>
   </div>
 
-<!-- ここより <script> 全体を置き換え -->
 <script>
 /* ====== 参照先 ====== */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
 
 /* 正規化（大文字・ハイフン除去） */
-const normKey = k => String(k||'').toUpperCase();
+const normKey   = k => String(k||'').toUpperCase();
 const squishKey = k => normKey(k).replace(/[^A-Z0-9+]/g,''); // AIN-10 -> AIN10
 
-/* マップは「素のキー」と「正規化キー」の両取りで引けるようにする */
+/* 「素のキー」「正規化キー」どちらでも参照可能に */
 const ORIG_MAP = {
   'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
   'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs', // alias
+  'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 const FOLDER_MAP = {
   'ASTRA4' : 'ASTRA4',
   'R-BANK9': 'R_BANK9',
   'AIN-10' : 'AIN10',
-  'AIN10'  : 'AIN10', // alias
+  'AIN10'  : 'AIN10',
   'S-COIN+': 'S-COIN+',
 };
-
-/* マップ取得の共通関数（素のキー → なければ正規化で探す） */
-function getOriginBase(key){
-  const k = String(key||'');
-  return ORIG_MAP[k] ?? ORIG_MAP[squishKey(k)] ?? null;
-}
-function getSiteFolder(key){
-  const k = String(key||'');
-  return FOLDER_MAP[k] ?? FOLDER_MAP[squishKey(k)] ?? null;
-}
+function getOriginBase(key){ const k=String(key||''); return ORIG_MAP[k] ?? ORIG_MAP[squishKey(k)] ?? null; }
+function getSiteFolder(key){ const k=String(key||''); return FOLDER_MAP[k] ?? FOLDER_MAP[squishKey(k)] ?? null; }
 
 /* ====== util ====== */
 function toSlug(key){ return String(key||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,''); }
@@ -161,7 +152,13 @@ async function getLastRun(key){
 const IMG_SEQ=new WeakMap();
 async function loadFirst(urls){
   for(const u of urls){
-    const ok=await new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.referrerPolicy='no-referrer'; i.src=u+(u.includes('?')?'&':'?')+'t='+Date.now(); });
+    const ok=await new Promise(res=>{
+      const i=new Image();
+      i.onload=()=>res(true);
+      i.onerror=()=>res(false);
+      i.referrerPolicy='no-referrer';
+      i.src=u+(u.includes('?')?'&':'?')+'t='+Date.now();
+    });
     if(ok) return u;
   }
   return null;
@@ -211,48 +208,92 @@ function parsePercentFromText(t){
 }
 function fmtPct(v){ const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%'; return {t:s,c:v>0?'up':v<0?'down':'na'}; }
 
+/* 追加: intraday CSV から末尾の数値を拾うフォールバック */
+async function tryCsvPercent(base, slug){
+  if(!base) return null;
+  const urls = [
+    `${base}/${slug}_post_intraday.csv`,
+    `${base}/${slug}_intraday_post.csv`,
+    `${base}/${slug}_intraday_am.csv`,
+    `${base}/${slug}_intraday.csv`,
+  ];
+  for (const u of urls){
+    try{
+      const r = await fetch(u, {cache:'no-store'});
+      if(!r.ok) continue;
+      const text = await r.text();
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      if(!lines.length) continue;
+      // 末尾近辺から数値トークンを探す
+      for(let i=lines.length-1;i>=Math.max(0, lines.length-5);i--){
+        const cols = lines[i].split(/[,\t;]/).map(s=>s.trim());
+        for(let j=cols.length-1;j>=0;j--){
+          const v = Number(cols[j].replace(/[^0-9.+-eE]/g,''));
+          if(Number.isFinite(v)) return v;
+        }
+      }
+    }catch(_){}
+  }
+  return null;
+}
+
+/* 差し替え: stats は「元リポ → サイト」の順。post/AM テキスト → stats → CSV */
 async function applyStats(key, market, card, img){
   const pctEl=document.getElementById('pct-'+key);
   const updEl=document.getElementById('upd-'+key);
-  const cap=CAP[market]??8;
+  const cap = (CAP[market] ?? 8);
 
   const hint = img?.dataset?.srcHint || 'intra';
-  const slug=toSlug(key), base=getOriginBase(key), folder=getSiteFolder(key);
-  const site= folder ? `${SITE_CHARTS_BASE}/${folder}` : null;
+  const slug = toSlug(key);
+  const base = getOriginBase(key);
+  const folder = getSiteFolder(key);
+  const site  = folder ? `${SITE_CHARTS_BASE}/${folder}` : null;
 
-  let v=null, tsStr=null;
+  let v = null;
+  let tsStr = null;
 
-  // post / am の時だけテキストを使う
-  if(hint==='post' && base){
+  // 1) post/AM はテキスト最優先
+  if(hint === 'post' && base){
     const t = await fetchText(`${base}/${slug}_post_intraday.txt`)
-           || await fetchText(`${base}/${slug}_intraday_post.txt`)
-           || await fetchText(`${base}/${slug}_post.txt`);
+          || await fetchText(`${base}/${slug}_intraday_post.txt`)
+          || await fetchText(`${base}/${slug}_post.txt`);
     v = parsePercentFromText(t);
-  }else if(hint==='am' && base){
+  }else if(hint === 'am' && base){
     const t = await fetchText(`${base}/${slug}_intraday_am.txt`);
     v = parsePercentFromText(t);
   }
 
-  // stats.json（サイト→元リポ）にフォールバック
-  if(v==null){
-    const j1 = site ? await fetchJson(`${site}/stats.json`) : null;
-    const j2 = base ? await fetchJson(`${base}/${slug}_stats.json`) : null;
-    const cand = [j1,j2].filter(Boolean);
-    for(const j of cand){
+  // 2) stats.json は「元リポ → サイト」の順
+  if(v == null){
+    const jBase = base ? await fetchJson(`${base}/${slug}_stats.json`) : null;
+    const jSite = site ? await fetchJson(`${site}/stats.json`) : null;
+    const cand  = [jBase, jSite].filter(Boolean);
+    for (const j of cand){
       const vv = pickPctFromStat(j);
-      if(vv!=null){ v=vv; tsStr=j.updated_at||null; break; }
+      if(vv != null){ v = vv; tsStr = j.updated_at || null; break; }
     }
   }
 
-  if(v==null){
-    pctEl.textContent='N/A'; pctEl.className='pct na';
-    updEl.textContent=''; card.classList.remove('pos','neg'); return;
+  // 3) 最後の砦：intraday CSV 末尾値
+  if(v == null){
+    v = await tryCsvPercent(base, slug);
   }
 
-  v = clamp(v,-cap,cap);
-  const {t,c}=fmtPct(v);
-  pctEl.textContent=t; pctEl.className='pct '+c;
-  card.classList.toggle('pos',c==='up'); card.classList.toggle('neg',c==='down');
+  // 表示
+  if(v == null){
+    pctEl.textContent = 'N/A';
+    pctEl.className   = 'pct na';
+    updEl.textContent = '';
+    card.classList.remove('pos','neg');
+    return;
+  }
+
+  v = clamp(v, -cap, cap);
+  const info = fmtPct(v);
+  pctEl.textContent = info.t;
+  pctEl.className   = `pct ${info.c}`;
+  card.classList.toggle('pos', info.c==='up');
+  card.classList.toggle('neg', info.c==='down');
   updEl.textContent = tsStr ? ('as of '+ new Date(tsStr).toLocaleString('ja-JP')) : '';
 }
 
@@ -280,7 +321,10 @@ function cardView(meta){
     .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
-  (async()=>{ await setTimeframe(key, img, 'intraday'); await applyStats(key, market, card, img); })();
+  (async()=>{
+    await setTimeframe(key, img, 'intraday');
+    await applyStats(key, market, card, img);
+  })();
 
   acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
@@ -297,7 +341,6 @@ function cardView(meta){
   document.getElementById('year').textContent=(new Date()).getFullYear();
   document.getElementById('syncMeta').textContent=`同期完了：${new Date().toLocaleString('ja-JP')} ／ データ: charts/*`;
   let metas=[]; try{ const r=await fetch('data/indexes.json',{cache:'no-store'}); metas = r.ok ? await r.json() : []; }catch{}
-  // 表示順は indexes.json の順を尊重（並べ替えしない）
   const grid=document.getElementById('cards'); metas.forEach(m=> grid.appendChild(cardView(m)));
 })();
 </script>
