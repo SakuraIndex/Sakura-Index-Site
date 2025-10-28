@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌸 桜Index - 公式サイト</title>
   <style>
-    :root{ --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
+    :root{
+      --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
       --text:#d4e9f7; --sub:#9fb6c7; --muted:#7890a0; --brand:#93c5fd;
-      --up:#34d399; --down:#fb7185; --chip:#0b2233; }
+      --up:#34d399; --down:#fb7185; --chip:#0b2233;
+    }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
@@ -21,12 +23,15 @@
     .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
       padding:11px 16px;border-radius:12px;font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;transition:all .15s}
     .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
+
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
+
     .card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
       border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative}
     .card.pos{ box-shadow:0 0 0 2px #34d39933 inset }
     .card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
+
     .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
     .flag{font-size:18px;line-height:1}
     .name{font-size:18px;font-weight:700;letter-spacing:.2px}
@@ -35,6 +40,7 @@
     .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
     .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
     .updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
+
     .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
       background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .chart img{display:block;width:100%;height:100%;object-fit:contain}
@@ -72,7 +78,9 @@
   </div>
 
 <script>
+/* ====== 参照先 ====== */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+
 const ORIG = {
   'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
@@ -80,7 +88,14 @@ const ORIG = {
   'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
-const FOLDER = { 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
+const FOLDER = {
+  'ASTRA4' : 'ASTRA4',
+  'R-BANK9': 'R_BANK9',
+  'AIN-10' : 'AIN10',
+  'AIN10'  : 'AIN10',
+  'S-COIN+': 'S-COIN+',
+};
+
 const IDX = [
   { key:'ASTRA4',  label:'ASTRA4',  flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP', description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { key:'R-BANK9', label:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',     market:'JP', description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
@@ -88,8 +103,8 @@ const IDX = [
   { key:'S-COIN+', label:'S-COIN+', flag:'🪙',  badge:'仮想資産関連', market:'CRYPTO', description:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
+/* ====== util ====== */
 const toSlug = k => String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-const $ = (s,el=document)=>el.querySelector(s);
 function nowJP(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 async function fetchText(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.text():null; }catch{ return null; } }
 async function fetchJson(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.json():null; }catch{ return null; } }
@@ -105,10 +120,10 @@ function parseJPDate(str){
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
+/* last_run.txt キャッシュ */
 const LAST_RUN = new Map();
 async function getLastRun(key){
-  const folder = siteFolder(key);
-  if(!folder) return null;
+  const folder = siteFolder(key); if(!folder) return null;
   if(LAST_RUN.has(folder)) return LAST_RUN.get(folder);
   const txt = await fetchText(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`);
   const v = (txt||'').trim() || null;
@@ -116,6 +131,7 @@ async function getLastRun(key){
   return v;
 }
 
+/* ====== 画像候補 ====== */
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
@@ -127,10 +143,11 @@ function imgCandidates(tf,key){
       base?`${base}/${slug}_post_intraday.png`:null,
     ].filter(Boolean);
   }
-  const suff = tf==='7d'?'7d':(tf==='1m'?'1m':'1y');
+  const suff=tf==='7d'?'7d':tf==='1m'?'1m':'1y';
   return [ site?`${site}/${suff}.png`:null, base?`${base}/${slug}_${suff}.png`:null ].filter(Boolean);
 }
 
+/* 画像ロード */
 const IMG_SEQ=new WeakMap();
 function tryLoad(url){
   return new Promise(res=>{
@@ -138,25 +155,23 @@ function tryLoad(url){
     i.onload=()=>res(true);
     i.onerror=()=>res(false);
     i.referrerPolicy='no-referrer';
-    i.src = url + (url.includes('?')?'&':'?') + 't=' + Date.now();
+    i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();
   });
 }
-async function loadFirst(urls){
-  for(const u of urls){ if(await tryLoad(u)) return u; }
-  return null;
-}
+async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
 
+/* ====== % 取得 ====== */
 function percentSources(key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
   return {
-    txts: {
+    stats: [ site?`${site}/stats.json`:null, base?`${base}/${slug}_stats.json`:null ].filter(Boolean),
+    txts : {
       sitePost : site?`${site}/post_intraday.txt`:null,
       siteIntra: site?`${site}/intraday.txt`:null,
       origPost : base?`${base}/${slug}_post_intraday.txt`:null,
       origIntra: base?`${base}/${slug}_intraday.txt`:null,
-    },
-    stats: [ site?`${site}/stats.json`:null, base?`${base}/${slug}_stats.json`:null ].filter(Boolean)
+    }
   };
 }
 function parsePctFromText(t){
@@ -167,87 +182,69 @@ function parsePctFromText(t){
   const ts = tsM ? tsM[1] : null;
   return {v, ts};
 }
-
-/* === 修正ポイント：stats から値を取るとき「1d系を最優先」に === */
-function pickPctFromStat(j, preferDaily=true){
+function pickPctFromStat(j){
   if(!j) return null;
-
-  const intradayFields = ['pct_intraday','rtn_intraday','intraday_pct'];
-  const dailyFields    = ['pct_1d','rtn_1d','change_1d','daily_pct'];
-  const genericFields  = ['pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
-
-  const order = preferDaily
-    ? [dailyFields, intradayFields, genericFields]
-    : [intradayFields, dailyFields, genericFields];
-
-  let n=null;
-  for(const arr of order){
-    for(const f of arr){
-      if(j[f]==null) continue;
-      const v = Number(j[f]);
-      if(Number.isFinite(v)){ n = v; break; }
-    }
-    if(n!=null) break;
+  const fields=['pct_intraday','rtn_intraday','intraday_pct','pct_1d','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
+  for(const f of fields){
+    if(j[f]==null) continue;
+    let n=Number(j[f]); if(!Number.isFinite(n)) continue;
+    const unit=(j.unit||'').toLowerCase();
+    if(unit==='ratio') n*=100;
+    else if(unit==='percent'||unit==='%') {}
+    else if(Math.abs(n)<=1.2) n*=100;
+    return n;
   }
-  if(n==null) return null;
-
-  const unit  = (j.unit || '').toLowerCase();
-  const scale = (j.scale|| '').toLowerCase();
-
-  if(scale==='pct' || unit==='percent' || unit==='%'){ /* すでに % */ }
-  else if(scale==='ratio' || unit==='ratio'){ n*=100; }
-  else if(Math.abs(n)<=1.2){ n*=100; } // 不明時の安全側
-  return n;
+  return null;
 }
-
-function isPostFresh(postTsStr, lastRunStr){
+function isPostFresh(postTsStr,lastRunStr){
   if(!postTsStr) return false;
   if(!lastRunStr) return true;
-  const post = parseJPDate(postTsStr);
-  const last = parseJPDate(lastRunStr);
+  const post=parseJPDate(postTsStr), last=parseJPDate(lastRunStr);
   if(!post || !last) return true;
-  return (post.getTime() + 60*60*1000) >= last.getTime();
+  return (post.getTime()+60*60*1000)>=last.getTime();
 }
 
+/* ←← ここがポイント：stats.json を最優先に変更 */
 async function resolvePercent(key, market){
   const cap = {JP:8, US:8, CRYPTO:30}[market] ?? 8;
-  const {txts, stats} = percentSources(key);
+  const {stats, txts} = percentSources(key);
   const lastRun = await getLastRun(key);
 
-  // テキスト（post→intra→orig post→orig intra）
-  if(txts.sitePost){
-    const t = await fetchText(txts.sitePost);
-    if(t){ const {v, ts} = parsePctFromText(t); if(v!=null && isPostFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts}; }
-  }
-  if(txts.siteIntra){
-    const t = await fetchText(txts.siteIntra);
-    if(t){ const {v, ts} = parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap), ts}; }
-  }
-  if(txts.origPost){
-    const t = await fetchText(txts.origPost);
-    if(t){ const {v, ts} = parsePctFromText(t); if(v!=null && isPostFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts}; }
-  }
-  if(txts.origIntra){
-    const t = await fetchText(txts.origIntra);
-    if(t){ const {v, ts} = parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap), ts}; }
-  }
-
-  // ★ stats.json：±6h かつ |v|≤cap、かつ「1d優先」で採用
+  // 1) stats.json（サイト優先 → オリジン）
   for(const u of stats){
     const j = await fetchJson(u);
     if(!j) continue;
-    const v = pickPctFromStat(j, /*preferDaily*/true);
-    const ts = j.updated_at || null;
-    let freshEnough = true;
-    if(ts && lastRun){
-      const ju = parseJPDate(ts), lr = parseJPDate(lastRun);
-      if(ju && lr){ freshEnough = Math.abs(ju.getTime()-lr.getTime()) <= 6*60*60*1000; }
+    const v = pickPctFromStat(j);
+    if(v!=null){
+      const ts = j.updated_at || null;
+      return {v:clamp(v,-cap,cap), ts};
     }
-    if(v!=null && freshEnough && Math.abs(v) <= cap){ return {v, ts}; }
   }
+
+  // 2) post_intraday（サイト→オリジン）: 新鮮なときだけ
+  if(txts.sitePost){
+    const t=await fetchText(txts.sitePost);
+    if(t){ const {v,ts}=parsePctFromText(t); if(v!=null && isPostFresh(ts,lastRun)) return {v:clamp(v,-cap,cap), ts}; }
+  }
+  if(txts.origPost){
+    const t=await fetchText(txts.origPost);
+    if(t){ const {v,ts}=parsePctFromText(t); if(v!=null && isPostFresh(ts,lastRun)) return {v:clamp(v,-cap,cap), ts}; }
+  }
+
+  // 3) intraday（サイト→オリジン）
+  if(txts.siteIntra){
+    const t=await fetchText(txts.siteIntra);
+    if(t){ const {v,ts}=parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap), ts}; }
+  }
+  if(txts.origIntra){
+    const t=await fetchText(txts.origIntra);
+    if(t){ const {v,ts}=parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap), ts}; }
+  }
+
   return {v:null, ts:null};
 }
 
+/* サイト intraday.png を使ってよいか */
 async function shouldUseSiteIntraday(key){
   const folder = siteFolder(key);
   if(!folder) return false;
@@ -260,6 +257,7 @@ async function shouldUseSiteIntraday(key){
   return true;
 }
 
+/* ====== カード描画 ====== */
 function renderCard(meta){
   const key=meta.key, market=meta.market||'JP';
   const card=document.createElement('article');card.className='card';
@@ -270,16 +268,22 @@ function renderCard(meta){
     <div class="pct na" id="pct-${key}">N/A</div>
     <div class="updatedAt" id="upd-${key}"></div>`;
   card.appendChild(head);
+
   const desc=document.createElement('div');desc.className='desc';desc.textContent=meta.description||'';card.appendChild(desc);
+
   const chart=document.createElement('div');chart.className='chart';
   const img=document.createElement('img');img.loading='lazy';img.referrerPolicy='no-referrer';
   chart.appendChild(img);card.appendChild(chart);
+
   const acts=document.createElement('div');acts.className='actions';
   acts.innerHTML=[['intraday','Intraday'],['7d','7日'],['1m','1ヶ月'],['1y','1年']]
     .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
-  (async()=>{ await switchTf(key, img, 'intraday'); await applyPercent(key, market, card); })();
+  (async()=>{
+    await switchTf(key, img, 'intraday');
+    await applyPercent(key, market, card);
+  })();
 
   acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
@@ -298,23 +302,25 @@ async function switchTf(key, img, tf){
     const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
     if(siteUrl && urls[0]===siteUrl){
       const ok = await shouldUseSiteIntraday(key);
-      if(!ok){ urls = urls.slice(1); }
+      if(!ok) urls = urls.slice(1);
     }
   }
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
-  const url = await loadFirst(urls);
+  let url = await loadFirst(urls);
   if((IMG_SEQ.get(img)||0)!==req) return;
   if(url){
     let v = Date.now();
-    const folder = siteFolder(key);
+    const folder=siteFolder(key);
     if(folder && url.startsWith(`${SITE_CHARTS_BASE}/${folder}`)){
-      const lr = await getLastRun(key); if(lr) v = lr;
+      const lr = await getLastRun(key);
+      if(lr) v = lr;
     }
     img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
     img.alt='';
   }else{
-    img.removeAttribute('src'); img.alt='画像が見つかりません';
+    img.removeAttribute('src');
+    img.alt='画像が見つかりません';
   }
   requestAnimationFrame(()=>img.style.opacity='1');
 }
@@ -323,13 +329,17 @@ async function applyPercent(key, market, card){
   const pctEl = document.getElementById('pct-'+key);
   const updEl = document.getElementById('upd-'+key);
   const {v, ts} = await resolvePercent(key, market);
-  if(v==null){ pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return; }
-  const {t,c} = fmtPct(v);
+  if(v==null){
+    pctEl.textContent='N/A'; pctEl.className='pct na';
+    updEl.textContent=''; card.classList.remove('pos','neg'); return;
+  }
+  const {t,c}=fmtPct(v);
   pctEl.textContent=t; pctEl.className='pct '+c;
   card.classList.toggle('pos', c==='up'); card.classList.toggle('neg', c==='down');
   updEl.textContent = ts ? ('as of '+ts) : '';
 }
 
+/* init */
 (async function init(){
   document.getElementById('year').textContent=(new Date()).getFullYear();
   document.getElementById('syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
