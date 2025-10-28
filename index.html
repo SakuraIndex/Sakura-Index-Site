@@ -47,7 +47,7 @@
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
       padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
-    .chipbtn.active{outline:2px solid var(--brand)}
+    .chipbtn.active{outline:2px solid #93c5fd}
     .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
     footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
   </style>
@@ -82,10 +82,10 @@
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
 const SITE_FOLDER = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
 const EXTERNAL_ORIGINS = {
-  'Astra4' :  'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9':  'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10' :  'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+':  'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+  'Astra4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 const FIELD_PREF = {
   'Astra4' : ['pct_intraday','rtn_intraday','intraday_pct'],
@@ -94,31 +94,37 @@ const FIELD_PREF = {
   'S-COIN+': ['rtn_intraday','pct_intraday','intraday_pct'],
 };
 
-/* 時間軸 → 実ファイル候補（先にサイト、無ければ legacy） */
+/* 時間軸 → 実ファイル候補 */
 const FILEMAP = {
   intraday: (slug, id)=>[
+    // サイトに同期済みの標準名
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1d.png`,
+    // 元リポの代表名
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1d.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`,
+    // 互換（AM/POST）
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_post.png`
+    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_post.png`,
   ],
   am: (slug, id)=>[
     `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`
+    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1d.png`,
   ],
   '7d': (slug, id)=>[
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/7d.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1w.png`
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1w.png`,
   ],
   '1m': (slug, id)=>[
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1m.png`,
     `${EXTERNAL_ORIGINS[id]}/${slug}_1m.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`
+    `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`,
   ],
   '1y': (slug, id)=>[
     `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1y.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png`
+    `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png`,
   ],
 };
 
@@ -126,7 +132,7 @@ const INDICES = [
   { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',       desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-  { id:'S-COIN+', title:'S-COIN+', flag:'🇯🇵', badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+  { id:'S-COIN+', title:'S-COIN+', flag:'🪙',  badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
 /* ============ util ============ */
@@ -134,23 +140,26 @@ const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
-// フォルダの last_run.txt を1回だけ取得してキャッシュ
-const LASTRUN_CACHE = new Map();
-async function getSiteLastRun(id){
-  const folder = SITE_FOLDER[id];
-  if (!folder) return null;
-  if (LASTRUN_CACHE.has(folder)) return LASTRUN_CACHE.get(folder);
+// last_run.txt 候補
+function lastRunCandidates(id){
+  const site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/last_run.txt`;
+  const base = EXTERNAL_ORIGINS[id];
+  return [site, `${base}/_last_run.txt`, `${base}/last_run.txt`];
+}
+
+async function fetchText(url){
   try{
-    const url = `${SITE_CHARTS_BASE}/${folder}/last_run.txt`;
-    const r = await fetch(url, { cache:'no-cache' });
-    if (!r.ok) throw new Error(r.status);
-    const txt = (await r.text()).trim();
-    LASTRUN_CACHE.set(folder, txt);
-    return txt;
-  }catch(_){
-    LASTRUN_CACHE.set(folder, null);
-    return null;
+    const r = await fetch(url, {mode:'cors', cache:'no-store'});
+    if(!r.ok) throw 0;
+    return (await r.text()).trim();
+  }catch{ return ''; }
+}
+async function getLastRunTimestamp(id){
+  for(const u of lastRunCandidates(id)){
+    const s = await fetchText(u);
+    if(s) return s;
   }
+  return '';
 }
 
 // レース対策付き画像ロード
@@ -185,12 +194,9 @@ async function switchTimeframe(idx, img, tf){
   if ((IMG_REQ_SEQ.get(img) || 0) !== reqId) return;
 
   if (url){
-    // 7d/1m/1y はサイト側の last_run.txt を v= に採用（キャッシュバスター）
-    let v = reqId;
-    if (tf === '7d' || tf === '1m' || tf === '1y'){
-      const lr = await getSiteLastRun(idx.id);
-      if (lr) v = lr;
-    }
+    // キャッシュバスト: last_run があればそれを、無ければ時刻
+    const lr = await getLastRunTimestamp(idx.id);
+    const v = lr || Date.now();
     img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
     img.alt = '';
   } else {
@@ -227,7 +233,7 @@ function fmtPctText(val){
 function getPctFromJson(jsonObj, id){
   if (!jsonObj) return null;
   const fields = (FIELD_PREF[id] || []).concat([
-    'pct', 'pct_today', 'change_pct', 'change_percent', 'intraday', 'rtn_pct'
+    'pct','pct_today','change_pct','change_percent','intraday','rtn_pct'
   ]);
   let raw = null;
   for(const f of fields){
@@ -240,15 +246,13 @@ function getPctFromJson(jsonObj, id){
   const unit = String(jsonObj.unit || '').toLowerCase();
   if (unit === 'ratio') v = v * 100.0;
   else if (unit === 'percent' || unit === '%') v = v;
-  else {
-    v = (Math.abs(v) <= 1.2) ? v * 100.0 : v;
-  }
+  else { v = (Math.abs(v) <= 1.2) ? v * 100.0 : v; }
   if (!Number.isFinite(v)) return null;
-  if (Math.abs(v) > 50) v = Math.sign(v) * 50;
+  if (Math.abs(v) > 50) v = Math.sign(v) * 50; // ガード
   return v;
 }
 
-/* ---- 異常値を避けつつ最新を選ぶ ---- */
+/* ---- 異常値を避けつつ最新を選ぶ（last_run で as-of 補完） ---- */
 function applyStats(idx, card, img){
   const pctEl = document.getElementById('pct-'+idx.id);
   const updEl = document.getElementById('upd-'+idx.id);
@@ -270,11 +274,13 @@ function applyStats(idx, card, img){
     });
   });
 
-  function finalize(){
+  async function finalize(){
+    let lastRun = await getLastRunTimestamp(idx.id);
+
     if (results.length === 0){
       pctEl.textContent = 'N/A';
       pctEl.className   = 'pct na';
-      updEl.textContent = '';
+      updEl.textContent = lastRun ? ('as of '+ new Date(lastRun).toLocaleString('ja-JP')) : '';
       card.classList.remove('pos','neg');
       return;
     }
@@ -300,7 +306,7 @@ function applyStats(idx, card, img){
     card.classList.toggle('pos', vinfo.cls === 'up');
     card.classList.toggle('neg', vinfo.cls === 'down');
 
-    const tsStr = best.raw && best.raw.updated_at ? best.raw.updated_at : null;
+    const tsStr = (best.raw && best.raw.updated_at) ? best.raw.updated_at : (lastRun || '');
     if (tsStr){
       try{
         const d = new Date(tsStr);
