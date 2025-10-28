@@ -120,22 +120,43 @@ async function loadFirst(urls){
   return null;
 }
 
+/* last_run（長期のキャッシュバスターに使用） */
+const LAST_RUN_CACHE = new Map();
+async function getLastRun(key){
+  const folder = FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')];
+  if(!folder) return null;
+  if(LAST_RUN_CACHE.has(folder)) return LAST_RUN_CACHE.get(folder);
+  try{
+    const r = await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`, {cache:'no-store'});
+    if(!r.ok){ LAST_RUN_CACHE.set(folder,null); return null; }
+    const t = (await r.text()||'').trim() || null;
+    LAST_RUN_CACHE.set(folder,t);
+    return t;
+  }catch(_){
+    LAST_RUN_CACHE.set(folder,null);
+    return null;
+  }
+}
+
 /* ====== 各種候補パス ====== */
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
+/* ★ 重要：Intraday は各指数リポのみ（サイトの intraday.png は使わない） */
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
+
   if(tf==='intraday'){
+    // 正しい順序：post（後場）→ 通常 → AM
     return [
-      site?`${site}/intraday.png`:null,
+      base?`${base}/${slug}_post_intraday.png`:null,
       base?`${base}/${slug}_intraday.png`:null,
       base?`${base}/${slug}_intraday_am.png`:null,
-      base?`${base}/${slug}_post_intraday.png`:null,
     ].filter(Boolean);
   }
-  // long
+
+  // long はサイトのミラー優先 → なければ各指数リポ
   const map={'7d':'7d','1m':'1m','1y':'1y'};
   const suff = map[tf];
   return [
@@ -155,7 +176,7 @@ function percentSources(key){
     base?`${base}/${slug}_intraday.txt`:null,
   ].filter(Boolean);
 
-  // stats 候補（index内 and ルート別名の両方）
+  // stats 候補
   const stats = [
     site?`${site}/stats.json`:null,
     `${SITE_CHARTS_BASE}/${slug}_stats.json`,
@@ -172,7 +193,7 @@ function parsePctFromText(t){
   if(!t) return {v:null, ts:null};
   const m = String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/);
   const v = m? Number(m[0].replace('%','')) : null;
-  const tsM = String(t).match(/\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/); // 2025/10/28 15:58
+  const tsM = String(t).match(/\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/); // 2025/10/28 15:58 のような書式
   const ts = tsM ? tsM[0] : null;
   return {v, ts};
 }
@@ -264,7 +285,13 @@ async function switchTf(key, img, tf){
   const url = await loadFirst(urls);
   if((IMG_SEQ.get(img)||0)!==req) return;
   if(url){
-    img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(Date.now());
+    // 長期はサイト last_run をバージョンに使ってキャッシュ抑止、Intraday は逐次バスターでOK
+    let v = Date.now();
+    if(tf!=='intraday'){
+      const lr = await getLastRun(key);
+      if(lr) v = lr;
+    }
+    img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
     img.alt='';
   }else{
     img.removeAttribute('src');
