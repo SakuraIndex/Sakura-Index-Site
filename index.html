@@ -78,7 +78,7 @@
   </div>
 
 <script>
-/* ====== 参照先・定義（前回と同じ。省略なしで貼っています） ====== */
+/* ====== 参照先・定義 ====== */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
 
 const ORIG = {
@@ -218,11 +218,14 @@ function isPostFresh(postTsStr, lastRunStr){
   if(!post || !last) return true;
   return (post.getTime() + 60*60*1000) >= last.getTime();
 }
+
+/* ←← ここを修正：stats.json 採用にガードを追加（±6h & |v|<=cap） */
 async function resolvePercent(key, market){
   const cap = {JP:8, US:8, CRYPTO:30}[market] ?? 8;
   const {txts, stats} = percentSources(key);
   const lastRun = await getLastRun(key);
 
+  // 1) テキスト優先（post → intraday）
   if(txts.sitePost){
     const t = await fetchText(txts.sitePost);
     if(t){
@@ -251,34 +254,44 @@ async function resolvePercent(key, market){
       if(v!=null) return {v:clamp(v,-cap,cap), ts};
     }
   }
+
+  // 2) stats.json は「鮮度±6時間 & 常識的な範囲」の時だけ採用
   for(const u of stats){
     const j = await fetchJson(u);
     if(!j) continue;
     const v = pickPctFromStat(j);
-    if(v!=null) return {v:clamp(v,-cap,cap), ts:j.updated_at||null};
+    const ts = j.updated_at || null;
+
+    // 鮮度チェック（±6時間の窓）
+    let freshEnough = true;
+    if(ts && lastRun){
+      const ju = parseJPDate(ts), lr = parseJPDate(lastRun);
+      if(ju && lr){
+        const diff = Math.abs(ju.getTime() - lr.getTime());
+        freshEnough = diff <= 6*60*60*1000;
+      }
+    }
+
+    if(v!=null && freshEnough && Math.abs(v) <= cap){
+      return {v, ts};
+    }
   }
+
   return {v:null, ts:null};
 }
 
-/* ====== ここが今回の追加：サイト intraday.png を使ってよいか判定 ====== */
+/* ====== intraday.png を使うか判定（化石化を避ける） ====== */
 async function shouldUseSiteIntraday(key){
   const folder = siteFolder(key);
   if(!folder) return false;
   const txt = await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`);
   const lastRun = await getLastRun(key);
 
-  // intraday.txt 自体が無い → 使わない
   if(!txt) return false;
-
   const {v, ts} = parsePctFromText(txt);
-
-  // intraday.txt から％が拾えない（＝No data系 or 生成だけ）→ 使わない
   if(v==null) return false;
-
-  // 時刻が last_run より明らかに古い（＝化石化）→ 使わない
   if(!isPostFresh(ts, lastRun)) return false;
 
-  // ここまでパスしたらサイト intraday.png を採用
   return true;
 }
 
@@ -323,14 +336,13 @@ function renderCard(meta){
 async function switchTf(key, img, tf){
   let urls = imgCandidates(tf, key);
 
-  // ★ intraday は「サイト画像を使ってよいか」判定して、ダメなら元リポへフォールバック
+  // intraday は「サイト画像を使ってよいか」判定して、ダメなら元リポへ
   if(tf==='intraday'){
     const folder = siteFolder(key);
     const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
     if(siteUrl && urls[0]===siteUrl){
       const ok = await shouldUseSiteIntraday(key);
       if(!ok){
-        // 先頭（サイト画像）を外して、元リポ候補を優先させる
         urls = urls.slice(1);
       }
     }
