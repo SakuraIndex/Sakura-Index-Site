@@ -141,91 +141,120 @@ async function setTimeframe(key, market, img, tf){
   requestAnimationFrame(()=>img.style.opacity='1');
 }
 
-/* ===== stats → ％取得（拡張 & CSVフォールバック） ===== */
+/* ===== ％取得（優先度＋外れ値除外＋CSVフォールバック） ===== */
 function statUrls(key){
   const slug=toSlug(key), base=EXTERNAL_ORIGINS[key], site=`${SITE_CHARTS_BASE}/${SITE_FOLDER[key]}`;
   return [`${site}/stats.json`, `${base}/${slug}_stats.json`, `${base}/${key.toLowerCase()}_stats.json`];
 }
-function fmtPct(v){ if(v==null||!isFinite(v)) return {t:'N/A',c:'na'}; const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%'; return {t:s,c:v>0?'up':v<0?'down':'na'}; }
-function clamp50(x){ return Math.max(-50, Math.min(50, x)); }
-function toNumber(x){ const n=Number(x); return Number.isFinite(n)?n:null; }
-
-const FIELD_CANDIDATES = [
-  // 最優先（よく使う）
-  'pct_intraday','rtn_intraday','intraday_pct','pct_today','change_pct','change_percent',
-  'pct','intraday','rtn_pct','rtn_today','today_pct','return_pct',
-  // ありがちな別名
-  'pct_change','perf_intraday','performance','delta_pct','d1_pct','day_change_pct'
-];
-
+function postTxtUrls(key){
+  const slug=toSlug(key), base=EXTERNAL_ORIGINS[key];
+  return [
+    `${base}/${slug}_post_intraday.txt`,
+    `${base}/${slug}_intraday_post.txt`,
+    `${base}/${slug}_post.txt`
+  ];
+}
 async function fetchJson(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.json():null; }catch{return null;} }
 async function fetchText(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.text():null; }catch{return null;} }
 
-/* CSV 末尾から％を推定（2列目 or 行中の最後の数値を使用） */
-async function fallbackPctFromCSV(key){
-  const slug=toSlug(key), base=EXTERNAL_ORIGINS[key];
-  const u = `${base}/${slug}_intraday.csv`;
-  const txt = await fetchText(u);
-  if(!txt) return null;
-  const lines = txt.trim().split(/\r?\n/).filter(Boolean);
-  if(lines.length<2) return null;
-  const last = lines[lines.length-1];
-  const parts = last.split(',');
-  let v = null;
-  if(parts.length>=2){ v = toNumber(parts[1]); }
-  if(v==null){
-    const nums = last.match(/-?\d+(\.\d+)?/g);
-    if(nums && nums.length) v = toNumber(nums[nums.length-1]);
-  }
-  if(v==null) return null;
-  // 単位補正：0.0x を％とみなす（0.7 → 0.7% にはしない：1未満で±1.2以内のみ×100）
-  if(Math.abs(v)<=1.2) v = v*100;
-  return clamp50(v);
-}
+const FIELD_CANDIDATES = [
+  'pct_intraday','rtn_intraday','intraday_pct','pct_today','change_pct','change_percent',
+  'pct','intraday','rtn_pct','rtn_today','today_pct','return_pct','pct_change','perf_intraday','performance','delta_pct','d1_pct','day_change_pct'
+];
+function clamp(x,min,max){ return Math.max(min, Math.min(max,x)); }
+const CAP = { JP:10, US:10, CRYPTO:30 }; // 市場別クランプ上限（％）
+const OUTLIER = { JP:3, US:3, CRYPTO:8 }; // 乖離で捨てるしきい値（％）
 
 function pickPctFromStat(j){
   if(!j) return null;
   for(const f of FIELD_CANDIDATES){
     if(j[f]==null) continue;
-    const n = toNumber(j[f]); if(n==null) continue;
+    let n = Number(j[f]); if(!Number.isFinite(n)) continue;
     const unit = String(j.unit||'').toLowerCase();
-    let v = unit==='ratio' ? n*100 : n;
-    if(unit!=='percent' && unit!=='%' && Math.abs(v)<=1.2) v*=100;
-    return clamp50(v);
+    if(unit==='ratio') n*=100;
+    else if(unit==='percent' || unit==='%'){} else if(Math.abs(n)<=1.2){ n*=100; }
+    return n;
   }
   return null;
 }
+function parsePercentLike(s){
+  if(!s) return null;
+  const m = String(s).replace(/[^\d\.\-\+%]/g,' ').trim().split(/\s+/).pop();
+  if(!m) return null;
+  let v = parseFloat(m.replace('%',''));
+  return Number.isFinite(v) ? v : null;
+}
+async function pctFromPostTxt(key){
+  for(const u of postTxtUrls(key)){
+    const t = await fetchText(u);
+    if(!t) continue;
+    const v = parsePercentLike(t);
+    if(v==null) continue;
+    return { v, ts: Date.now(), src:'post' };
+  }
+  return null;
+}
+async function pctFromCSV(key){
+  const slug=toSlug(key), base=EXTERNAL_ORIGINS[key];
+  const txt=await fetchText(`${base}/${slug}_intraday.csv`);
+  if(!txt) return null;
+  const lines=txt.trim().split(/\r?\n/).filter(Boolean);
+  if(lines.length<2) return null;
+  const last=lines[lines.length-1].split(',');
+  let v=null; if(last.length>=2) v=Number(last[1]);
+  if(!Number.isFinite(v)){
+    const nums=lines[lines.length-1].match(/-?\d+(\.\d+)?/g);
+    if(nums&&nums.length) v=Number(nums.at(-1));
+  }
+  if(!Number.isFinite(v)) return null;
+  if(Math.abs(v)<=1.2) v*=100;
+  return { v, ts: Date.now(), src:'csv' };
+}
+function fmtPct(v){ const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%'; return {t:s,c:v>0?'up':v<0?'down':'na'}; }
 
-async function applyStats(key, card, img){
+async function applyStats(key, market, card, img){
   const pctEl=document.getElementById('pct-'+key);
   const updEl=document.getElementById('upd-'+key);
+  const cap = CAP[market] ?? 10;
+  const outlier = OUTLIER[market] ?? 3;
 
-  // 1) stats.json 群
-  const urls = statUrls(key);
-  const results=[];
-  await Promise.all(urls.map(async(u,i)=>{
-    const j=await fetchJson(u);
-    if(!j) return;
-    const v=pickPctFromStat(j);
-    if(v==null) return;
+  const candidates=[];
+
+  // 1) stats.json 群（重み3）
+  await Promise.all(statUrls(key).map(async(u,i)=>{
+    const j=await fetchJson(u); if(!j) return;
+    const v=pickPctFromStat(j); if(v==null) return;
     let ts=0; try{ ts=j.updated_at?Date.parse(j.updated_at):0; }catch{}
-    results.push({order:i, ts, v, raw:j});
+    candidates.push({v,ts,w:3,src:'stats',order:i,raw:j});
   }));
 
-  let best=null;
-  if(results.length){
-    // 新しい順、同時刻なら候補順位で
-    results.sort((a,b)=> b.ts-a.ts || a.order-b.order);
-    best=results[0];
-  }else{
-    // 2) CSV フォールバック
-    const v = await fallbackPctFromCSV(key);
-    if(v!=null) best={ v, raw:{}, ts: Date.now() };
+  // 2) post_intraday.txt 系（重み2）
+  const post = await pctFromPostTxt(key);
+  if(post) candidates.push({v:post.v,ts:post.ts,w:2,src:post.src});
+
+  // 3) CSV（最終フォールバック・重み1）
+  if(!candidates.length){
+    const csv = await pctFromCSV(key);
+    if(csv) candidates.push({v:csv.v,ts:csv.ts,w:1,src:'csv'});
   }
 
-  if(!best){
+  if(!candidates.length){
     pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return;
   }
+
+  // 単純クランプ & 外れ除去
+  candidates.forEach(c=> c.v = clamp(c.v, -cap, cap));
+  // 中央値から大きく離れるものを除外（候補が複数あるときのみ）
+  if(candidates.length>=2){
+    const med = candidates.map(c=>c.v).sort((a,b)=>a-b);
+    const mid = med.length%2 ? med[(med.length-1)/2] : (med[med.length/2-1]+med[med.length/2])/2;
+    const filtered = candidates.filter(c=> Math.abs(c.v - mid) <= outlier || c.w>=3 );
+    if(filtered.length) candidates.splice(0, candidates.length, ...filtered);
+  }
+
+  // 最終選定：重み → ts 新しい → order
+  candidates.sort((a,b)=> b.w-a.w || b.ts-a.ts || (a.order??9)-(b.order??9));
+  const best=candidates[0];
 
   const {t,c}=fmtPct(best.v);
   pctEl.textContent=t; pctEl.className='pct '+c;
@@ -237,7 +266,6 @@ async function applyStats(key, card, img){
     catch{ updEl.textContent='updated: '+tsStr; }
     if(img && img.src){ img.src = img.src.split('?')[0] + '?v=' + encodeURIComponent(tsStr); }
   }else{
-    // CSV フォールバック時
     updEl.textContent = 'as of ' + new Date().toLocaleString('ja-JP');
   }
 }
@@ -266,7 +294,7 @@ function cardView(meta){
     .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
-  (async()=>{ await setTimeframe(key, mkt, img, 'intraday'); await applyStats(key, card, img); })();
+  (async()=>{ await setTimeframe(key, mkt, img, 'intraday'); await applyStats(key, mkt, card, img); })();
 
   acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
@@ -281,11 +309,8 @@ function cardView(meta){
 (async function init(){
   document.getElementById('year').textContent=(new Date()).getFullYear();
   document.getElementById('syncMeta').textContent=`同期完了：${new Date().toLocaleString('ja-JP')} ／ データ: charts/*`;
-
-  // サイトの data/indexes.json を読み込み
   let metas=[]; try{ const r=await fetch('data/indexes.json',{cache:'no-store'}); metas = r.ok ? await r.json() : []; }catch{}
   const order=['ASTRA4','R-BANK9','AIN10','S-COIN+']; metas.sort((a,b)=> order.indexOf(a.key)-order.indexOf(b.key));
-
   const grid=document.getElementById('cards'); metas.forEach(m=> grid.appendChild(cardView(m)));
 })();
 </script>
