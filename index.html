@@ -47,7 +47,7 @@
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
       padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
-    .chipbtn.active{outline:2px solid #93c5fd}
+    .chipbtn.active{outline:2px solid var(--brand)}
     .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
     footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
   </style>
@@ -80,292 +80,214 @@
 <script>
 /* ============ 参照先 ============ */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-const SITE_FOLDER = { 'Astra4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN-10':'AIN10', 'S-COIN+':'S-COIN+' };
+const SITE_FOLDER = { 'ASTRA4':'ASTRA4', 'R-BANK9':'R_BANK9', 'AIN10':'AIN10', 'S-COIN+':'S-COIN+' };
 const EXTERNAL_ORIGINS = {
-  'Astra4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
+
+/* ===== 市場別・時間帯 ===== */
+const JST = new Intl.DateTimeFormat('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Tokyo'});
+function nowHM(){ const d=new Date(); return +JST.formatToParts(d).find(p=>p.type==='hour').value*60 + +JST.formatToParts(d).find(p=>p.type==='minute').value; }
+// 取引時間（おおよそ / DST を気にしない簡易版）
+const SESSION = {
+  JP:  { open:  9*60, close: 15*60+30 },          // 09:00-15:30 JST
+  US:  { open: 23*60+30, close: 30+6*60 },        // 23:30-06:00 JST 相当
+  CRYPTO: { open:0, close:24*60 }                 // 24h
+};
+function isOpen(mkt){
+  const hm = nowHM();
+  if (mkt==='CRYPTO') return true;
+  const {open, close} = SESSION[mkt]||{};
+  if (open<=close) return hm>=open && hm<=close;   // JP
+  return hm>=open || hm<=close;                    // US
+}
+
+/* ====== 騰落率フィールド候補 ====== */
 const FIELD_PREF = {
-  'Astra4' : ['pct_intraday','rtn_intraday','intraday_pct'],
-  'R-BANK9': ['rtn_intraday','pct_intraday','intraday_pct'],
-  'AIN-10' : ['pct_intraday','intraday_pct','rtn_intraday'],
-  'S-COIN+': ['rtn_intraday','pct_intraday','intraday_pct'],
+  'ASTRA4':['pct_intraday','rtn_intraday','intraday_pct'],
+  'R-BANK9':['rtn_intraday','pct_intraday','intraday_pct'],
+  'AIN10'  :['pct_intraday','intraday_pct','rtn_intraday'],
+  'S-COIN+':['rtn_intraday','pct_intraday','intraday_pct'],
 };
 
-/* 時間軸 → 実ファイル候補 */
-const FILEMAP = {
-  intraday: (slug, id)=>[
-    // サイトに同期済みの標準名
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1d.png`,
-    // 元リポの代表名
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1d.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday.png`,
-    // 互換（AM/POST）
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_post.png`,
-  ],
-  am: (slug, id)=>[
-    `${EXTERNAL_ORIGINS[id]}/${slug}_intraday_am.png`,
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/intraday.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1d.png`,
-  ],
-  '7d': (slug, id)=>[
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/7d.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_7d.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1w.png`,
-  ],
-  '1m': (slug, id)=>[
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1m.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1m.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_30d.png`,
-  ],
-  '1y': (slug, id)=>[
-    `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/1y.png`,
-    `${EXTERNAL_ORIGINS[id]}/${slug}_1y.png`,
-  ],
-};
+/* ====== 画像候補（Intraday は市場×時間帯で並び替え） ====== */
+function toSlug(key){ return key.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,''); }
 
-const INDICES = [
-  { id:'Astra4',  title:'Astra4',  flag:'🇯🇵', badge:'宇宙ベンチャー', desc:'宇宙関連銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-  { id:'R-BANK9', title:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       desc:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-  { id:'AIN-10',  title:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',       desc:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-  { id:'S-COIN+', title:'S-COIN+', flag:'🪙',  badge:'仮想資産関連',   desc:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
-];
+function intradayCandidates(key, market){
+  const slug = toSlug(key), base = EXTERNAL_ORIGINS[key], site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[key]}`;
+  const post = `${base}/${slug}_post_intraday.png`;
+  const snap = `${base}/${slug}_intraday.png`;
+  const am   = `${base}/${slug}_intraday_am.png`;
+  const site1d = `${site}/intraday.png`; // 1d を最後の最後に
 
-/* ============ util ============ */
-const $ = (s,el=document)=>el.querySelector(s);
-const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
-const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-
-// last_run.txt 候補
-function lastRunCandidates(id){
-  const site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}/last_run.txt`;
-  const base = EXTERNAL_ORIGINS[id];
-  return [site, `${base}/_last_run.txt`, `${base}/last_run.txt`];
-}
-
-async function fetchText(url){
-  try{
-    const r = await fetch(url, {mode:'cors', cache:'no-store'});
-    if(!r.ok) throw 0;
-    return (await r.text()).trim();
-  }catch{ return ''; }
-}
-async function getLastRunTimestamp(id){
-  for(const u of lastRunCandidates(id)){
-    const s = await fetchText(u);
-    if(s) return s;
+  // US は場外＝post優先、場中＝snap優先。JP も場外は post を先に。
+  const open = isOpen(market);
+  if (market==='US'){
+    return open ? [snap, am, post, site1d] : [post, snap, am, site1d];
   }
-  return '';
+  if (market==='JP'){
+    return open ? [snap, am, post, site1d] : [post, snap, am, site1d];
+  }
+  // CRYPTO
+  return [snap, site1d];
 }
 
-// レース対策付き画像ロード
-const IMG_REQ_SEQ = new WeakMap();
-async function loadFirstImageUrl(urlList){
-  for(const u of urlList){
+function longCandidates(tf, key){
+  const slug = toSlug(key), base = EXTERNAL_ORIGINS[key], site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[key]}`;
+  if (tf==='7d') return [`${site}/7d.png`, `${base}/${slug}_7d.png`, `${base}/${slug}_1w.png`];
+  if (tf==='1m') return [`${site}/1m.png`, `${base}/${slug}_1m.png`, `${base}/${slug}_30d.png`];
+  return [`${site}/1y.png`, `${base}/${slug}_1y.png`];
+}
+
+/* ====== last_run.txt（キャッシュバスター） ====== */
+const LASTRUN_CACHE = new Map();
+async function getLastRun(key){
+  const folder = SITE_FOLDER[key]; if(!folder) return null;
+  if (LASTRUN_CACHE.has(folder)) return LASTRUN_CACHE.get(folder);
+  try{
+    const r = await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`, {cache:'no-store'});
+    const t = r.ok ? (await r.text()).trim() : null;
+    LASTRUN_CACHE.set(folder,t); return t;
+  }catch{ LASTRUN_CACHE.set(folder,null); return null; }
+}
+
+/* ====== 画像ローダ ====== */
+const IMG_SEQ = new WeakMap();
+async function loadFirst(urls){
+  for(const u of urls){
     const ok = await new Promise(res=>{
-      const t=new Image();
-      t.onload = ()=>res(true);
-      t.onerror= ()=>res(false);
-      t.referrerPolicy='no-referrer';
-      t.src = u + (u.includes('?')?'&':'?') + 't=' + Date.now();
+      const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false);
+      i.referrerPolicy='no-referrer'; i.src=u+(u.includes('?')?'&':'?')+'t='+Date.now();
     });
-    if(ok) return u;
+    if (ok) return u;
   }
   return null;
 }
 
-async function switchTimeframe(idx, img, tf){
-  const slug = toSlug(idx.id);
-  const maker = FILEMAP[tf] ? FILEMAP[tf] : FILEMAP['intraday'];
-  const candidates = maker(slug, idx.id);
-
-  const prev = IMG_REQ_SEQ.get(img) || 0;
-  const reqId = prev + 1;
-  IMG_REQ_SEQ.set(img, reqId);
-
-  img.style.opacity = '0.5';
-
-  const url = await loadFirstImageUrl(candidates);
-
-  if ((IMG_REQ_SEQ.get(img) || 0) !== reqId) return;
-
+async function setTimeframe(key, market, img, tf){
+  const urls = tf==='intraday' ? intradayCandidates(key, market) : longCandidates(tf, key);
+  const prev = IMG_SEQ.get(img)||0, req = prev+1; IMG_SEQ.set(img,req);
+  img.style.opacity='0.5';
+  const url = await loadFirst(urls);
+  if ((IMG_SEQ.get(img)||0)!==req) return;
   if (url){
-    // キャッシュバスト: last_run があればそれを、無ければ時刻
-    const lr = await getLastRunTimestamp(idx.id);
-    const v = lr || Date.now();
+    let v=req;
+    if (tf!=='intraday'){ const lr=await getLastRun(key); if(lr) v=lr; }
     img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
-    img.alt = '';
-  } else {
-    img.removeAttribute('src');
-    img.alt = '画像が見つかりません';
+    img.alt='';
+  }else{
+    img.removeAttribute('src'); img.alt='画像が見つかりません';
   }
-  requestAnimationFrame(()=>{ img.style.opacity = '1'; });
+  requestAnimationFrame(()=>img.style.opacity='1');
 }
 
-function fetchJson(url, cb){
-  fetch(url,{mode:'cors',cache:'no-store'}).then(r=>{
-    if(!r.ok) throw new Error(r.status);
-    return r.json();
-  }).then(j=>cb(null,j)).catch(e=>cb(e||new Error('fetch failed')));
+/* ====== stats.json → 騰落率 ====== */
+function statUrls(key){
+  const slug = toSlug(key), base=EXTERNAL_ORIGINS[key], site=`${SITE_CHARTS_BASE}/${SITE_FOLDER[key]}`;
+  return [`${site}/stats.json`, `${base}/${slug}_stats.json`, `${base}/${key.toLowerCase()}_stats.json`];
 }
-
-function statsCandidates(id){
-  const base = EXTERNAL_ORIGINS[id] || '';
-  const slug = toSlug(id);
-  const site = `${SITE_CHARTS_BASE}/${SITE_FOLDER[id]}`;
-  return [
-    `${site}/stats.json`,
-    `${base}/${slug}_stats.json`,
-    `${base}/${id.toLowerCase()}_stats.json`,
-  ];
+function fmtPct(v){
+  if(v==null||!isFinite(v)) return {t:'N/A',c:'na'};
+  const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';
+  return {t:s,c:v>0?'up':v<0?'down':'na'};
 }
-
-function fmtPctText(val){
-  if(val==null || Number.isNaN(val)) return {text:'N/A', cls:'na'};
-  const s = (val>=0?'+':'') + (Math.round(val*100)/100).toFixed(2) + '%';
-  return {text:s, cls:val>0?'up':val<0?'down':'na'};
-}
-
-function getPctFromJson(jsonObj, id){
-  if (!jsonObj) return null;
-  const fields = (FIELD_PREF[id] || []).concat([
-    'pct','pct_today','change_pct','change_percent','intraday','rtn_pct'
-  ]);
-  let raw = null;
-  for(const f of fields){
-    if (jsonObj[f] == null) continue;
-    const n = Number(jsonObj[f]);
-    if (Number.isFinite(n)){ raw = n; break; }
-  }
-  if (raw == null) return null;
-  let v = raw;
-  const unit = String(jsonObj.unit || '').toLowerCase();
-  if (unit === 'ratio') v = v * 100.0;
-  else if (unit === 'percent' || unit === '%') v = v;
-  else { v = (Math.abs(v) <= 1.2) ? v * 100.0 : v; }
-  if (!Number.isFinite(v)) return null;
-  if (Math.abs(v) > 50) v = Math.sign(v) * 50; // ガード
+function pickPct(j,key){
+  if(!j) return null;
+  const fields=(FIELD_PREF[key]||[]).concat(['pct','pct_today','change_pct','change_percent','intraday','rtn_pct']);
+  let raw=null; for(const f of fields){ if(j[f]!=null && isFinite(+j[f])){ raw=+j[f]; break; } }
+  if(raw==null) return null;
+  const unit=String(j.unit||'').toLowerCase();
+  let v = unit==='ratio' ? raw*100 : raw;
+  if(Math.abs(v)<=1.2 && unit!=='percent' && unit!=='%') v*=100;
+  if(!isFinite(v)) return null;
+  if(Math.abs(v)>50) v=Math.sign(v)*50;
   return v;
 }
-
-/* ---- 異常値を避けつつ最新を選ぶ（last_run で as-of 補完） ---- */
-function applyStats(idx, card, img){
-  const pctEl = document.getElementById('pct-'+idx.id);
-  const updEl = document.getElementById('upd-'+idx.id);
-  const urls  = statsCandidates(idx.id);
-
-  const results = [];
-  let done = 0;
-  urls.forEach((u, order)=>{
-    fetchJson(u, (err, j)=>{
-      if (!err && j){
-        const v = getPctFromJson(j, idx.id);
-        if (v != null){
-          let ts = 0;
-          try { ts = j.updated_at ? Date.parse(j.updated_at) : 0; } catch(_){}
-          results.push({ order, ts, v, raw: j });
-        }
-      }
-      if (++done === urls.length) finalize();
-    });
-  });
-
-  async function finalize(){
-    let lastRun = await getLastRunTimestamp(idx.id);
-
-    if (results.length === 0){
-      pctEl.textContent = 'N/A';
-      pctEl.className   = 'pct na';
-      updEl.textContent = lastRun ? ('as of '+ new Date(lastRun).toLocaleString('ja-JP')) : '';
-      card.classList.remove('pos','neg');
-      return;
-    }
-
-    const vs = results.map(r=>r.v).slice().sort((a,b)=>a-b);
-    const median = vs.length%2 ? vs[(vs.length-1)/2] : (vs[vs.length/2-1]+vs[vs.length/2])/2;
-    const filtered = results.filter(r=>{
-      const tooLarge = Math.abs(r.v) > 20;
-      const tooFar   = Math.abs(r.v - median) > 7;
-      return !(tooLarge || tooFar) || results.length === 1;
-    });
-    const pool = filtered.length ? filtered : results;
-
-    pool.sort((a,b)=>{
-      if (b.ts !== a.ts) return b.ts - a.ts;
-      return a.order - b.order;
-    });
-    const best = pool[0];
-
-    const vinfo = fmtPctText(best.v);
-    pctEl.textContent = vinfo.text;
-    pctEl.className   = `pct ${vinfo.cls}`;
-    card.classList.toggle('pos', vinfo.cls === 'up');
-    card.classList.toggle('neg', vinfo.cls === 'down');
-
-    const tsStr = (best.raw && best.raw.updated_at) ? best.raw.updated_at : (lastRun || '');
-    if (tsStr){
-      try{
-        const d = new Date(tsStr);
-        updEl.textContent='as of '+d.toLocaleString('ja-JP');
-        if (img && img.src){
-          const base = img.src.split('?')[0];
-          img.src = `${base}?v=${encodeURIComponent(tsStr)}`;
-        }
-      }catch(_){
-        updEl.textContent=`updated: ${tsStr}`;
-      }
-    } else {
-      updEl.textContent='';
-    }
-  }
+function fetchJson(u){ return fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null); }
+async function applyStats(key, card, img){
+  const pctEl=document.getElementById('pct-'+key);
+  const updEl=document.getElementById('upd-'+key);
+  const urls=statUrls(key);
+  const results=[];
+  await Promise.all(urls.map(async(u,i)=>{
+    const j = await fetchJson(u);
+    if(!j) return;
+    const v = pickPct(j,key);
+    if(v==null) return;
+    let ts=0; try{ ts=j.updated_at?Date.parse(j.updated_at):0; }catch{}
+    results.push({order:i, ts, v, raw:j});
+  }));
+  if(results.length===0){ pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return; }
+  const values=results.map(r=>r.v).sort((a,b)=>a-b);
+  const med = values.length%2 ? values[(values.length-1)/2] : (values[values.length/2-1]+values[values.length/2])/2;
+  const pool = results.filter(r=> !(Math.abs(r.v)>20 || Math.abs(r.v-med)>7)) || results;
+  pool.sort((a,b)=> b.ts-a.ts || a.order-b.order);
+  const best=pool[0];
+  const {t,c}=fmtPct(best.v);
+  pctEl.textContent=t; pctEl.className='pct '+c;
+  card.classList.toggle('pos',c==='up'); card.classList.toggle('neg',c==='down');
+  const ts=best.raw.updated_at;
+  if(ts){
+    try{ const d=new Date(ts); updEl.textContent='as of '+d.toLocaleString('ja-JP'); }catch{ updEl.textContent='updated: '+ts; }
+    if(img && img.src){ img.src = img.src.split('?')[0] + '?v=' + encodeURIComponent(ts); }
+  }else{ updEl.textContent=''; }
 }
 
-/* ============ 描画 ============ */
-function renderCard(idx){
+/* ====== 描画 ====== */
+function cardView(meta){
+  const key=meta.key, title=meta.label, flag=meta.flag||'🏳️', badge=meta.category||'', mkt=meta.market||'JP';
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
-  head.innerHTML=`<div class="flag">${idx.flag||'🏳️'}</div>
-    <div class="name">${idx.title}</div>
-    <div class="badge">${idx.badge||''}</div>
-    <div class="pct na" id="pct-${idx.id}">N/A</div>
-    <div class="updatedAt" id="upd-${idx.id}"></div>`;
+  head.innerHTML=`<div class="flag">${flag}</div>
+    <div class="name">${title}</div>
+    <div class="badge">${badge}</div>
+    <div class="pct na" id="pct-${key}">N/A</div>
+    <div class="updatedAt" id="upd-${key}"></div>`;
   card.appendChild(head);
 
-  const desc=document.createElement('div');desc.className='desc';desc.textContent=idx.desc||'';card.appendChild(desc);
+  const desc=document.createElement('div');desc.className='desc';
+  desc.textContent=meta.description||''; card.appendChild(desc);
 
   const chart=document.createElement('div');chart.className='chart';
   const img=document.createElement('img');img.loading='lazy';img.referrerPolicy='no-referrer';img.alt='画像が見つかりません';
-  chart.appendChild(img);card.appendChild(chart);
+  chart.appendChild(img); card.appendChild(chart);
 
   const acts=document.createElement('div');acts.className='actions';
   acts.innerHTML=[['intraday','Intraday'],['am','前場(AM)'],['7d','7日'],['1m','1ヶ月'],['1y','1年']]
-    .map(([key,label],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${key}">${label}</span>`).join('');
+    .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
-  (async()=>{
-    await switchTimeframe(idx, img, 'intraday');
-    applyStats(idx, card, img);
-  })();
+  (async()=>{ await setTimeframe(key, mkt, img, 'intraday'); applyStats(key, card, img); })();
 
-  acts.addEventListener('click', async (e)=>{
+  acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
-    acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    await switchTimeframe(idx, img, b.dataset.tf);
+    acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    await setTimeframe(key, mkt, img, b.dataset.tf);
   });
 
   return card;
 }
 
-(function init(){
+/* ====== 初期化 ====== */
+(async function init(){
   document.getElementById('year').textContent=(new Date()).getFullYear();
-  document.getElementById('syncMeta').textContent=`同期完了：${nowString()} ／ データ: charts/*`;
+  document.getElementById('syncMeta').textContent=`同期完了：${new Date().toLocaleString('ja-JP')} ／ データ: charts/*`;
+
+  // サイトの data/indexes.json を読み込み（キー/市場/説明を利用）
+  let metas=[];
+  try{
+    const r = await fetch('data/indexes.json', {cache:'no-store'});
+    metas = r.ok ? await r.json() : [];
+  }catch{}
+  // 並び順を固定
+  const order = ['ASTRA4','R-BANK9','AIN10','S-COIN+'];
+  metas.sort((a,b)=> order.indexOf(a.key)-order.indexOf(b.key));
+
   const grid=document.getElementById('cards');
-  INDICES.forEach(idx=>grid.appendChild(renderCard(idx)));
+  metas.forEach(m=> grid.appendChild(cardView(m)));
 })();
 </script>
 </body>
