@@ -78,14 +78,14 @@
   </div>
 
 <script>
-/* ================== 参照先 ================== */
+/* ====== 参照先・定義（前回と同じ。省略なしで貼っています） ====== */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
 
 const ORIG = {
   'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
   'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs', // alias
+  'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 const FOLDER = {
@@ -103,17 +103,14 @@ const IDX = [
   { key:'S-COIN+', label:'S-COIN+', flag:'🪙',  badge:'仮想資産関連', market:'CRYPTO', description:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
 ];
 
-/* ================== util ================== */
+/* ====== util ====== */
 const toSlug = k => String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-const normKey = k => String(k||'');
 const $ = (s,el=document)=>el.querySelector(s);
 function nowJP(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 async function fetchText(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.text():null; }catch{ return null; } }
 async function fetchJson(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.json():null; }catch{ return null; } }
 function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
 function fmtPct(v){ const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%'; return {t:s,c:v>0?'up':v<0?'down':'na'}; }
-
-/* 文字列から yyyy/mm/dd hh:mm を拾って Date にする */
 function parseJPDate(str){
   if(!str) return null;
   const m = String(str).match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})[ T](\d{2}):(\d{2})/);
@@ -122,11 +119,11 @@ function parseJPDate(str){
   return new Date(y,mo-1,d,h,mi,0);
 }
 
-/* ================== フォルダヘルパ ================== */
+/* ====== フォルダヘルパ ====== */
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
-/* last_run.txt をキャッシュしておく（サイト側の同期印） */
+/* last_run.txt をキャッシュ */
 const LAST_RUN = new Map();
 async function getLastRun(key){
   const folder = siteFolder(key);
@@ -138,13 +135,12 @@ async function getLastRun(key){
   return v;
 }
 
-/* ================== 画像候補（統一テーマ優先＋堅牢フォールバック） ================== */
+/* ====== 画像候補 ====== */
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
 
   if(tf==='intraday'){
-    // 統一テーマ（site）→ 元リポ（intraday→am/post）
     return [
       site?`${site}/intraday.png`:null,
       base?`${base}/${slug}_intraday.png`:null,
@@ -175,33 +171,31 @@ async function loadFirst(urls){
   return null;
 }
 
-/* ================== ％（鮮度チェック付きで決定） ================== */
+/* ====== ％（鮮度チェック付き） ====== */
 function percentSources(key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-  const txts = {
-    sitePost : site?`${site}/post_intraday.txt`:null,
-    siteIntra: site?`${site}/intraday.txt`:null,
-    origPost : base?`${base}/${slug}_post_intraday.txt`:null,
-    origIntra: base?`${base}/${slug}_intraday.txt`:null,
+  return {
+    txts: {
+      sitePost : site?`${site}/post_intraday.txt`:null,
+      siteIntra: site?`${site}/intraday.txt`:null,
+      origPost : base?`${base}/${slug}_post_intraday.txt`:null,
+      origIntra: base?`${base}/${slug}_intraday.txt`:null,
+    },
+    stats: [
+      site?`${site}/stats.json`:null,
+      base?`${base}/${slug}_stats.json`:null,
+    ].filter(Boolean)
   };
-  const stats = [
-    site?`${site}/stats.json`:null,
-    base?`${base}/${slug}_stats.json`:null,
-  ].filter(Boolean);
-  return {txts, stats};
 }
-
 function parsePctFromText(t){
   if(!t) return {v:null, ts:null};
   const m = String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/);
   const v = m? Number(m[0].replace('%','')) : null;
-  // 例: ▲ ASTRA4 日中スナップショット (2025/10/24 15:20)
   const tsM = String(t).match(/\((\d{4}[\/\-]\d{2}[\/\-]\d{2}[\sT]\d{2}:\d{2})\)/);
   const ts = tsM ? tsM[1] : null;
   return {v, ts};
 }
-
 function pickPctFromStat(j){
   if(!j) return null;
   const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
@@ -216,23 +210,19 @@ function pickPctFromStat(j){
   }
   return null;
 }
-
-/* post_intraday の鮮度判定： last_run より明らかに古いなら弾く（ゆるめに 1h 許容） */
 function isPostFresh(postTsStr, lastRunStr){
   if(!postTsStr) return false;
-  if(!lastRunStr) return true; // last_run が無いならチェック不能→採用
+  if(!lastRunStr) return true;
   const post = parseJPDate(postTsStr);
   const last = parseJPDate(lastRunStr);
   if(!post || !last) return true;
-  return (post.getTime() + 60*60*1000) >= last.getTime(); // +1h バッファ
+  return (post.getTime() + 60*60*1000) >= last.getTime();
 }
-
 async function resolvePercent(key, market){
   const cap = {JP:8, US:8, CRYPTO:30}[market] ?? 8;
   const {txts, stats} = percentSources(key);
   const lastRun = await getLastRun(key);
 
-  // 1) site post_intraday（鮮度OKなら最優先）
   if(txts.sitePost){
     const t = await fetchText(txts.sitePost);
     if(t){
@@ -240,7 +230,6 @@ async function resolvePercent(key, market){
       if(v!=null && isPostFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts};
     }
   }
-  // 2) site intraday
   if(txts.siteIntra){
     const t = await fetchText(txts.siteIntra);
     if(t){
@@ -248,7 +237,6 @@ async function resolvePercent(key, market){
       if(v!=null) return {v:clamp(v,-cap,cap), ts};
     }
   }
-  // 3) origin post_intraday（鮮度OKのときだけ）
   if(txts.origPost){
     const t = await fetchText(txts.origPost);
     if(t){
@@ -256,7 +244,6 @@ async function resolvePercent(key, market){
       if(v!=null && isPostFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts};
     }
   }
-  // 4) origin intraday
   if(txts.origIntra){
     const t = await fetchText(txts.origIntra);
     if(t){
@@ -264,7 +251,6 @@ async function resolvePercent(key, market){
       if(v!=null) return {v:clamp(v,-cap,cap), ts};
     }
   }
-  // 5) stats.json
   for(const u of stats){
     const j = await fetchJson(u);
     if(!j) continue;
@@ -274,7 +260,29 @@ async function resolvePercent(key, market){
   return {v:null, ts:null};
 }
 
-/* ================== カード描画 ================== */
+/* ====== ここが今回の追加：サイト intraday.png を使ってよいか判定 ====== */
+async function shouldUseSiteIntraday(key){
+  const folder = siteFolder(key);
+  if(!folder) return false;
+  const txt = await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`);
+  const lastRun = await getLastRun(key);
+
+  // intraday.txt 自体が無い → 使わない
+  if(!txt) return false;
+
+  const {v, ts} = parsePctFromText(txt);
+
+  // intraday.txt から％が拾えない（＝No data系 or 生成だけ）→ 使わない
+  if(v==null) return false;
+
+  // 時刻が last_run より明らかに古い（＝化石化）→ 使わない
+  if(!isPostFresh(ts, lastRun)) return false;
+
+  // ここまでパスしたらサイト intraday.png を採用
+  return true;
+}
+
+/* ====== カード描画 ====== */
 function renderCard(meta){
   const key=meta.key, market=meta.market||'JP';
   const card=document.createElement('article');card.className='card';
@@ -313,7 +321,21 @@ function renderCard(meta){
 }
 
 async function switchTf(key, img, tf){
-  const urls = imgCandidates(tf, key);
+  let urls = imgCandidates(tf, key);
+
+  // ★ intraday は「サイト画像を使ってよいか」判定して、ダメなら元リポへフォールバック
+  if(tf==='intraday'){
+    const folder = siteFolder(key);
+    const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
+    if(siteUrl && urls[0]===siteUrl){
+      const ok = await shouldUseSiteIntraday(key);
+      if(!ok){
+        // 先頭（サイト画像）を外して、元リポ候補を優先させる
+        urls = urls.slice(1);
+      }
+    }
+  }
+
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
 
@@ -321,7 +343,6 @@ async function switchTf(key, img, tf){
   if((IMG_SEQ.get(img)||0)!==req) return;
 
   if(url){
-    // サイト画像には last_run をキャッシュバスターに（あれば）
     let v = Date.now();
     const siteFolderName = siteFolder(key);
     if(siteFolderName && url.startsWith(`${SITE_CHARTS_BASE}/${siteFolderName}`)){
@@ -352,7 +373,7 @@ async function applyPercent(key, market, card){
   updEl.textContent = ts ? ('as of '+ts) : '';
 }
 
-/* ================== init ================== */
+/* ====== init ====== */
 (async function init(){
   document.getElementById('year').textContent=(new Date()).getFullYear();
   document.getElementById('syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
