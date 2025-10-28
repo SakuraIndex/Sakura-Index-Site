@@ -62,156 +62,131 @@
   </div>
 
 <script>
-const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-const ORIG = {
+const SITE_CHARTS_BASE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+const ORIG={
   'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
   'AIN-10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'AIN10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'AIN10' :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
-const FOLDER = { 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
+const FOLDER={'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+'};
 
-const IDX = [
-  { key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
-    description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-  { key:'R-BANK9', label:'R-BANK9', flag:'🇯🇵', badge:'地方銀行', market:'JP',
-    description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
-  { key:'AIN-10', label:'AIN-10', flag:'🇺🇸', badge:'AI関連10', market:'US',
-    description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。' },
-  { key:'S-COIN+', label:'S-COIN+', flag:'🪙', badge:'仮想資産関連', market:'CRYPTO',
-    description:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。' },
+const IDX=[
+  {key:'ASTRA4',label:'ASTRA4',flag:'🇯🇵',badge:'宇宙ベンチャー',market:'JP',description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
+  {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵',badge:'地方銀行',market:'JP',description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
+  {key:'AIN-10',label:'AIN-10',flag:'🇺🇸',badge:'AI関連10',market:'US',description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
+  {key:'S-COIN+',label:'S-COIN+',flag:'🪙',badge:'仮想資産関連',market:'CRYPTO',description:'暗号資産関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'},
 ];
 
-const toSlug = k => String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-function nowJP(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
-async function fetchText(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.text():null; }catch{ return null; } }
-async function fetchJson(u){ try{ const r=await fetch(u,{cache:'no-store'}); return r.ok?await r.json():null; }catch{ return null; } }
-function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
-function fmtPct(v){ const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%'; return {t:s,c:v>0?'up':v<0?'down':'na'}; }
+const toSlug=k=>String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
+function nowJP(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+async function fetchText(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}}
+async function fetchJson(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return {t:s,c:v>0?'up':v<0?'down':'na'};}
 
 const IMG_SEQ=new WeakMap();
-async function tryLoad(url){ return await new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.referrerPolicy='no-referrer'; i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now(); }); }
-async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
-
+async function tryLoad(url){return await new Promise(res=>{const i=new Image();i.onload=()=>res(true);i.onerror=()=>res(false);i.referrerPolicy='no-referrer';i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();});}
+async function loadFirst(urls){for(const u of urls){if(await tryLoad(u)) return u;}return null;}
 const LR_CACHE=new Map();
+function parseTs(t){if(!t) return 0;const d=new Date(t);const v=d.getTime();return Number.isFinite(v)?v:0;}
+
 async function getSiteLastRun(key){
-  const folder=FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')];
-  if(!folder) return null;
-  const k='site:'+folder;
-  if(LR_CACHE.has(k)) return LR_CACHE.get(k);
-  try{ const r=await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`,{cache:'no-store'});
-       const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;
-  }catch{ LR_CACHE.set(k,null); return null; }
+  const folder=FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]; if(!folder) return null;
+  const k='site:'+folder; if(LR_CACHE.has(k)) return LR_CACHE.get(k);
+  try{const r=await fetch(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`,{cache:'no-store'});
+      const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;}catch{LR_CACHE.set(k,null); return null;}
 }
 async function getRepoLastRun(key){
-  const base = ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')];
-  if(!base) return null;
-  const k='repo:'+base;
-  if(LR_CACHE.has(k)) return LR_CACHE.get(k);
-  try{ const r=await fetch(`${base}/_last_run.txt`,{cache:'no-store'});
-       const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;
-  }catch{ LR_CACHE.set(k,null); return null; }
-}
-function parseTs(t){ if(!t) return 0; const d=new Date(t); const v=d.getTime(); return Number.isFinite(v)?v:0; }
-
-/* どちらが新しいかを選ぶ */
-async function chooseProvider(key){
-  const [siteLR, repoLR] = await Promise.all([getSiteLastRun(key), getRepoLastRun(key)]);
-  const s = parseTs(siteLR), r=parseTs(repoLR);
-  if (s===0 && r===0) return {prov:'site', v:null};         // どちらも不明ならサイト優先
-  if (s>=r)            return {prov:'site', v:siteLR||null};
-  return {prov:'base', v:repoLR||null};
+  const base=ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]; if(!base) return null;
+  const k='repo:'+base; if(LR_CACHE.has(k)) return LR_CACHE.get(k);
+  try{const r=await fetch(`${base}/_last_run.txt`,{cache:'no-store'});
+      const t=r.ok?((await r.text()).trim()||null):null; LR_CACHE.set(k,t); return t;}catch{LR_CACHE.set(k,null); return null;}
 }
 
-/* 候補URL（provider に応じて切り替え） */
-function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
-function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
+/* ---------- intraday の新鮮判定を「テキストの実体時刻」で行う ---------- */
+const TXT_CACHE=new Map();
+/** テキスト（post_intraday.txt / intraday.txt）から % とタイムスタンプ（日時文字列 or ISO）を抽出し、数値時刻も返す */
+async function getTxtInfo(url){
+  if(!url) return null;
+  if(TXT_CACHE.has(url)) return TXT_CACHE.get(url);
+  const t=await fetchText(url); if(!t){TXT_CACHE.set(url,null); return null;}
+  const pctM = String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/);
+  const tsM1 = String(t).match(/\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/);  // 2025/10/28 15:58
+  const tsM2 = String(t).match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/); // ISO
+  const tsStr = tsM1?tsM1[0] : (tsM2?tsM2[0]:null);
+  const tsNum = parseTs(tsStr);
+  const info = {pct: pctM?Number(pctM[0].replace('%','')):null, tsStr, tsNum};
+  TXT_CACHE.set(url,info);
+  return info;
+}
 
-function imgCandidates(tf,key, prov){
+/** intraday の画像ソースを、サイト/元リポの post/intraday.txt の「新しい方」で決める */
+async function chooseIntradaySource(key){
+  const slug=toSlug(key);
+  const folder=FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]; const site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
+  const base=ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')];
+
+  const siteTxts = [ site?`${site}/post_intraday.txt`:null, site?`${site}/intraday.txt`:null ].filter(Boolean);
+  const repoTxts = [ base?`${base}/${slug}_post_intraday.txt`:null, base?`${base}/${slug}_intraday.txt`:null ].filter(Boolean);
+
+  const siteInfos = (await Promise.all(siteTxts.map(getTxtInfo))).filter(Boolean);
+  const repoInfos = (await Promise.all(repoTxts.map(getTxtInfo))).filter(Boolean);
+
+  const siteBestTs = siteInfos.length? Math.max(...siteInfos.map(x=>x.tsNum||0)) : 0;
+  const repoBestTs = repoInfos.length? Math.max(...repoInfos.map(x=>x.tsNum||0)) : 0;
+
+  if(siteBestTs===0 && repoBestTs===0){
+    // フォールバック: last_run で判断
+    const [sLR,rLR]=await Promise.all([getSiteLastRun(key),getRepoLastRun(key)]);
+    const s=parseTs(sLR), r=parseTs(rLR);
+    return (s>=r) ? {prov:'site', v:sLR||Date.now()} : {prov:'base', v:rLR||Date.now()};
+  }
+  return (siteBestTs>=repoBestTs) ? {prov:'site', v:null} : {prov:'base', v:null};
+}
+
+/** 長期の画像は last_run で新鮮な方 */
+async function chooseLongSource(key){
+  const [sLR,rLR]=await Promise.all([getSiteLastRun(key),getRepoLastRun(key)]);
+  const s=parseTs(sLR), r=parseTs(rLR);
+  if(s===0 && r===0) return {prov:'site', v:null};
+  return (s>=r) ? {prov:'site', v:sLR||null} : {prov:'base', v:rLR||null};
+}
+
+function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
+function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
+
+function imgCandidates(tf,key,prov){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-
   if(tf==='intraday'){
-    if (prov==='site'){
-      return [
-        site?`${site}/intraday.png`:null,
-        base?`${base}/${slug}_post_intraday.png`:null,
-        base?`${base}/${slug}_intraday.png`:null,
-        base?`${base}/${slug}_intraday_am.png`:null,
-      ].filter(Boolean);
-    } else {
-      return [
-        base?`${base}/${slug}_post_intraday.png`:null,
-        base?`${base}/${slug}_intraday.png`:null,
-        base?`${base}/${slug}_intraday_am.png`:null,
-        site?`${site}/intraday.png`:null,
-      ].filter(Boolean);
+    if(prov==='site'){
+      return [ site?`${site}/intraday.png`:null, base?`${base}/${slug}_post_intraday.png`:null, base?`${base}/${slug}_intraday.png`:null, base?`${base}/${slug}_intraday_am.png`:null ].filter(Boolean);
+    }else{
+      return [ base?`${base}/${slug}_post_intraday.png`:null, base?`${base}/${slug}_intraday.png`:null, base?`${base}/${slug}_intraday_am.png`:null, site?`${site}/intraday.png`:null ].filter(Boolean);
     }
   }
-  const map={'7d':'7d','1m':'1m','1y':'1y'};
-  const suff=map[tf];
-  if (prov==='site'){
-    return [ site?`${site}/${suff}.png`:null, base?`${base}/${slug}_${suff}.png`:null ].filter(Boolean);
-  } else {
-    return [ base?`${base}/${slug}_${suff}.png`:null, site?`${site}/${suff}.png`:null ].filter(Boolean);
-  }
+  const map={'7d':'7d','1m':'1m','1y':'1y'}, suff=map[tf];
+  if(prov==='site'){ return [ site?`${site}/${suff}.png`:null, base?`${base}/${slug}_${suff}.png`:null ].filter(Boolean); }
+  return [ base?`${base}/${slug}_${suff}.png`:null, site?`${site}/${suff}.png`:null ].filter(Boolean);
 }
 
 function percentSources(key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-  const txts=[
-    site?`${site}/post_intraday.txt`:null,
-    base?`${base}/${slug}_post_intraday.txt`:null,
-    site?`${site}/intraday.txt`:null,
-    base?`${base}/${slug}_intraday.txt`:null,
-  ].filter(Boolean);
-  const stats=[
-    site?`${site}/stats.json`:null,
-    `${SITE_CHARTS_BASE}/${slug}_stats.json`,
-    `${SITE_CHARTS_BASE}/${key.toLowerCase()}_stats.json`,
-    base?`${base}/${slug}_stats.json`:null,
-    base?`${base}/${key.toLowerCase()}_stats.json`:null,
-  ].filter(Boolean);
+  const txts=[ site?`${site}/post_intraday.txt`:null, base?`${base}/${slug}_post_intraday.txt`:null, site?`${site}/intraday.txt`:null, base?`${base}/${slug}_intraday.txt`:null ].filter(Boolean);
+  const stats=[ site?`${site}/stats.json`:null, `${SITE_CHARTS_BASE}/${slug}_stats.json`, `${SITE_CHARTS_BASE}/${key.toLowerCase()}_stats.json`, base?`${base}/${slug}_stats.json`:null, base?`${base}/${key.toLowerCase()}_stats.json`:null ].filter(Boolean);
   return {txts,stats};
 }
-function parsePctFromText(t){
-  if(!t) return {v:null,ts:null};
-  const m=String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/);
-  const v=m?Number(m[0].replace('%','')):null;
-  const tsM=String(t).match(/\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/);
-  return {v,ts:tsM?tsM[0]:null};
-}
-function pickPctFromStat(j){
-  if(!j) return null;
-  const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
-  for(const f of fields){
-    if(j[f]==null) continue;
-    let n=Number(j[f]); if(!Number.isFinite(n)) continue;
-    const unit=(j.unit||'').toLowerCase();
-    if(unit==='ratio') n*=100; else if(unit==='percent'||unit==='%'){} else if(Math.abs(n)<=1.2) n*=100;
-    return n;
-  }
-  return null;
-}
-async function resolvePercent(key,market){
-  const cap={JP:8,US:8,CRYPTO:30}[market]??8;
-  const {txts,stats}=percentSources(key);
-  for(const u of txts){
-    const t=await fetchText(u);
-    if(!t) continue;
-    const {v,ts}=parsePctFromText(t);
-    if(v==null) continue;
-    return {v:clamp(v,-cap,cap),ts};
-  }
-  for(const u of stats){
-    const j=await fetchJson(u); if(!j) continue;
-    const v=pickPctFromStat(j); if(v==null) continue;
-    const ts=j.updated_at||null; return {v:clamp(v,-cap,cap),ts};
-  }
-  return {v:null,ts:null};
-}
+function parsePctFromText(t){ if(!t) return {v:null,ts:null}; const m=String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/); const v=m?Number(m[0].replace('%','')):null;
+  const tsM1=String(t).match(/\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/); const tsM2=String(t).match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/); const ts=tsM1?tsM1[0]:(tsM2?tsM2[0]:null); return {v,ts}; }
+function pickPctFromStat(j){ if(!j) return null; const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
+  for(const f of fields){ if(j[f]==null) continue; let n=Number(j[f]); if(!Number.isFinite(n)) continue; const unit=(j.unit||'').toLowerCase(); if(unit==='ratio') n*=100; else if(unit==='percent'||unit==='%'){} else if(Math.abs(n)<=1.2) n*=100; return n;} return null; }
+async function resolvePercent(key,market){ const cap={JP:8,US:8,CRYPTO:30}[market]??8; const {txts,stats}=percentSources(key);
+  for(const u of txts){ const t=await fetchText(u); if(!t) continue; const {v,ts}=parsePctFromText(t); if(v==null) continue; return {v:clamp(v,-cap,cap),ts}; }
+  for(const u of stats){ const j=await fetchJson(u); if(!j) continue; const v=pickPctFromStat(j); if(v==null) continue; const ts=j.updated_at||null; return {v:clamp(v,-cap,cap),ts}; }
+  return {v:null,ts:null}; }
 
 function renderCard(meta){
   const key=meta.key, market=meta.market||'JP';
@@ -233,33 +208,33 @@ function renderCard(meta){
   card.appendChild(acts);
 
   (async()=>{ await switchTf(key,img,'intraday'); await applyPercent(key,market,card); })();
-
   acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
     acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
     await switchTf(key,img,b.dataset.tf);
     if(b.dataset.tf==='intraday'){ await applyPercent(key,market,card); }
   });
-
   return card;
 }
 
 async function switchTf(key,img,tf){
-  const {prov,v:lrPrefer} = await chooseProvider(key);
+  // 1) ソース選択
+  const sel = (tf==='intraday') ? await chooseIntradaySource(key) : await chooseLongSource(key);
+  const prov = sel.prov, lrPref = sel.v;
+
+  // 2) 候補 URL
   const urls=imgCandidates(tf,key,prov);
+
+  // 3) ロード & キャッシュバスター
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
   const url=await loadFirst(urls);
   if((IMG_SEQ.get(img)||0)!==req) return;
 
   if(url){
-    let v = lrPrefer || Date.now();
-    // サイト画像を使う、またはロングタームの場合も last_run を採用
-    if(url.startsWith(SITE_CHARTS_BASE)){
-      const s = await getSiteLastRun(key); if(s) v=s;
-    }else if(tf!=='intraday'){
-      const s = await getSiteLastRun(key); if(s) v=s;
-    }
+    let v = lrPref || Date.now();
+    if(url.startsWith(SITE_CHARTS_BASE)){ const s=await getSiteLastRun(key); if(s) v=s; }
+    else if(tf!=='intraday'){ const s=await getSiteLastRun(key); if(s) v=s; }
     img.src=url+(url.includes('?')?'&':'?')+'v='+encodeURIComponent(v);
     img.alt='';
   }else{
