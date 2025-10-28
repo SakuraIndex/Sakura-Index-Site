@@ -134,6 +134,25 @@ const $ = (s,el=document)=>el.querySelector(s);
 const nowString = ()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const toSlug = id => id.toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
 
+// フォルダの last_run.txt を1回だけ取得してキャッシュ
+const LASTRUN_CACHE = new Map();
+async function getSiteLastRun(id){
+  const folder = SITE_FOLDER[id];
+  if (!folder) return null;
+  if (LASTRUN_CACHE.has(folder)) return LASTRUN_CACHE.get(folder);
+  try{
+    const url = `${SITE_CHARTS_BASE}/${folder}/last_run.txt`;
+    const r = await fetch(url, { cache:'no-cache' });
+    if (!r.ok) throw new Error(r.status);
+    const txt = (await r.text()).trim();
+    LASTRUN_CACHE.set(folder, txt);
+    return txt;
+  }catch(_){
+    LASTRUN_CACHE.set(folder, null);
+    return null;
+  }
+}
+
 // レース対策付き画像ロード
 const IMG_REQ_SEQ = new WeakMap();
 async function loadFirstImageUrl(urlList){
@@ -166,7 +185,13 @@ async function switchTimeframe(idx, img, tf){
   if ((IMG_REQ_SEQ.get(img) || 0) !== reqId) return;
 
   if (url){
-    img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(reqId);
+    // 7d/1m/1y はサイト側の last_run.txt を v= に採用（キャッシュバスター）
+    let v = reqId;
+    if (tf === '7d' || tf === '1m' || tf === '1y'){
+      const lr = await getSiteLastRun(idx.id);
+      if (lr) v = lr;
+    }
+    img.src = url + (url.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
     img.alt = '';
   } else {
     img.removeAttribute('src');
