@@ -198,7 +198,8 @@ function parsePctFromText(t){
 }
 function pickPctFromStat(j){
   if(!j) return null;
-  const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct'];
+  // ★ AIN-10対応で pct_1d / rtn_1d を追加
+  const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','pct_1d','rtn_1d','change_pct','change_percent','rtn_pct','today_pct'];
   for(const f of fields){
     if(j[f]==null) continue;
     let n = Number(j[f]); if(!Number.isFinite(n)) continue;
@@ -216,8 +217,16 @@ function isFresh(postTsStr, lastRunStr){
   const post = parseJPDate(postTsStr);
   const last = parseJPDate(lastRunStr);
   if(!post || !last) return true;
-  // post が last_run より 1h 以上古いなら NG
   return (post.getTime() + 60*60*1000) >= last.getTime();
+}
+
+/* txtのタイムスタンプだけ取るヘルパ */
+async function getTxtTs(u){
+  if(!u) return null;
+  const t = await fetchText(u);
+  if(!t) return null;
+  const {ts} = parsePctFromText(t);
+  return ts;
 }
 
 /* ====== サイト intraday.png を使ってよいか（No data/古さを弾く） ====== */
@@ -231,6 +240,52 @@ async function shouldUseSiteIntraday(key){
   if(v==null) return false;
   if(!isFresh(ts, lastRun)) return false;
   return true;
+}
+
+/* ====== intraday画像：サイト/元リポの鮮度比較で選択 ====== */
+async function chooseIntradayUrls(key){
+  const slug = toSlug(key);
+  const folder = siteFolder(key);
+  const base = originBase(key);
+
+  const site = folder?{
+    png: `${SITE_CHARTS_BASE}/${folder}/intraday.png`,
+    post: `${SITE_CHARTS_BASE}/${folder}/post_intraday.txt`,
+    intra:`${SITE_CHARTS_BASE}/${folder}/intraday.txt`,
+    lastRun: await getLastRun(key),
+  }:null;
+
+  const orig = base?{
+    pngs: [
+      `${base}/${slug}_intraday.png`,
+      `${base}/${slug}_intraday_am.png`,
+      `${base}/${slug}_post_intraday.png`,
+    ],
+    post: `${base}/${slug}_post_intraday.txt`,
+    intra:`${base}/${slug}_intraday.txt`,
+  }:null;
+
+  // タイムスタンプを取得
+  let siteTs = null;
+  if(site){
+    const [p,i] = await Promise.all([getTxtTs(site.post), getTxtTs(site.intra)]);
+    siteTs = p || i || null;
+  }
+  let origTs = null;
+  if(orig){
+    const [p,i] = await Promise.all([getTxtTs(orig.post), getTxtTs(orig.intra)]);
+    origTs = p || i || null;
+  }
+
+  // サイトpngが鮮度OK & (サイトが新しい or 元リポ情報なし) ならサイトを先頭に
+  const siteUsable = site && siteTs && isFresh(siteTs, site.lastRun);
+  const siteNewer  = siteTs && (!origTs || (parseJPDate(siteTs) > parseJPDate(origTs)));
+
+  const urls = [];
+  if(siteUsable && siteNewer) urls.push(site.png);
+  if(orig && orig.pngs) urls.push(...orig.pngs);
+  if(site && !(siteUsable && siteNewer)) urls.unshift(site.png); // 最後の保険としてサイトも候補に
+  return urls.filter(Boolean);
 }
 
 /* ====== ★ ここが肝：％決定ロジック（AIN-10だけ stats を最優先） ====== */
@@ -323,14 +378,9 @@ function renderCard(meta){
 async function switchTf(key, img, tf){
   let urls = imgCandidates(tf, key);
 
-  // intraday は「サイト画像の鮮度」を確認し、ダメなら元リポにフォールバック
   if(tf==='intraday'){
-    const folder = siteFolder(key);
-    const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
-    if(siteUrl && urls[0]===siteUrl){
-      const ok = await shouldUseSiteIntraday(key);
-      if(!ok){ urls = urls.slice(1); }
-    }
+    // サイト/元リポの鮮度を比較して並び替え
+    urls = await chooseIntradayUrls(key);
   }
 
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
@@ -340,7 +390,7 @@ async function switchTf(key, img, tf){
   if((IMG_SEQ.get(img)||0)!==req) return;
 
   if(url){
-    // サイト側画像は last_run をバージョンIDに使い、古い画像キャッシュを避ける
+    // サイト側画像は last_run をバージョンIDに
     let v = Date.now();
     const siteFolderName = siteFolder(key);
     if(siteFolderName && url.startsWith(`${SITE_CHARTS_BASE}/${siteFolderName}`)){
