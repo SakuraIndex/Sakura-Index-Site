@@ -80,23 +80,22 @@
 <script>
 /* ====== 参照先 ====== */
 const SITE_CHARTS_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-
 const ORIG = {
   'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
   'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
   'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'AIN10'  : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+' : 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+  'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 const FOLDER = {
   'ASTRA4' : 'ASTRA4',
   'R-BANK9': 'R_BANK9',
   'AIN-10' : 'AIN10',
   'AIN10'  : 'AIN10',
-  'S-COIN+' : 'S-COIN+',
+  'S-COIN+': 'S-COIN+',
 };
 
-// S-COIN+ は日本株の仮想通貨関連株（取引時間 9:00-15:30）として JP 扱い
+// S-COIN+ は「日本株」の仮想通貨関連株指数（9:00–15:30 JST）
 const IDX = [
   { key:'ASTRA4',  label:'ASTRA4',  flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP', description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
   { key:'R-BANK9', label:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',       market:'JP', description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。' },
@@ -117,23 +116,31 @@ function parseJPDate(str){
   const m = String(str).match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})[ T](\d{2}):(\d{2})/);
   if(!m) return null;
   const [_,y,mo,d,h,mi]=m.map(Number);
-  return new Date(y,mo-1,d,h,mi,0);
+  return new Date(y,mo-1,d,h,mi,0); // JST 前提の表示文字列だがブラウザ日付で十分
 }
-function isFresh(postTsStr, lastRunStr){
-  // 「鮮度±1h」: テキスト時刻 +1h >= last_run なら “新鮮”
+function sameDayJST(a,b){
+  if(!a||!b) return false;
+  const aj = new Date(a.getTime()+9*3600*1000);
+  const bj = new Date(b.getTime()+9*3600*1000);
+  return aj.getUTCFullYear()===bj.getUTCFullYear() &&
+         aj.getUTCMonth()===bj.getUTCMonth() &&
+         aj.getUTCDate()===bj.getUTCDate();
+}
+function isFreshJP(postTsStr, lastRunStr){
   if(!postTsStr) return false;
   if(!lastRunStr) return true;
   const post = parseJPDate(postTsStr);
   const last = parseJPDate(lastRunStr);
   if(!post || !last) return true;
-  return (post.getTime() + 60*60*1000) >= last.getTime();
+  if(!sameDayJST(post,last)) return false;
+  return Math.abs(post.getTime()-last.getTime()) <= 60*60*1000; // ±1h
 }
 
-/* ====== フォルダヘルパ ====== */
+/* ====== フォルダ ====== */
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
-/* last_run.txt をキャッシュ */
+/* last_run.txt キャッシュ */
 const LAST_RUN = new Map();
 async function getLastRun(key){
   const folder = siteFolder(key);
@@ -165,7 +172,7 @@ function imgCandidates(tf,key){
   ].filter(Boolean);
 }
 
-/* 画像ロード（成功した最初のURLを返す） */
+/* 画像ロード */
 const IMG_SEQ=new WeakMap();
 function tryLoad(url){
   return new Promise(res=>{
@@ -181,24 +188,47 @@ async function loadFirst(urls){
   return null;
 }
 
-/* ====== ％ソース ====== */
-function percentSources(key){
+/* ====== intraday.png をサイトから使ってよいか ====== */
+async function shouldUseSiteIntraday(key){
+  const folder = siteFolder(key);
+  if(!folder) return false;
+  const txt = await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`);
+  if(!txt) return false;
+  if(/no\s*data/i.test(txt)) return false;
+  const {ts} = parsePctFromText(txt);
+  const last = await getLastRun(key);
+  return isFreshJP(ts,last); // 同日±1h のときだけ採用
+}
+
+/* ====== ％の出所候補（優先順を切替） ====== */
+function percentSources(key, prefer /* 'site' | 'orig' */){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-  const txts = [
+
+  const siteTxts = [
     site?`${site}/post_intraday.txt`:null,
     site?`${site}/intraday.txt`:null,
+  ].filter(Boolean);
+  const origTxts = [
     base?`${base}/${slug}_post_intraday.txt`:null,
     base?`${base}/${slug}_intraday.txt`:null,
   ].filter(Boolean);
-  const stats = [
-    site?`${site}/stats.json`:null,
-    base?`${base}/${slug}_stats.json`:null,
-  ].filter(Boolean);
+  const siteStats = site?`${site}/stats.json`:null;
+  const origStats = base?`${base}/${slug}_stats.json`:null;
+
+  const txts = (prefer==='orig')
+    ? [...origTxts, ...siteTxts]
+    : [...siteTxts, ...origTxts];
+
+  const stats = (prefer==='orig')
+    ? [origStats, siteStats].filter(Boolean)
+    : [siteStats, origStats].filter(Boolean);
+
   return {txts, stats};
 }
 function parsePctFromText(t){
   if(!t) return {v:null, ts:null};
+  if(/no\s*data/i.test(t)) return {v:null, ts:null};
   const m = String(t).match(/[+\-]?\d+(?:\.\d+)?\s*%/);
   const v = m? Number(m[0].replace('%','')) : null;
   const tsM = String(t).match(/\((\d{4}[\/\-]\d{2}[\/\-]\d{2}[\sT]\d{2}:\d{2})\)/);
@@ -220,55 +250,39 @@ function pickPctFromStat(j){
   return null;
 }
 
-/* ====== ％決定（鮮度優先→フォールバック） ====== */
-async function resolvePercent(key, market){
+/* ====== ％決定（画像の出所を優先） ====== */
+async function resolvePercent(key, market, preferOrigin /* 'site'|'orig' */){
   const cap = {JP:8, US:8, CRYPTO:30}[market] ?? 8;
-  const {txts, stats} = percentSources(key);
+  const {txts, stats} = percentSources(key, preferOrigin);
   const lastRun = await getLastRun(key);
 
-  // 1st: 鮮度±1hが合うもの
-  for (const u of txts) {
-    const t = await fetchText(u); if(!t) continue;
-    if (/no\s*data/i.test(t)) continue;
-    const {v, ts} = parsePctFromText(t);
-    if (v!=null && isFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts};
+  // 1st: 同日±1h の新しいテキスト
+  for(const u of txts){
+    const t=await fetchText(u); if(!t) continue;
+    const {v, ts}=parsePctFromText(t);
+    if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap), ts};
   }
-  for (const u of stats) {
-    const j = await fetchJson(u); if(!j) continue;
+  // 2nd: stats を採用（鮮度はあればチェック）
+  for(const u of stats){
+    const j=await fetchJson(u); if(!j) continue;
     const v = pickPctFromStat(j);
-    if (v!=null) {
-      const ts = j.updated_at || null;
-      if (!lastRun || isFresh(ts, lastRun)) return {v:clamp(v,-cap,cap), ts};
+    if(v!=null){
+      const ts=j.updated_at||null;
+      if(!lastRun || isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap), ts};
     }
   }
-
-  // 2nd: 鮮度条件を外して値を拾う（N/A回避）
-  for (const u of txts) {
-    const t = await fetchText(u); if(!t) continue;
-    if (/no\s*data/i.test(t)) continue;
-    const {v, ts} = parsePctFromText(t);
-    if (v!=null) return {v:clamp(v,-cap,cap), ts};
+  // 3rd: 鮮度条件を外してテキスト→stats の順で拾う（N/A回避）
+  for(const u of txts){
+    const t=await fetchText(u); if(!t) continue;
+    const {v, ts}=parsePctFromText(t);
+    if(v!=null) return {v:clamp(v,-cap,cap), ts};
   }
-  for (const u of stats) {
-    const j = await fetchJson(u); if(!j) continue;
+  for(const u of stats){
+    const j=await fetchJson(u); if(!j) continue;
     const v = pickPctFromStat(j);
-    if (v!=null) return {v:clamp(v,-cap,cap), ts:j.updated_at||null};
+    if(v!=null) return {v:clamp(v,-cap,cap), ts:j.updated_at||null};
   }
-
   return {v:null, ts:null};
-}
-
-/* ====== サイト intraday を使うか判定（画像優先 / No data 明示のみ除外） ====== */
-async function shouldUseSiteIntraday(key){
-  const folder = siteFolder(key);
-  if(!folder) return false;
-
-  // テキストが "No data" なら使わない
-  const txt = await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`);
-  if (txt && /no\s*data/i.test(txt)) return false;
-
-  // テキストが無くても、画像が存在するなら使う（loadFirstで最終確認される）
-  return true;
 }
 
 /* ====== カード描画 ====== */
@@ -295,15 +309,15 @@ function renderCard(meta){
   card.appendChild(acts);
 
   (async()=>{
-    await switchTf(key, img, 'intraday');
-    await applyPercent(key, market, card);
+    const origin=await switchTf(key, img, 'intraday');
+    await applyPercent(key, market, card, origin);
   })();
 
   acts.addEventListener('click', async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
     acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
-    await switchTf(key, img, b.dataset.tf);
-    if(b.dataset.tf==='intraday'){ await applyPercent(key, market, card); }
+    const origin=await switchTf(key, img, b.dataset.tf);
+    if(b.dataset.tf==='intraday'){ await applyPercent(key, market, card, origin); }
   });
 
   return card;
@@ -311,21 +325,26 @@ function renderCard(meta){
 
 async function switchTf(key, img, tf){
   let urls = imgCandidates(tf, key);
+  let origin='site';
 
-  if (tf === 'intraday') {
+  if(tf==='intraday'){
     const folder = siteFolder(key);
     const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
-    if (siteUrl && urls[0] === siteUrl) {
-      const ok = await shouldUseSiteIntraday(key);
-      if (!ok) urls = urls.slice(1); // No data 明示時のみフォールバック
+    let useSite=true;
+    if(siteUrl && urls[0]===siteUrl){
+      useSite = await shouldUseSiteIntraday(key);
+      if(!useSite) urls = urls.slice(1); // 原リポ優先へ
     }
+    origin = useSite?'site':'orig';
+  }else{
+    origin = 'site'; // 長期系はサイト生成を優先
   }
 
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
 
   const url = await loadFirst(urls);
-  if((IMG_SEQ.get(img)||0)!==req) return;
+  if((IMG_SEQ.get(img)||0)!==req) return origin;
 
   if(url){
     let v = Date.now();
@@ -340,14 +359,16 @@ async function switchTf(key, img, tf){
     img.removeAttribute('src');
     img.alt='画像が見つかりません';
   }
+  img.dataset.origin = origin;
   requestAnimationFrame(()=>img.style.opacity='1');
+  return origin;
 }
 
-async function applyPercent(key, market, card){
+async function applyPercent(key, market, card, preferOrigin){
   const pctEl = document.getElementById('pct-'+key);
   const updEl = document.getElementById('upd-'+key);
 
-  const {v, ts} = await resolvePercent(key, market);
+  const {v, ts} = await resolvePercent(key, market, preferOrigin||'site');
   if(v==null){
     pctEl.textContent='N/A'; pctEl.className='pct na';
     updEl.textContent=''; card.classList.remove('pos','neg'); return;
