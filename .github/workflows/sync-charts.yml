@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0          # rebaseのため履歴全取得
           persist-credentials: true
 
       - name: Pull latest charts from index repos
@@ -34,7 +34,6 @@ jobs:
           try_fetch(){ url="$1"; out="$2"; curl -fsSL "$url" -o "$out" >/dev/null 2>&1 || return 1; }
 
           copy_first_hit(){
-            # $1: base, $2: dst_file, $3..: path candidates
             local base="$1"; shift
             local out="$1"; shift
             local hit=""
@@ -53,26 +52,25 @@ jobs:
           b_ain="https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs"
           b_scp="https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs"
 
-          # ---------- ASTRA4 (level) ----------
-          fetch "$b_ast/astra4_1d.png"    "$d_ast/intraday.png" || true
-          fetch "$b_ast/astra4_7d.png"    "$d_ast/7d.png"       || true
-          fetch "$b_ast/astra4_1m.png"    "$d_ast/1m.png"       || true
-          fetch "$b_ast/astra4_1y.png"    "$d_ast/1y.png"       || true
+          # ---------- ASTRA4 ----------
+          fetch "$b_ast/astra4_1d.png" "$d_ast/intraday.png" || true
+          fetch "$b_ast/astra4_7d.png" "$d_ast/7d.png" || true
+          fetch "$b_ast/astra4_1m.png" "$d_ast/1m.png" || true
+          fetch "$b_ast/astra4_1y.png" "$d_ast/1y.png" || true
           copy_first_hit "$b_ast" "$d_ast/intraday.txt" \
             "astra4_post_intraday.txt" "astra4_intraday_post.txt" "astra4_intraday_am.txt" "astra4_intraday.txt"
-          fetch "$b_ast/astra4_stats.json" "$d_ast/stats.json"   || true
+          fetch "$b_ast/astra4_stats.json" "$d_ast/stats.json" || true
 
-          # ---------- R-BANK9 (%) ----------
-          fetch "$b_rbk/rbank9_1d.png"    "$d_rbk/intraday.png" || true
-          fetch "$b_rbk/rbank9_7d.png"    "$d_rbk/7d.png"       || true
-          fetch "$b_rbk/rbank9_1m.png"    "$d_rbk/1m.png"       || true
-          fetch "$b_rbk/rbank9_1y.png"    "$d_rbk/1y.png"       || true
+          # ---------- R-BANK9 ----------
+          fetch "$b_rbk/rbank9_1d.png" "$d_rbk/intraday.png" || true
+          fetch "$b_rbk/rbank9_7d.png" "$d_rbk/7d.png" || true
+          fetch "$b_rbk/rbank9_1m.png" "$d_rbk/1m.png" || true
+          fetch "$b_rbk/rbank9_1y.png" "$d_rbk/1y.png" || true
           copy_first_hit "$b_rbk" "$d_rbk/intraday.txt" \
             "rbank9_post_intraday.txt" "rbank9_intraday_post.txt" "rbank9_intraday_am.txt" "rbank9_intraday.txt"
-          fetch "$b_rbk/rbank9_stats.json" "$d_rbk/stats.json"   || true
+          fetch "$b_rbk/rbank9_stats.json" "$d_rbk/stats.json" || true
 
-          # ---------- AIN-10 (%) ----------
-          # 命名ゆらぎに対応: ain10 / ain_10 / ain-10
+          # ---------- AIN-10 ----------
           for n in ain10 ain_10 ain-10; do
             try_fetch "$b_ain/${n}_1d.png" "$d_ain/intraday.png" && break || true
           done
@@ -92,8 +90,7 @@ jobs:
           copy_first_hit "$b_ain" "$d_ain/stats.json" \
             "ain10_stats.json" "ain_10_stats.json" "ain-10_stats.json"
 
-          # ---------- S-COIN+ (%) ----------
-          # 命名ゆらぎ: scoin_plus / s_coin_plus / s-coin_plus
+          # ---------- S-COIN+ ----------
           for n in scoin_plus s_coin_plus s-coin_plus; do
             try_fetch "$b_scp/${n}_1d.png" "$d_scp/intraday.png" && break || true
           done
@@ -113,19 +110,28 @@ jobs:
           copy_first_hit "$b_scp" "$d_scp/stats.json" \
             "scoin_plus_stats.json" "s_coin_plus_stats.json" "s-coin_plus_stats.json"
 
-          # last_run（キャッシュバスター用）
+          # ---------- キャッシュバスター ----------
           date -u +'%Y-%m-%dT%H:%M:%SZ' | tee \
             "$d_ast/last_run.txt" "$d_rbk/last_run.txt" "$d_ain/last_run.txt" "$d_scp/last_run.txt" >/dev/null
 
-          # 旧配置の掃除（任意）
+          # ---------- 清掃 ----------
           git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
 
+          # ---------- commit & safe push ----------
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add docs/charts/**/*
+
           if git diff --cached --quiet; then
-            echo "No changes."
-          else
-            git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats + intraday.txt"
-            git push
+            echo "No changes detected."
+            exit 0
           fi
+
+          git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats + intraday.txt"
+
+          echo "Pulling latest main branch for rebase..."
+          git pull --rebase origin main || true
+
+          echo "Pushing updates safely..."
+          git push --force-with-lease origin HEAD:main || echo "Push skipped or failed, likely concurrent run."
