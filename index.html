@@ -95,16 +95,13 @@ const FOLDER = {
   'S-COIN+': 'S-COIN+',
 };
 
-/* ====== 各指数ポリシー（ココが“負の相関”対策） ======
-   img:  'smart'…site(鮮度OK)→orig、 'orig'…常に原リポ
-   pct:  'smart' or 'orig'（どちらを優先して読むか）
-   allowStats: stats.json を ％計算の候補に入れるか */
+/* ====== ポリシー ====== */
 const POLICY = {
   'ASTRA4' : {img:'smart', pct:'smart', allowStats:true},
   'R-BANK9': {img:'smart', pct:'smart', allowStats:true},
-  'AIN-10' : {img:'orig',  pct:'orig',  allowStats:false}, // ← 原リポテキストのみ
+  'AIN-10' : {img:'orig',  pct:'orig',  allowStats:false},
   'AIN10'  : {img:'orig',  pct:'orig',  allowStats:false},
-  'S-COIN+': {img:'smart', pct:'smart', allowStats:false},  // ← テキストのみ（stats不可）
+  'S-COIN+': {img:'smart', pct:'smart', allowStats:false},  // テキストのみ
 };
 
 // S-COIN+ は日本株（場：9:00–15:30 JST）
@@ -151,15 +148,35 @@ function isFreshJP(postTsStr, lastRunStr){
 function siteFolder(key){ return FOLDER[key] || FOLDER[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 function originBase(key){ return ORIG[key] || ORIG[key.replace(/[^A-Z0-9+]/gi,'')] || null; }
 
-// 原リポの実ファイル接頭辞を列挙
 function fileStem(key){
   if(key==='AIN-10' || key==='AIN10') return 'ain10';
   if(key==='ASTRA4') return 'astra4';
   if(key==='R-BANK9') return 'rbank9';
-  if(key==='S-COIN+') return 's_coin'; // 広く使われる接頭辞を網羅
+  if(key==='S-COIN+') return 's_coin'; // 実運用の標準形
   return String(key).toLowerCase().replace(/\W+/g,'');
 }
+function sCoinNameSet(kind, suf){
+  // S-COIN+ は 's_coin' / 's_coin_plus' 両対応
+  const p = ['s_coin','s_coin_plus'];
+  if(kind==='img_intraday'){
+    return p.flatMap(stem=>[
+      `${stem}_post_intraday.png`,
+      `${stem}_intraday_post.png`,
+      `${stem}_intraday.png`,
+    ]);
+  }
+  if(kind==='txt_intraday'){
+    return p.flatMap(stem=>[
+      `${stem}_post_intraday.txt`,
+      `${stem}_intraday_post.txt`,
+      `${stem}_intraday.txt`,
+    ]);
+  }
+  if(kind==='img_lt') return p.map(stem=>`${stem}_${suf}.png`);
+  return [];
+}
 function nameCandidates(key, kind, suf){
+  if(key==='S-COIN+') return sCoinNameSet(kind, suf);
   const stem = fileStem(key);
   if(kind==='img_intraday'){
     return [
@@ -178,12 +195,6 @@ function nameCandidates(key, kind, suf){
   }
   if(kind==='img_lt'){
     return [`${stem}_${suf}.png`];
-  }
-  if(kind==='txt_post'){
-    return [
-      `${stem}_post_intraday.txt`,
-      `${stem}_intraday_post.txt`,
-    ];
   }
   return [];
 }
@@ -254,6 +265,16 @@ function percentSources(key, prefer /* 'site' | 'orig' */){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
   const base=originBase(key);
 
+  // AIN-10 は原リポテキストのみ（順序固定）
+  if(key==='AIN-10' || key==='AIN10'){
+    const txts = base ? [
+      `${base}/ain10_post_intraday.txt`,
+      `${base}/ain10_intraday_post.txt`,
+      `${base}/ain10_intraday.txt`,
+    ] : [];
+    return { txts, stats: [], allowStats:false };
+  }
+
   const siteTxts = [
     site?`${site}/post_intraday.txt`:null,
     site?`${site}/intraday.txt`:null
@@ -264,11 +285,7 @@ function percentSources(key, prefer /* 'site' | 'orig' */){
     origTxts = nameCandidates(key,'txt_intraday').map(n=>`${base}/${n}`);
   }
 
-  // AIN-10: 原リポテキストのみ
-  if(key==='AIN-10' || key==='AIN10'){
-    return { txts: origTxts, stats: [], allowStats:false };
-  }
-  // S-COIN+: テキストのみ（stats 不使用）
+  // S-COIN+ はテキストのみ（stats 不使用）
   if(key==='S-COIN+'){
     const txts = (prefer==='orig') ? [...origTxts, ...siteTxts] : [...siteTxts, ...origTxts];
     return { txts, stats: [], allowStats:false };
@@ -313,6 +330,23 @@ function pickPctFromStat(j){
 
 /* ====== ％決定 ====== */
 async function resolvePercent(key, market, preferOrigin /* 'site'|'orig' */){
+  // AIN-10 は専用：テキストのみ・上限なしに近い（100%）
+  if(key==='AIN-10' || key==='AIN10'){
+    const {txts} = percentSources(key, 'orig');
+    const lastRun = await getLastRun(key);
+    for(const u of txts){
+      const t=await fetchText(u); if(!t) continue;
+      const {v, ts}=parsePctFromText(t);
+      if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-100,100), ts};
+    }
+    for(const u of txts){ // 鮮度外でも最後に拾う
+      const t=await fetchText(u); if(!t) continue;
+      const {v, ts}=parsePctFromText(t);
+      if(v!=null) return {v:clamp(v,-100,100), ts};
+    }
+    return {v:null, ts:null};
+  }
+
   const cap = {JP:8, US:8, CRYPTO:30}[market] ?? 8;
   const {txts, stats} = percentSources(key, preferOrigin);
   const lastRun = await getLastRun(key);
@@ -393,7 +427,6 @@ async function switchTf(key, img, tf){
     if(pol.img==='orig'){
       origin='orig';
     }else{
-      // site を使う場合は鮮度チェック
       const folder = siteFolder(key);
       const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
       let useSite=true;
@@ -433,7 +466,7 @@ async function switchTf(key, img, tf){
 
 async function applyPercent(key, market, card, preferOrigin){
   const pctEl = document.getElementById('pct-'+key);
-  const updEl = document.getElementById('upd-'+key);
+  const updEl = document.getElementById('upd-'+key');
 
   const {v, ts} = await resolvePercent(key, market, preferOrigin||'site');
   if(v==null){
