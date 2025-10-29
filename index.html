@@ -466,7 +466,7 @@ async function switchTf(key, img, tf){
 
 async function applyPercent(key, market, card, preferOrigin){
   const pctEl = document.getElementById('pct-'+key);
-  const updEl = document.getElementById('upd-'+key');
+  const updEl = document.getElementById('upd-'+key);
 
   const {v, ts} = await resolvePercent(key, market, preferOrigin||'site');
   if(v==null){
