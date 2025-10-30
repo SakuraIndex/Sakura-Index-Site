@@ -104,7 +104,7 @@ const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 
-// 全角→半角正規化を前提にした日付パーサ（例: （2025/10/30 13:00））
+/* 日付パース & 鮮度 */
 function parseJPDate(str){
   if(!str) return null;
   const s=(String(str).normalize ? String(str).normalize('NFKC') : String(str));
@@ -118,14 +118,21 @@ function sameDayJST(a,b){
   const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
   return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
-/* 当日±2hを“鮮度OK”とみなす（市場ズレ対策） */
-function isFreshJP(postTsStr,lastRunStr){
+/* 1) “サイト画像を使ってよいか” チェック（サイトの last_run と近いか） */
+function isFreshAgainstSite(postTsStr,lastRunStr,deltaMin=180){
   if(!postTsStr) return false;
-  if(!lastRunStr) return true;
   const post=parseJPDate(postTsStr), last=parseJPDate(lastRunStr);
   if(!post||!last) return true;
   if(!sameDayJST(post,last)) return false;
-  return Math.abs(post.getTime()-last.getTime())<=2*60*60*1000;
+  return Math.abs(post.getTime()-last.getTime())<=deltaMin*60*1000;
+}
+/* 2) “当日として新しいか” チェック（％表示用：サイトとは独立） */
+function isTodayFresh(postTsStr,deltaMin=360){
+  if(!postTsStr) return false;
+  const post=parseJPDate(postTsStr); if(!post) return false;
+  const now=new Date();
+  if(!sameDayJST(post,now)) return false;
+  return (now.getTime()-post.getTime())<=deltaMin*60*1000;
 }
 
 /* ====== フォルダ & キャッシュ ====== */
@@ -176,26 +183,33 @@ function tryLoad(url){
     i.onload=()=>res(true);
     i.onerror=()=>res(false);
     i.referrerPolicy='no-referrer';
-    i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();
+    i.src=url+(url.includes('?')?'&':'?')+'t='+(Date.now());
   });
 }
 async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
 
-/* intraday.png をサイトから使ってよいか（NO DATAを拒否） */
+/* intraday.png をサイトから使ってよいか
+   - intraday.txt が無いリポもあるため、post_intraday.txt も見る */
 async function shouldUseSiteIntraday(key){
   const folder=siteFolder(key); if(!folder) return false;
-  const txt=await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`);
-  if(!txt) return false;
-  if(/no\s*data/i.test(txt)) return false;
-  const {ts}=parsePctFromText(txt);
+  const base=`${SITE_CHARTS_BASE}/${folder}`;
   const last=await getLastRun(key);
-  return isFreshJP(ts,last);
+  // どちらか新しい方で判定
+  const txtPost=await fetchText(`${base}/post_intraday.txt`);
+  const txtIntr=await fetchText(`${base}/intraday.txt`);
+  const inText = txtIntr && !/no\s*data/i.test(txtIntr) ? txtIntr : txtPost;
+
+  if(!inText){ return false; }
+  const {ts}=parsePctFromText(inText);
+  if(!ts){ return false; }
+  return isFreshAgainstSite(ts,last,180);
 }
 
 /* ====== ％の出所（指数別ヒント） ====== */
 const PCT_ORIGIN_PREF={
   'AIN-10':'orig','AIN10':'orig','S-COIN+':'orig',
-  'ASTRA4':'orig','R-BANK9':'orig' // ← 暫定：サイト同期が安定するまで orig 優先
+  // サイト側との非同期で欠落しないよう、ASTRA4/R-BANK9 も orig 優先
+  'ASTRA4':'orig','R-BANK9':'orig'
 };
 
 function percentSources(key,prefer/* 'site'|'orig' */){
@@ -211,9 +225,10 @@ function percentSources(key,prefer/* 'site'|'orig' */){
   const stats=(prefer==='orig')?[origStats,siteStats].filter(Boolean):[siteStats,origStats].filter(Boolean);
   return {txts,stats};
 }
+
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
-  const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t)); // 全角→半角
+  const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t));
   if(/no\s*data/i.test(s)) return {v:null,ts:null};
   const m=s.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
   const v=m?Number(m[0].replace('%','')):null;
@@ -237,22 +252,21 @@ function pickPctFromStat(j){
   return null;
 }
 
-/* ％決定：鮮度OK→テキスト/Statsどちらでも、鮮度NG→Statsを優先 */
+/* ％決定：まず“当日JSTで新鮮”なものを優先（サイト last_run に依存しない） */
 async function resolvePercent(key,market,preferHint/* 'site'|'orig' */){
   const cap={JP:8,US:8,CRYPTO:30}[market]??8;
   const prefer=PCT_ORIGIN_PREF[key]||preferHint||'site';
   const {txts,stats}=percentSources(key,prefer);
-  const lastRun=await getLastRun(key);
 
-  // 1) 鮮度OKのものを優先（stats→textの順）
+  // 1) テキスト/Statsとも「当日・最新」を優先（ts は各ファイル内）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
-    if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
     const {v,ts}=parsePctFromText(t);
-    if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
 
-  // 2) 鮮度条件を外して「stats → text」の順で拾う
+  // 2) 当日条件を外しつつ、値が拾えた方を採用（古い場合は as of を表示）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
@@ -268,7 +282,7 @@ function renderCard(meta){
   const head=document.createElement('div');head.className='head';
   head.innerHTML=`<div class="flag">${meta.flag||'🏳️'}</div>
     <div class="name">${meta.label||key}</div>
-    <div class="badge">${meta.category||''}</div>
+    <div class="badge">${meta.badge||''}</div>
     <div class="pct na" id="pct-${key}">N/A</div>
     <div class="updatedAt" id="upd-${key}"></div>`;
   card.appendChild(head);
