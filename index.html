@@ -76,90 +76,139 @@
   </div>
 
 <script>
-/* === ベース設定 === */
-const SITE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-const ORIG={
- 'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
- 'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
- 'AIN-10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
- 'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+/* ========= 定数 ========= */
+const ORIG_BASE = {
+  'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
-const FOLDER={'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','S-COIN+':'S-COIN+'};
+const SITE_BASE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+const SITE_FOLDER = { 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','S-COIN+':'S-COIN+' };
 
-/* === indexデータ === */
-const IDX=[
- {key:'ASTRA4',label:'ASTRA4',flag:'🇯🇵',badge:'宇宙ベンチャー',market:'JP',description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
- {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵',badge:'地方銀行',market:'JP',description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
- {key:'AIN-10',label:'AIN-10',flag:'🇺🇸',badge:'AI関連10',market:'US',description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
- {key:'S-COIN+',label:'S-COIN+',flag:'🪙',badge:'仮想資産関連',market:'JP',description:'暗号資産関連の等ウェイト指数（日本株）。日中は騰落率、長期はレベル推移を表示。'}
+/* ★ ここが肝：実ファイル名のスラッグを指数別に固定 */
+const SLUG = {
+  'ASTRA4' : 'astra4',
+  'R-BANK9': 'rbank9',
+  'AIN-10' : 'ain10',
+  'S-COIN+': 'scoin_plus',
+};
+
+/* 表示カードの定義 */
+const INDEXES = [
+  {key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
+   description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
+  {key:'R-BANK9', label:'R-BANK9', flag:'🇯🇵', badge:'地方銀行', market:'JP',
+   description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
+  {key:'AIN-10', label:'AIN-10', flag:'🇺🇸', badge:'AI関連10', market:'US',
+   description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
+  {key:'S-COIN+', label:'S-COIN+', flag:'🪙', badge:'仮想資産関連', market:'JP',
+   description:'暗号資産関連の等ウェイト指数（日本株）。日中は騰落率、長期はレベル推移を表示。'},
 ];
 
-/* === util === */
-const toSlug=k=>k.toLowerCase().replace(/\+/g,'_plus');
-const $=(s,e=document)=>e.querySelector(s);
-async function fetchText(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null}catch{return null}}
-async function fetchJson(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null}catch{return null}}
-const fmtPct=v=>({t:(v>=0?'+':'')+v.toFixed(2)+'%',c:v>0?'up':v<0?'down':'na'});
-
-/* === intraday URL構築（orig最優先）=== */
-async function intradayUrls(key){
- const f=FOLDER[key], s=f?`${SITE}/${f}`:null, o=ORIG[key];
- const urls=[];
- if(o){
-   const slug=toSlug(key);
-   urls.push(`${o}/${slug}_intraday.png`,`${o}/${slug}_post_intraday.png`,`${o}/${slug}_intraday_am.png`);
- }
- if(s) urls.push(`${s}/intraday.png`);
- return urls;
+/* ========= ユーティリティ ========= */
+const $ = (s, el=document)=>el.querySelector(s);
+const nowJP = () => new Date().toLocaleString('ja-JP', {hour12:false});
+async function fetchText(url){ try{ const r=await fetch(url,{cache:'no-store'}); return r.ok?await r.text():null; }catch{ return null; } }
+async function fetchJson(url){ try{ const r=await fetch(url,{cache:'no-store'}); return r.ok?await r.json():null; }catch{ return null; } }
+function fmtPct(v){ return {t:(v>=0?'+':'')+v.toFixed(2)+'%', c:v>0?'up':v<0?'down':'na'}; }
+async function loadImageFirst(urls){
+  for(const u of urls){
+    const ok = await new Promise(res=>{
+      const img=new Image();
+      img.onload = ()=>res(true);
+      img.onerror= ()=>res(false);
+      img.src = u + (u.includes('?')?'&':'?') + 'v=' + Date.now();
+    });
+    if(ok) return u;
+  }
+  return null;
 }
 
-/* === loadFirst === */
-async function tryLoad(u){
- return new Promise(res=>{
-  const i=new Image();
-  i.onload=()=>res(true);
-  i.onerror=()=>res(false);
-  i.src=u+(u.includes('?')?'&':'?')+'v='+(Date.now());
- });
-}
-async function loadFirst(urls){
- for(const u of urls){if(await tryLoad(u))return u;}
- return null;
-}
-
-/* === 騰落率 === */
-async function getPct(key){
- const o=ORIG[key]; const slug=toSlug(key);
- const j=await fetchJson(`${o}/${slug}_stats.json`);
- if(j&&j.pct_intraday!=null)return j.pct_intraday*1;
- const t=await fetchText(`${o}/${slug}_post_intraday.txt`);
- if(!t)return null;
- const m=t.match(/[+\-]?\d+(?:\.\d+)?/);
- return m?parseFloat(m[0]):null;
+/* ========= データ取得 ========= */
+/* 画像URL候補：orig最優先 → だめならサイト同期画像 */
+function intradayImageCandidates(key){
+  const base = ORIG_BASE[key];
+  const slug = SLUG[key];
+  const list = [];
+  if(base){
+    list.push(
+      `${base}/${slug}_intraday.png`,
+      `${base}/${slug}_post_intraday.png`,
+      `${base}/${slug}_intraday_am.png`
+    );
+  }
+  const folder = SITE_FOLDER[key];
+  if(folder){
+    list.push(`${SITE_BASE}/${folder}/intraday.png`);
+  }
+  return list;
 }
 
-/* === カード描画 === */
+/* 騰落率：origの stats.json → post_intraday.txt の順で */
+async function fetchPercent(key){
+  const base = ORIG_BASE[key];
+  const slug = SLUG[key];
+  if(!base || !slug) return null;
+
+  const j = await fetchJson(`${base}/${slug}_stats.json`);
+  if(j && (j.pct_intraday!=null || j.rtn_intraday!=null)){
+    const v = (j.pct_intraday ?? j.rtn_intraday);
+    // 0.02 = 2% のケースもあるため倍率判定
+    const n = Math.abs(v)<=1.2 ? v*100 : v; 
+    return n;
+  }
+  const t = await fetchText(`${base}/${slug}_post_intraday.txt`);
+  if(t){
+    const m = t.match(/[+\-]?\d+(?:\.\d+)?/);
+    if(m) return parseFloat(m[0]);
+  }
+  return null;
+}
+
+/* ========= 描画 ========= */
 async function renderCard(meta){
- const k=meta.key;
- const pct=await getPct(k);
- const urls=await intradayUrls(k);
- const img=await loadFirst(urls);
- const c=document.createElement('article');c.className='card';
- const pcls=pct==null?'na':pct>=0?'up':'down';
- c.innerHTML=`
- <div class="head"><div class="flag">${meta.flag}</div><div class="name">${meta.label}</div><div class="badge">${meta.badge}</div>
- <div class="pct ${pcls}">${pct==null?'N/A':(pct>=0?'+':'')+pct.toFixed(2)+'%'}</div></div>
- <div class="desc">${meta.description}</div>
- <div class="chart">${img?`<img src="${img}" style="width:100%">`:'<div style="color:#666">No data</div>'}</div>`;
- return c;
+  const key = meta.key;
+  const pctVal = await fetchPercent(key);
+  const pct = (pctVal==null)? {t:'N/A',c:'na'} : fmtPct(pctVal);
+
+  const imgUrl = await loadImageFirst(intradayImageCandidates(key));
+
+  const card=document.createElement('article');
+  card.className='card';
+  if(pct.c==='up') card.classList.add('pos');
+  if(pct.c==='down') card.classList.add('neg');
+
+  card.innerHTML = `
+    <div class="head">
+      <div class="flag">${meta.flag||'🏳️'}</div>
+      <div class="name">${meta.label||key}</div>
+      <div class="badge">${meta.badge||''}</div>
+      <div class="pct ${pct.c}" id="pct-${key}">${pct.t}</div>
+      <div class="updatedAt" id="upd-${key}"></div>
+    </div>
+    <div class="desc">${meta.description||''}</div>
+    <div class="chart">
+      ${imgUrl ? `<img src="${imgUrl}" alt="${key} intraday" style="width:100%;height:100%;object-fit:contain">`
+               : `<div style="color:#7890a0;">No data</div>`}
+    </div>
+    <div class="actions">
+      <span class="chipbtn active">Intraday</span>
+      <span class="chipbtn" style="opacity:.5;pointer-events:none">7日</span>
+      <span class="chipbtn" style="opacity:.5;pointer-events:none">1ヶ月</span>
+      <span class="chipbtn" style="opacity:.5;pointer-events:none">1年</span>
+    </div>
+  `;
+  return card;
 }
 
-/* === init === */
-(async()=>{
- $('#year').textContent=(new Date()).getFullYear();
- $('#syncMeta').textContent=`同期完了：${new Date().toLocaleString()} ／ データ: charts/*`;
- const grid=$('#cards');
- for(const i of IDX){grid.appendChild(await renderCard(i));}
+(async function init(){
+  $('#year').textContent=(new Date()).getFullYear();
+  $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
+  const grid=$('#cards');
+  for(const meta of INDEXES){
+    grid.appendChild(await renderCard(meta));
+  }
 })();
 </script>
 </body>
