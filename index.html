@@ -87,7 +87,7 @@ const ORIG={
 };
 const FOLDER={ 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
 
-/* 日本株扱い（S-COIN+ は日本株の“関連株”指数） */
+/* 表示する指数 */
 const IDX=[
   {key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP', description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
   {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵', badge:'地方銀行',      market:'JP', description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
@@ -118,46 +118,39 @@ function sameDayJST(a,b){
   const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
   return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
-function isTodayFresh(postTsStr,deltaMin=240){
-  if(!postTsStr) return false;
-  const post=parseJPDate(postTsStr); if(!post) return false;
+function isTodayFresh(tsStr,deltaMin=300){
+  if(!tsStr) return false;
+  const ts=parseJPDate(tsStr); if(!ts) return false;
   const now=new Date();
-  if(!sameDayJST(post,now)) return false;
-  return (now.getTime()-post.getTime())<=deltaMin*60*1000;
+  if(!sameDayJST(ts,now)) return false;
+  return (now.getTime()-ts.getTime())<=deltaMin*60*1000;
 }
 
-/* ====== フォルダ & キャッシュ ====== */
+/* ====== 画像候補 ====== */
 function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
-const LAST_RUN=new Map();
-async function getLastRun(key){
-  const folder=siteFolder(key); if(!folder) return null;
-  if(LAST_RUN.has(folder)) return LAST_RUN.get(folder);
-  const txt=await fetchText(`${SITE_CHARTS_BASE}/${folder}/last_run.txt`);
-  const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
-}
 
-/* ====== 画像候補（S-COIN+ 別名網羅） ====== */
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-  const extras=(key==='S-COIN+')?['scoinp','s_coin','s_coin_plus']:[];
+  // S-COIN+ は scoinp（最優先）→ s_coin → s_coin_plus
+  const aliases=(key==='S-COIN+')?['scoinp','s_coin','s_coin_plus']:[slug];
+
   if(tf==='intraday'){
-    const arr=[];
-    if(site) arr.push(`${site}/intraday.png`);
+    const orig=[];
     if(base){
-      arr.push(`${base}/${slug}_intraday.png`, `${base}/${slug}_intraday_am.png`, `${base}/${slug}_post_intraday.png`);
-      for(const p of extras){ arr.push(`${base}/${p}_intraday.png`, `${base}/${p}_intraday_am.png`, `${base}/${p}_post_intraday.png`); }
+      // ORIGを最優先
+      for(const n of aliases){
+        orig.push(`${base}/${n}_intraday.png`, `${base}/${n}_intraday_am.png`, `${base}/${n}_post_intraday.png`);
+      }
     }
-    return arr;
+    const siteArr=site?[`${site}/intraday.png`]:[];
+    return [...orig,...siteArr];
   }
   const suff=tf==='7d'?'7d':(tf==='1m'?'1m':'1y');
   const arr=[];
+  if(base){ for(const n of aliases) arr.push(`${base}/${n}_${suff}.png`); }
   if(site) arr.push(`${site}/${suff}.png`);
-  if(base){
-    arr.push(`${base}/${slug}_${suff}.png`);
-    for(const p of extras) arr.push(`${base}/${p}_${suff}.png`);
-  }
   return arr;
 }
 
@@ -174,46 +167,24 @@ function tryLoad(url){
 }
 async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
 
-/* intraday.png をサイトから使ってよいか（厳格版）
-   - post_intraday.txt or intraday.txt が存在
-   - 'no data' を含まない
-   - タイムスタンプが「当日」 */
-async function shouldUseSiteIntraday(key){
-  const folder=siteFolder(key); if(!folder) return false;
-  const base=`${SITE_CHARTS_BASE}/${folder}`;
-  const txtPost=await fetchText(`${base}/post_intraday.txt`);
-  const txtIntr=await fetchText(`${base}/intraday.txt`);
-  let pick=txtIntr || txtPost;
-  if(!pick) return false;
-  const s=(String(pick).normalize?String(pick).normalize('NFKC'):String(pick));
-  if(/no\s*data/i.test(s)) return false;
-  const {ts}=parsePctFromText(s);
-  if(!ts) return false;
-  return isTodayFresh(ts,300); // 当日 & 5h以内を許容
-}
-
-/* ====== ％の出所（指数別ヒント） ====== */
-const PCT_ORIGIN_PREF={
-  'AIN-10':'orig','AIN10':'orig',
-  'S-COIN+':'site',       // S-COIN+はサイト優先
-  'ASTRA4':'orig','R-BANK9':'orig'
-};
+/* ％の出所（当面は全て ORIG 優先に統一） */
+const PCT_ORIGIN_PREF={ 'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig','S-COIN+':'orig' };
 
 function percentSources(key,prefer){
-  const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
+  const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
   const base=originBase(key);
-  const names=(key==='S-COIN+')?Array.from(new Set([slug,'scoinp','s_coin','s_coin_plus'])):[slug];
+  const aliases=(key==='S-COIN+')?['scoinp','s_coin','s_coin_plus']:[toSlug(key)];
 
   const siteTxts=[site?`${site}/post_intraday.txt`:null,site?`${site}/intraday.txt`:null].filter(Boolean);
+  const siteStats=site?`${site}/stats.json`:null;
+
   const origTxts=[], origStats=[];
-  for(const n of names){
-    if(base){
+  if(base){
+    for(const n of aliases){
       origTxts.push(`${base}/${n}_post_intraday.txt`,`${base}/${n}_intraday.txt`);
       origStats.push(`${base}/${n}_stats.json`);
     }
   }
-  const siteStats=site?`${site}/stats.json`:null;
-
   return (prefer==='orig')
     ? { txts:[...origTxts,...siteTxts], stats:[...origStats,siteStats].filter(Boolean) }
     : { txts:[...siteTxts,...origTxts], stats:[siteStats,...origStats].filter(Boolean) };
@@ -244,18 +215,17 @@ function pickPctFromStat(j){
   return null;
 }
 
-/* ％決定：当日JST優先→それ以外 */
 async function resolvePercent(key,market,preferHint){
   const cap={JP:8,US:8,CRYPTO:30}[market]??8;
-  const prefer=PCT_ORIGIN_PREF[key]||preferHint||'site';
+  const prefer=PCT_ORIGIN_PREF[key]||preferHint||'orig';
   const {txts,stats}=percentSources(key,prefer);
 
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
-    if(v!=null && isTodayFresh(ts,300)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
     const {v,ts}=parsePctFromText(t);
-    if(v!=null && isTodayFresh(ts,300)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
 
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
@@ -288,59 +258,38 @@ function renderCard(meta){
     .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
-  (async()=>{ const origin=await switchTf(key,img,'intraday'); await applyPercent(key,market,card,origin); })();
+  (async()=>{ await switchTf(key,img,'intraday'); await applyPercent(key,market,card,'orig'); })();
   acts.addEventListener('click',async e=>{
     const b=e.target.closest('.chipbtn'); if(!b) return;
     acts.querySelectorAll('.chipbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
-    const origin=await switchTf(key,img,b.dataset.tf);
-    if(b.dataset.tf==='intraday'){ await applyPercent(key,market,card,origin); }
+    await switchTf(key,img,b.dataset.tf);
+    if(b.dataset.tf==='intraday'){ await applyPercent(key,market,card,'orig'); }
   });
 
   return card;
 }
 
 async function switchTf(key,img,tf){
-  let urls=imgCandidates(tf,key);
-  let origin='site';
-
-  if(tf==='intraday'){
-    const siteOk=await shouldUseSiteIntraday(key);
-    if(!siteOk){
-      // サイト画像が不適切 → ORIG 優先で再並べ替え
-      const firstNonSite = urls.filter(u=>!u.startsWith(`${SITE_CHARTS_BASE}/`));
-      const siteOnes     = urls.filter(u=> u.startsWith(`${SITE_CHARTS_BASE}/`));
-      urls=[...firstNonSite,...siteOnes];
-      origin='orig';
-    }else{
-      origin='site';
-    }
-  }else{
-    origin='site';
-  }
-
+  const urls=imgCandidates(tf,key);
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
 
   const url=await loadFirst(urls);
-  if((IMG_SEQ.get(img)||0)!==req) return origin;
+  if((IMG_SEQ.get(img)||0)!==req) return;
 
   if(url){
-    let v=Date.now();
-    const folder=siteFolder(key);
-    if(folder && url.startsWith(`${SITE_CHARTS_BASE}/${folder}`)){
-      const lr=await getLastRun(key); if(lr) v=lr;
-    }
-    img.src=url+(url.includes('?')?'&':'?')+'v='+encodeURIComponent(v);
+    // ORIG/サイトとも常に強制キャッシュバスターを付与
+    img.src=url+(url.includes('?')?'&':'?')+'v='+(Date.now());
     img.alt='';
   }else{
     img.removeAttribute('src'); img.alt='画像が見つかりません';
   }
-  img.dataset.origin=origin; requestAnimationFrame(()=>img.style.opacity='1'); return origin;
+  requestAnimationFrame(()=>img.style.opacity='1');
 }
 
-async function applyPercent(key,market,card,preferOrigin){
+async function applyPercent(key,market,card){
   const pctEl=$(`#pct-${key}`), updEl=$(`#upd-${key}`);
-  const {v,ts}=await resolvePercent(key,market,preferOrigin||'site');
+  const {v,ts}=await resolvePercent(key,market,'orig');
   if(v==null){ pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return; }
   const {t,c}=fmtPct(v); pctEl.textContent=t; pctEl.className='pct '+c;
   card.classList.toggle('pos',c==='up'); card.classList.toggle('neg',c==='down');
