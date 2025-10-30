@@ -3,7 +3,7 @@ name: Sync charts to site (intraday + 7d/1m/1y + stats)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 * * * *'  # 毎時10分
+    - cron: '10 * * * *'
 
 permissions:
   contents: write
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # rebaseのため履歴全取得
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Pull latest charts from index repos
@@ -29,21 +29,33 @@ jobs:
           d_scp="docs/charts/S-COIN+"
           mkdir -p "$d_ast" "$d_rbk" "$d_ain" "$d_scp"
 
+          # ---------- folder sanitize ----------
+          allow_files() { echo "intraday.png 7d.png 1m.png 1y.png intraday.txt post_intraday.txt stats.json last_run.txt"; }
+          sanitize_dir() {
+            local dir="$1"; local allow=" $(allow_files) "
+            shopt -s nullglob
+            for f in "$dir"/*; do
+              base="$(basename "$f")"
+              if [[ "$allow" != *" $base "* ]]; then
+                echo "remove stale: $f"; rm -f "$f" || true
+              fi
+            done
+            shopt -u nullglob
+          }
+
           # ---------- helpers ----------
           fetch(){ url="$1"; out="$2"; echo "-> $out <= $url"; curl -fsSL "$url" -o "$out" || return 1; }
           try_fetch(){ url="$1"; out="$2"; curl -fsSL "$url" -o "$out" >/dev/null 2>&1 || return 1; }
-
           copy_first_hit(){
             local base="$1"; shift
             local out="$1"; shift
             local hit=""
             for p in "$@"; do
               if try_fetch "${base}/${p}" "${out}"; then
-                echo "hit: ${base}/${p} -> ${out}"
-                hit="1"; break
+                echo "hit: ${base}/${p} -> ${out}"; hit="1"; break
               fi
             done
-            [[ -n "$hit" ]] || { echo "no match for ${out} (candidates tried)"; rm -f "$out" || true; }
+            [[ -n "$hit" ]] || { echo "no match for ${out}"; rm -f "$out" || true; }
           }
 
           # ---------- src ----------
@@ -60,6 +72,7 @@ jobs:
           copy_first_hit "$b_ast" "$d_ast/intraday.txt" \
             "astra4_post_intraday.txt" "astra4_intraday_post.txt" "astra4_intraday_am.txt" "astra4_intraday.txt"
           fetch "$b_ast/astra4_stats.json" "$d_ast/stats.json" || true
+          sanitize_dir "$d_ast"
 
           # ---------- R-BANK9 ----------
           fetch "$b_rbk/rbank9_1d.png" "$d_rbk/intraday.png" || true
@@ -69,69 +82,53 @@ jobs:
           copy_first_hit "$b_rbk" "$d_rbk/intraday.txt" \
             "rbank9_post_intraday.txt" "rbank9_intraday_post.txt" "rbank9_intraday_am.txt" "rbank9_intraday.txt"
           fetch "$b_rbk/rbank9_stats.json" "$d_rbk/stats.json" || true
+          sanitize_dir "$d_rbk"
 
           # ---------- AIN-10 ----------
           for n in ain10 ain_10 ain-10; do
             try_fetch "$b_ain/${n}_1d.png" "$d_ain/intraday.png" && break || true
+            try_fetch "$b_ain/${n}_intraday.png" "$d_ain/intraday.png" && break || true
           done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_7d.png" "$d_ain/7d.png" && break || true
-          done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_1m.png" "$d_ain/1m.png" && break || true
-          done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_1y.png" "$d_ain/1y.png" && break || true
-          done
+          for n in ain10 ain_10 ain-10; do try_fetch "$b_ain/${n}_7d.png" "$d_ain/7d.png" && break || true; done
+          for n in ain10 ain_10 ain-10; do try_fetch "$b_ain/${n}_1m.png" "$d_ain/1m.png" && break || true; done
+          for n in ain10 ain_10 ain-10; do try_fetch "$b_ain/${n}_1y.png" "$d_ain/1y.png" && break || true; done
           copy_first_hit "$b_ain" "$d_ain/intraday.txt" \
             "ain10_post_intraday.txt" "ain10_intraday_post.txt" "ain10_intraday_am.txt" "ain10_intraday.txt" \
             "ain_10_post_intraday.txt" "ain_10_intraday_post.txt" "ain_10_intraday_am.txt" "ain_10_intraday.txt" \
             "ain-10_post_intraday.txt" "ain-10_intraday_post.txt" "ain-10_intraday_am.txt" "ain-10_intraday.txt"
           copy_first_hit "$b_ain" "$d_ain/stats.json" \
             "ain10_stats.json" "ain_10_stats.json" "ain-10_stats.json"
+          sanitize_dir "$d_ain"
 
           # ---------- S-COIN+ ----------
-          for n in scoin_plus s_coin_plus s-coin_plus; do
-            try_fetch "$b_scp/${n}_1d.png" "$d_scp/intraday.png" && break || true
+          for n in scoin_plus s_coin_plus s-coin_plus s_coin_; do
+            try_fetch "$b_scp/${n}_1d.png"       "$d_scp/intraday.png" && break || true
+            try_fetch "$b_scp/${n}_intraday.png" "$d_scp/intraday.png" && break || true
           done
-          for n in scoin_plus s_coin_plus s-coin_plus; do
-            try_fetch "$b_scp/${n}_7d.png" "$d_scp/7d.png" && break || true
-          done
-          for n in scoin_plus s_coin_plus s-coin_plus; do
-            try_fetch "$b_scp/${n}_1m.png" "$d_scp/1m.png" && break || true
-          done
-          for n in scoin_plus s_coin_plus s-coin_plus; do
-            try_fetch "$b_scp/${n}_1y.png" "$d_scp/1y.png" && break || true
-          done
+          for n in scoin_plus s_coin_plus s-coin_plus s_coin_; do try_fetch "$b_scp/${n}_7d.png" "$d_scp/7d.png" && break || true; done
+          for n in scoin_plus s_coin_plus s-coin_plus s_coin_; do try_fetch "$b_scp/${n}_1m.png" "$d_scp/1m.png" && break || true; done
+          for n in scoin_plus s_coin_plus s-coin_plus s_coin_; do try_fetch "$b_scp/${n}_1y.png" "$d_scp/1y.png" && break || true; done
           copy_first_hit "$b_scp" "$d_scp/intraday.txt" \
             "scoin_plus_post_intraday.txt" "scoin_plus_intraday_post.txt" "scoin_plus_intraday_am.txt" "scoin_plus_intraday.txt" \
             "s_coin_plus_post_intraday.txt" "s_coin_plus_intraday_post.txt" "s_coin_plus_intraday_am.txt" "s_coin_plus_intraday.txt" \
-            "s-coin_plus_post_intraday.txt" "s-coin_plus_intraday_post.txt" "s-coin_plus_intraday_am.txt" "s-coin_plus_intraday.txt"
+            "s-coin_plus_post_intraday.txt" "s-coin_plus_intraday_post.txt" "s-coin_plus_intraday_am.txt" "s-coin_plus_intraday.txt" \
+            "s_coin__post_intraday.txt"
           copy_first_hit "$b_scp" "$d_scp/stats.json" \
-            "scoin_plus_stats.json" "s_coin_plus_stats.json" "s-coin_plus_stats.json"
+            "scoin_plus_stats.json" "s_coin_plus_stats.json" "s-coin_plus_stats.json" "s_coin__stats.json"
+          sanitize_dir "$d_scp"
 
           # ---------- キャッシュバスター ----------
           date -u +'%Y-%m-%dT%H:%M:%SZ' | tee \
             "$d_ast/last_run.txt" "$d_rbk/last_run.txt" "$d_ain/last_run.txt" "$d_scp/last_run.txt" >/dev/null
 
-          # ---------- 清掃 ----------
-          git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
-
-          # ---------- commit & safe push ----------
+          # ---------- commit & push (safe) ----------
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git add docs/charts/**/*
-
           if git diff --cached --quiet; then
-            echo "No changes detected."
-            exit 0
+            echo "No changes."
+          else
+            git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats + intraday.txt"
+            git pull --rebase origin main || true
+            git push origin HEAD:main
           fi
-
-          git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats + intraday.txt"
-
-          echo "Pulling latest main branch for rebase..."
-          git pull --rebase origin main || true
-
-          echo "Pushing updates safely..."
-          git push --force-with-lease origin HEAD:main || echo "Push skipped or failed, likely concurrent run."
