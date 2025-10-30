@@ -118,14 +118,6 @@ function sameDayJST(a,b){
   const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
   return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
-function isFreshAgainstSite(postTsStr,lastRunStr,deltaMin=180){
-  if(!postTsStr) return false;
-  if(!lastRunStr){ return isTodayFresh(postTsStr,deltaMin); } // last_runが無くても当日ならOK
-  const post=parseJPDate(postTsStr), last=parseJPDate(lastRunStr);
-  if(!post||!last) return true;
-  if(!sameDayJST(post,last)) return false;
-  return Math.abs(post.getTime()-last.getTime())<=deltaMin*60*1000;
-}
 function isTodayFresh(postTsStr,deltaMin=360){
   if(!postTsStr) return false;
   const post=parseJPDate(postTsStr); if(!post) return false;
@@ -151,7 +143,7 @@ function imgCandidates(tf,key){
   const base=originBase(key);
 
   const extras=[];
-  if(key==='S-COIN+'){ extras.push('scoinp','s_coin','s_coin_plus'); } // ← 追加
+  if(key==='S-COIN+'){ extras.push('scoinp','s_coin','s_coin_plus'); }
 
   if(tf==='intraday'){
     const arr=[];
@@ -187,51 +179,49 @@ function tryLoad(url){
 }
 async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
 
-/* intraday.png をサイトから使ってよいか（post_intraday.txt も見る） */
+/* intraday.png をサイトから使ってよいか
+   → post_intraday.txt が当日 or last_run.txt が当日なら採用 */
 async function shouldUseSiteIntraday(key){
   const folder=siteFolder(key); if(!folder) return false;
   const base=`${SITE_CHARTS_BASE}/${folder}`;
-  const last=await getLastRun(key);
   const txtPost=await fetchText(`${base}/post_intraday.txt`);
-  const txtIntr=await fetchText(`${base}/intraday.txt`);
-  const inText = txtIntr && !/no\s*data/i.test(txtIntr) ? txtIntr : txtPost;
-  if(!inText) return false;
-  const {ts}=parsePctFromText(inText);
-  if(!ts) return false;
-  return isFreshAgainstSite(ts,last,180);
+  if(txtPost){
+    const {ts}=parsePctFromText(txtPost);
+    if(isTodayFresh(ts,720)) return true; // 当日なら採用（最大12h許容）
+  }
+  const last=await getLastRun(key);
+  if(last && isTodayFresh(last,1440)) return true; // last_runが当日
+  return false;
 }
 
 /* ====== ％の出所（指数別ヒント） ====== */
 const PCT_ORIGIN_PREF={
-  'AIN-10':'orig','AIN10':'orig','S-COIN+':'orig',
+  'AIN-10':'orig','AIN10':'orig',
+  'S-COIN+':'site',       // ← サイト優先に変更
   'ASTRA4':'orig','R-BANK9':'orig'
 };
 
-function percentSources(key,prefer/* 'site'|'orig' */){
+function percentSources(key,prefer){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-
-  // S-COIN+ は別名をすべて拾う
   const names = (key==='S-COIN+')
     ? Array.from(new Set([slug,'scoinp','s_coin','s_coin_plus']))
     : [slug];
 
   const siteTxts=[site?`${site}/post_intraday.txt`:null,site?`${site}/intraday.txt`:null].filter(Boolean);
   const origTxts=[];
-  const statsList=[];
+  const origStats=[];
   for(const n of names){
     if(base){
       origTxts.push(`${base}/${n}_post_intraday.txt`,`${base}/${n}_intraday.txt`);
-      statsList.push(`${base}/${n}_stats.json`);
+      origStats.push(`${base}/${n}_stats.json`);
     }
   }
-
   const siteStats=site?`${site}/stats.json`:null;
-  const origStatsAll=statsList;
 
-  const txts=(prefer==='orig')?[...origTxts,...siteTxts]:[...siteTxts,...origTxts];
-  const stats=(prefer==='orig')?[...origStatsAll,siteStats].filter(Boolean):[siteStats,...origStatsAll].filter(Boolean);
-  return {txts,stats};
+  return (prefer==='orig')
+    ? { txts:[...origTxts,...siteTxts], stats:[...origStats,siteStats].filter(Boolean) }
+    : { txts:[...siteTxts,...origTxts], stats:[siteStats,...origStats].filter(Boolean) };
 }
 
 function parsePctFromText(t){
@@ -260,17 +250,17 @@ function pickPctFromStat(j){
 }
 
 /* ％決定：まず“当日JSTで新鮮”を優先 */
-async function resolvePercent(key,market,preferHint/* 'site'|'orig' */){
+async function resolvePercent(key,market,preferHint){
   const cap={JP:8,US:8,CRYPTO:30}[market]??8;
   const prefer=PCT_ORIGIN_PREF[key]||preferHint||'site';
   const {txts,stats}=percentSources(key,prefer);
 
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
-    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts,720)) return {v:clamp(v,-cap,cap),ts}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
     const {v,ts}=parsePctFromText(t);
-    if(v!=null && isTodayFresh(ts)) return {v:clamp(v,-cap,cap),ts}; }
+    if(v!=null && isTodayFresh(ts,720)) return {v:clamp(v,-cap,cap),ts}; }
 
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
