@@ -3,7 +3,7 @@ name: Sync charts to site (intraday + 7d/1m/1y + stats)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 * * * *'
+    - cron: '10 * * * *'  # 毎時10分
 
 permissions:
   contents: write
@@ -17,22 +17,25 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Pull latest charts from index repos (robust, meta-gated)
+      - name: Pull latest charts from index repos (robust, freshness-gated, no rollback)
         shell: bash
         run: |
           set -euo pipefail
 
+          # ====== dst ======
           d_ast="docs/charts/ASTRA4"
           d_rbk="docs/charts/R_BANK9"
           d_ain="docs/charts/AIN10"
           d_scp="docs/charts/S-COIN+"
           mkdir -p "$d_ast" "$d_rbk" "$d_ain" "$d_scp"
 
+          # ====== src ======
           b_ast="https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs"
           b_rbk="https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs"
           b_ain="https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs"
           b_scp="https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs"
 
+          # ====== helpers ======
           head_ok () {
             local url="$1"
             local h status ctype clen
@@ -50,14 +53,16 @@ jobs:
           validate_img () {
             local f="$1"
             local sz="$(wc -c <"$f" 2>/dev/null || echo 0)"
-            [[ "$sz" -ge 8192 ]] || return 1
-            if grep -a -qi 'No data' "$f"; then
-              return 1
+            [[ "$sz" -ge 30000 ]] || return 1
+            if command -v strings >/dev/null 2>&1; then
+              if strings "$f" | grep -qi 'No data'; then
+                return 1
+              fi
             fi
             return 0
           }
 
-          fetch_img () {
+          fetch_img () { # 保存は head_ok + validate_img を通った場合のみ
             local url="$1" out="$2"
             if ! head_ok "$url"; then
               echo "IMG NG(head): $url"
@@ -65,26 +70,34 @@ jobs:
             fi
             local tmp="$out.__dl__"
             if ! curl -fsSL "$url" -o "$tmp"; then
-              echo "IMG NG(dl): $url"; rm -f "$tmp" || true; return 1
+              echo "IMG NG(dl): $url"
+              rm -f "$tmp" || true
+              return 1
             fi
             if ! validate_img "$tmp"; then
-              echo "IMG NG(validate): $url"; rm -f "$tmp" || true; return 1
+              echo "IMG NG(validate): $url"
+              rm -f "$tmp" || true
+              return 1
             fi
             mv -f "$tmp" "$out"
             echo "IMG OK: $url -> $out"
             return 0
           }
 
-          fetch_txt () {
+          fetch_txt () { # 200 のみ保存
             local url="$1" out="$2"
             if curl -fsSL "$url" -o "$out.tmp"; then
-              mv "$out.tmp" "$out"; echo "TXT OK: $url"; return 0
+              mv "$out.tmp" "$out"
+              echo "TXT OK: $url"
+              return 0
             else
-              echo "TXT NG: $url"; rm -f "$out.tmp" || true; return 1
+              echo "TXT NG: $url"
+              rm -f "$out.tmp" || true
+              return 1
             fi
           }
 
-          copy_first_img () {
+          copy_first_img () { # out, urls...
             local out="$1"; shift
             local hit=""
             for u in "$@"; do
@@ -93,7 +106,7 @@ jobs:
             [[ -n "$hit" ]]
           }
 
-          copy_first_txt () {
+          copy_first_txt () { # out, urls...
             local out="$1"; shift
             local hit=""
             for u in "$@"; do
@@ -102,25 +115,15 @@ jobs:
             [[ -n "$hit" ]]
           }
 
+          # 命名ゆらぎ定義
           ain_png() { echo "$b_ain/ain10_$1.png" "$b_ain/ain_10_$1.png" "$b_ain/ain-10_$1.png"; }
-
-          # ★ S-COIN+ は intraday が無い場合に限り 1d を最後のフォールバックにする
           scoin_png() {
             if [[ "$1" == "intraday" ]]; then
-              echo \
-                "$b_scp/scoin_plus_intraday.png" \
-                "$b_scp/s_coin_plus_intraday.png" \
-                "$b_scp/s-coin_plus_intraday.png" \
-                "$b_scp/s_coin__intraday.png" \
-                "$b_scp/scoin_plus_1d.png" \
-                "$b_scp/s_coin_plus_1d.png" \
-                "$b_scp/s-coin_plus_1d.png" \
-                "$b_scp/s_coin__1d.png"
+              echo "$b_scp/scoin_plus_intraday.png" "$b_scp/s_coin_plus_intraday.png" "$b_scp/s-coin_plus_intraday.png" "$b_scp/s_coin__intraday.png"
             else
               echo "$b_scp/scoin_plus_$1.png" "$b_scp/s_coin_plus_$1.png" "$b_scp/s-coin_plus_$1.png" "$b_scp/s_coin__${1}.png"
             fi
           }
-
           ain_post_txts() {
             echo "$b_ain/ain10_post_intraday.txt" "$b_ain/ain10_intraday_post.txt" \
                  "$b_ain/ain_10_post_intraday.txt" "$b_ain/ain_10_intraday_post.txt" \
@@ -133,8 +136,27 @@ jobs:
                  "$b_scp/s_coin__post_intraday.txt" "$b_scp/s_coin__intraday_post.txt"
           }
 
+          # ====== 時刻抽出ユーティリティ（"YYYY/MM/DD HH:MM" を epoch に） ======
+          ts_from_text () { # file -> epoch or 0
+            local f="$1"
+            [[ -s "$f" ]] || { echo 0; return; }
+            # 全角→半角などの揺れはここでは省略、数値抜き出し
+            local line="$(cat "$f" | tr -d '\r')"
+            # 例: (... 2025/10/27 14:52)
+            local y m d H M
+            y="$(echo "$line" | grep -oE '[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}' | head -n1)"
+            if [[ -z "${y:-}" ]]; then echo 0; return; fi
+            date -d "$y" +%s 2>/dev/null || echo 0
+          }
+
+          newer_or_equal () { # a >= b ?  (epoch)
+            [[ "${1:-0}" -ge "${2:-0}" ]]
+          }
+
+          # ====== gate logic: 「メタが取れたら intraday.png を更新」 ======
           upd_ast=0; upd_rbk=0; upd_ain=0; upd_scp=0
 
+          # ASTRA4 / R-BANK9 / AIN-10 は従来どおり
           copy_first_txt "$d_ast/intraday.txt" "$b_ast/astra4_post_intraday.txt" "$b_ast/astra4_intraday_post.txt" "$b_ast/astra4_intraday.txt" && upd_ast=1 || true
           copy_first_txt "$d_ast/stats.json"   "$b_ast/astra4_stats.json" && upd_ast=1 || true
 
@@ -144,13 +166,36 @@ jobs:
           copy_first_txt "$d_ain/intraday.txt" $(ain_post_txts) && upd_ain=1 || true
           copy_first_txt "$d_ain/stats.json"   "$b_ain/ain10_stats.json" "$b_ain/ain_10_stats.json" "$b_ain/ain-10_stats.json" && upd_ain=1 || true
 
-          # S-COIN+ は post_intraday.txt も併せて保存
-          copy_first_txt "$d_scp/intraday.txt"      $(scoin_post_txts) && upd_scp=1 || true
-          copy_first_txt "$d_scp/post_intraday.txt" $(scoin_post_txts) || true
-          copy_first_txt "$d_scp/stats.json"        "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" && upd_scp=1 || true
+          # ====== S-COIN+：時刻比較して新しいときだけ更新（巻き戻り禁止） ======
+          # 1) 元の post_intraday を一時取得
+          tmp_scp_meta="$(mktemp)"
+          got_meta=0
+          for u in $(scoin_post_txts); do
+            if curl -fsSL "$u" -o "$tmp_scp_meta"; then got_meta=1; break; fi
+          done
+
+          site_meta_epoch=0
+          orig_meta_epoch=0
+          [[ -s "$d_scp/post_intraday.txt" ]] && site_meta_epoch="$(ts_from_text "$d_scp/post_intraday.txt")" || true
+          [[ "$got_meta" -eq 1 ]] && orig_meta_epoch="$(ts_from_text "$tmp_scp_meta")" || true
+
+          echo "S-COIN+ meta epoch (orig=${orig_meta_epoch}, site=${site_meta_epoch})"
+
+          if newer_or_equal "$orig_meta_epoch" "$site_meta_epoch" && [[ "$orig_meta_epoch" -gt 0 ]]; then
+            # メタが新しい場合だけ「メタ保存 → intraday画像を取得」
+            cp -f "$tmp_scp_meta" "$d_scp/post_intraday.txt"
+            upd_scp=1
+          else
+            echo "S-COIN+ meta is not newer; keep current files (no overwrite)."
+          fi
+          rm -f "$tmp_scp_meta" || true
+
+          # stats.json は参考用（時刻比較対象にしない：あるなら更新）
+          copy_first_txt "$d_scp/stats.json" "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" || true
 
           echo "META OK flags => AST:${upd_ast} RBK:${upd_rbk} AIN:${upd_ain} SCP:${upd_scp}"
 
+          # ====== long-term images は常に更新トライ（安全チェック付き） ======
           copy_first_img "$d_ast/7d.png" "$b_ast/astra4_7d.png" || true
           copy_first_img "$d_ast/1m.png" "$b_ast/astra4_1m.png" || true
           copy_first_img "$d_ast/1y.png" "$b_ast/astra4_1y.png" || true
@@ -167,24 +212,30 @@ jobs:
           copy_first_img "$d_scp/1m.png"  $(scoin_png 1m) || true
           copy_first_img "$d_scp/1y.png"  $(scoin_png 1y) || true
 
-          # intraday（S-COIN+ は intraday → (無ければ)1d）
+          # ====== intraday ======
           if [[ $upd_ast -eq 1 ]]; then copy_first_img "$d_ast/intraday.png" "$b_ast/astra4_1d.png" || true; fi
           if [[ $upd_rbk -eq 1 ]]; then copy_first_img "$d_rbk/intraday.png" "$b_rbk/rbank9_1d.png" || true; fi
           if [[ $upd_ain -eq 1 ]]; then copy_first_img "$d_ain/intraday.png" $(ain_png 1d) || true; fi
-          if [[ $upd_scp -eq 1 ]]; then copy_first_img "$d_scp/intraday.png" $(scoin_png intraday) || true; fi
 
+          # S-COIN+ は "intraday.png" 専用のみ、かつ meta が新しい場合のみ更新
+          if [[ $upd_scp -eq 1 ]]; then
+            copy_first_img "$d_scp/intraday.png" $(scoin_png intraday) || true
+          fi
+
+          # ====== last_run：元の _last_run があれば採用、なければUTC現在 ======
           fetch_txt "$b_ast/_last_run.txt" "$d_ast/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ast/last_run.txt"
           fetch_txt "$b_rbk/_last_run.txt" "$d_rbk/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_rbk/last_run.txt"
           fetch_txt "$b_ain/_last_run.txt" "$d_ain/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ain/last_run.txt"
           fetch_txt "$b_scp/_last_run.txt" "$d_scp/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_scp/last_run.txt"
 
+          # ====== cleanup（旧パス掃除：あっても無視） ======
           git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
 
           echo "--- after sync ---"
-          ls -l "$d_ast" || true
-          ls -l "$d_rbk" || true
-          ls -l "$d_ain" || true
-          ls -l "$d_scp" || true
+          ls -l docs/charts/ASTRA4 || true
+          ls -l docs/charts/R_BANK9 || true
+          ls -l docs/charts/AIN10 || true
+          ls -l docs/charts/S-COIN+ || true
 
       - name: Commit & push if changed
         shell: bash
@@ -197,6 +248,6 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
-          git commit -m "chore(site): S-COIN+ intraday fallback to 1d when missing; keep 'No data' blocked; meta-gated sync"
+          git commit -m "chore(site): S-COIN+ freshness gate (no rollback), meta-gated intraday only, image validation"
           git pull --rebase origin main || true
           git push --force-with-lease origin HEAD:main || echo "Push skipped or failed"
