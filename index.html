@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🌸 桜Index - 公式サイト</title>
   <style>
-    :root{ --bg:#0b1420; --panel:#0f1b28; --panel2:#0c1926; --border:#1c2a3a;
-      --text:#d4e9f7; --sub:#9fb6c7; --muted:#7890a0; --brand:#93c5fd;
-      --up:#34d399; --down:#fb7185; --chip:#0b2233; }
+    :root{ --bg:#0b1420;--panel:#0f1b28;--panel2:#0c1926;--border:#1c2a3a;
+      --text:#d4e9f7;--sub:#9fb6c7;--muted:#7890a0;--brand:#93c5fd;
+      --up:#34d399;--down:#fb7185;--chip:#0b2233;}
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
@@ -16,237 +16,144 @@
     .wrap{max-width:1160px;margin:32px auto;padding:0 16px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
     .title{display:flex;gap:12px;align-items:center}
-    .title h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.2px}
+    .title h1{margin:0;font-size:24px;font-weight:700}
     .meta{color:var(--muted);font-size:12px;margin-top:4px}
     .btns{display:flex;gap:10px}
     .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
-      padding:11px 16px;border-radius:12px;font-size:14px;line-height:1;display:inline-flex;gap:8px;align-items:center;transition:all .15s}
-    .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
-
+      padding:11px 16px;border-radius:12px;font-size:14px;display:inline-flex;align-items:center;gap:8px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    @media (max-width:900px){.grid{grid-template-columns:1fr}}
-
-    .card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
-      border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative}
-    .card.pos{ box-shadow:0 0 0 2px #34d39933 inset }
-    .card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
-
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+      border:1px solid var(--border);border-radius:16px;padding:14px;position:relative}
+    .card.pos{box-shadow:0 0 0 2px #34d39933 inset}
+    .card.neg{box-shadow:0 0 0 2px #fb718533 inset}
     .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .flag{font-size:18px;line-height:1}
-    .name{font-size:18px;font-weight:700;letter-spacing:.2px}
-    .badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);padding:4px 8px;border-radius:999px}
+    .flag{font-size:18px}
+    .name{font-size:18px;font-weight:700}
+    .badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);
+      padding:4px 8px;border-radius:999px}
     .desc{color:var(--sub);font-size:12px;margin:2px 0 8px 28px}
-    .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
-    .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
-    .updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
-
+    .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px}
+    .pct.up{color:var(--up)}.pct.down{color:var(--down)}.pct.na{color:var(--muted)}
     .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
       background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .chart img{display:block;width:100%;height:100%;object-fit:contain}
-
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chart img{width:100%;height:100%;object-fit:contain}
+    .actions{display:flex;gap:10px;margin-top:10px}
     .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
-      padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
+      padding:6px 10px;border-radius:999px}
     .chipbtn.active{outline:2px solid var(--brand)}
-
-    .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
-    footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
-        <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
-      </div>
-      <div class="btns">
-        <a class="btn" href="https://x.com" rel="noopener">公式X（Twitter）</a>
-        <a class="btn" href="https://note.com" rel="noopener">公式note</a>
-      </div>
-    </header>
-
-    <section class="grid" id="cards"></section>
-
-    <div class="hint">
-      データ：各指数は等加重指数（仕様は各リポジトリ参照）／画像は各指数リポジトリの自動生成スナップショットと同期しています。<br>
-      ※本サイトは投資助言ではありません。投資判断は自己責任でお願いいたします。
-    </div>
-    <footer>© <span id="year"></span> 桜Index</footer>
+<div class="wrap">
+<header>
+  <div>
+    <div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
+    <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
   </div>
+  <div class="btns">
+    <a class="btn" href="https://x.com">公式X（Twitter）</a>
+    <a class="btn" href="https://note.com">公式note</a>
+  </div>
+</header>
+
+<section class="grid" id="cards"></section>
+</div>
 
 <script>
-/* ====== 定義 ====== */
-const ORIG = {
-  'ASTRA4' : 'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9': 'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10' : 'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+': 'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
-};
-const SITE = 'https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-const FOLDER = { 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','S-COIN+':'S-COIN+' };
-const SLUG = { 'ASTRA4':'astra4','R-BANK9':'rbank9','AIN-10':'ain10','S-COIN+':'scoin_plus' };
+const ORIG={
+ 'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+ 'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+ 'AIN-10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+ 'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs'};
+const SITE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
+const FOLDER={'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','S-COIN+':'S-COIN+'};
+const SLUG={'ASTRA4':'astra4','R-BANK9':'rbank9','AIN-10':'ain10','S-COIN+':'scoin_plus'};
 
-const IDX = [
-  {key:'ASTRA4',  label:'ASTRA4',  flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
-   description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
-  {key:'R-BANK9', label:'R-BANK9', flag:'🇯🇵', badge:'地方銀行',     market:'JP',
-   description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
-  {key:'AIN-10',  label:'AIN-10',  flag:'🇺🇸', badge:'AI関連10',     market:'US',
-   description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
-  {key:'S-COIN+', label:'S-COIN+', flag:'🪙',  badge:'仮想資産関連', market:'JP',
-   description:'暗号資産関連の等ウェイト指数（日本株）。日中は騰落率、長期はレベル推移を表示。'},
-];
+const IDX=[
+ {key:'ASTRA4',flag:'🇯🇵',badge:'宇宙ベンチャー',desc:'宇宙関連4銘柄の等ウェイト指数。'},
+ {key:'R-BANK9',flag:'🇯🇵',badge:'地方銀行',desc:'地方銀行9銘柄の等ウェイト指数。'},
+ {key:'AIN-10',flag:'🇺🇸',badge:'AI関連10',desc:'米AI関連10銘柄の等ウェイト指数。'},
+ {key:'S-COIN+',flag:'🪙',badge:'仮想資産関連',desc:'暗号資産関連の等ウェイト指数（日本株）。'}];
 
-/* ====== util ====== */
 const $=(s,el=document)=>el.querySelector(s);
 const nowJP=()=>new Date().toLocaleString('ja-JP',{hour12:false});
-async function fetchText(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}}
-async function fetchJson(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}}
-function parseJPDate(s){if(!s) return null;const m=String(s).normalize('NFKC').match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[ T](\d{2}):(\d{2})/);if(!m)return null;const [_,y,mo,d,h,mi]=m.map(Number);return new Date(y,mo-1,d,h,mi);}
-function sameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
-function fmtPctFromPercentValue(v){ // v は「％単位の数値」
-  const s=(v>=0?'+':'')+Number(v).toFixed(2)+'%';
-  return {t:s,c:(v>0?'up':v<0?'down':'na')};
+async function ftxt(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null}catch{return null}}
+async function fjson(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null}catch{return null}}
+function parseJPDate(s){const m=s?.match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[ T](\d{2}):(\d{2})/);return m?new Date(m[1],m[2]-1,m[3],m[4],m[5]):null}
+function sameDay(a,b){return a&&b&&a.toDateString()==b.toDateString()}
+function pctfmt(v){return{t:(v>=0?'+':'')+v.toFixed(2)+'%',c:v>0?'up':v<0?'down':'na'}}
+
+async function pickPct(k){
+ const base=ORIG[k],slug=SLUG[k],fold=FOLDER[k];
+ // 1) site post（当日）
+ if(fold){
+   const t=await ftxt(`${SITE}/${fold}/post_intraday.txt`);
+   if(t){
+     const m=t.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/);
+     const ts=parseJPDate(m?.[1]);if(ts&&sameDay(ts,new Date())){
+       const n=parseFloat(t.match(/[+\-]?\d+(\.\d+)?/)?.[0]);
+       if(Math.abs(n)<20)return n;
+     }
+   }
+ }
+ // 2) stats
+ if(base&&slug){
+   const j=await fjson(`${base}/${slug}_stats.json`);
+   if(j){
+     const v=j.pct_intraday??j.rtn_intraday??j.pct??j.change_pct??j.change_percent;
+     if(v!=null){const n=Math.abs(v)<=5?v*100:v; if(Math.abs(n)<20)return n;}
+   }
+ }
+ // 3) fallback post
+ if(base&&slug){
+   const t=await ftxt(`${base}/${slug}_post_intraday.txt`);
+   const n=parseFloat(t?.match(/[+\-]?\d+(\.\d+)?/)?.[0]);
+   if(!isNaN(n)&&Math.abs(n)<20)return n;
+ }
+ return null;
 }
 
-/* ====== サイト側 鮮度/NoData 判定 ====== */
-async function siteFreshInfo(key){
-  const folder=FOLDER[key]; if(!folder) return {fresh:false, ts:null, noData:false};
-  const postTxt = await fetchText(`${SITE}/${folder}/post_intraday.txt`);
-  const intradayTxt = await fetchText(`${SITE}/${folder}/intraday.txt`);
-  const noData = intradayTxt ? /no\s*data/i.test(intradayTxt) : false;
-  if(!postTxt) return {fresh:false, ts:null, noData};
-  const m = postTxt.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/);
-  const tsStr = m? m[1] : null;
-  const ts = parseJPDate(tsStr);
-  const today = new Date();
-  return {fresh: !!(ts && sameDay(ts,today)), ts: tsStr, noData};
+async function pickImg(k){
+ const fold=FOLDER[k],base=ORIG[k],slug=SLUG[k];
+ const t=await ftxt(`${SITE}/${fold}/intraday.txt`);
+ const hasNo=/no\s*data/i.test(t||'');
+ // S-COIN+ は常に指数PNG最優先
+ if(k==='S-COIN+'&&base){
+   const u=`${base}/${slug}_intraday.png`;
+   return u;
+ }
+ if(!hasNo){
+   const u=`${SITE}/${fold}/intraday.png?v=${Date.now()}`;
+   if(await testImg(u))return u;
+ }
+ if(base){
+   const u=`${base}/${slug}_intraday.png`;
+   if(await testImg(u))return u;
+ }
+ return null;
+}
+function testImg(u){return new Promise(r=>{const i=new Image();i.onload=()=>r(true);i.onerror=()=>r(false);i.src=u;});}
+
+async function render(meta){
+ const k=meta.key;
+ const p=await pickPct(k);
+ const pf=p==null?{t:'N/A',c:'na'}:pctfmt(p);
+ const img=await pickImg(k);
+ const card=document.createElement('div');
+ card.className=`card ${pf.c==='up'?'pos':pf.c==='down'?'neg':''}`;
+ card.innerHTML=`
+ <div class="head"><div class="flag">${meta.flag}</div><div class="name">${k}</div>
+ <div class="badge">${meta.badge}</div><div class="pct ${pf.c}">${pf.t}</div></div>
+ <div class="desc">${meta.desc}</div>
+ <div class="chart">${img?`<img src="${img}">`:`<div style="color:#7890a0">No data</div>`}</div>`;
+ return card;
 }
 
-/* ====== 画像URL決定（NoData ならサイトPNGを回避） ====== */
-async function pickIntradayImageURL(key){
-  const folder=FOLDER[key], base=ORIG[key], slug=SLUG[key];
-  const {fresh, ts, noData} = await siteFreshInfo(key);
-  const v = ts ? encodeURIComponent(ts) : Date.now();
-
-  // 1) サイトが当日＆NoDataでないなら最優先
-  if(folder && fresh && !noData){
-    const u = `${SITE}/${folder}/intraday.png?v=${v}`;
-    if(await probeImage(u)) return u;
-  }
-  // 2) 指数リポのPNG群でフォールバック
-  if(base && slug){
-    const cands = [
-      `${base}/${slug}_intraday.png`,
-      `${base}/${slug}_post_intraday.png`,
-      `${base}/${slug}_intraday_am.png`,
-    ];
-    for(const u0 of cands){ const u = `${u0}?v=${v}`; if(await probeImage(u)) return u; }
-  }
-  // 3) 最後にサイトPNG（当日でなくても）
-  if(folder){
-    const u = `${SITE}/${folder}/intraday.png?v=${v}`;
-    if(await probeImage(u)) return u;
-  }
-  return null;
-}
-function probeImage(url){
-  return new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.src=url; });
-}
-
-/* ====== 騰落率（％）の決定：スケーリングを厳格化 ====== */
-function normalizePctFromStats(value, unitLike){
-  let n = Number(value);
-  if(!Number.isFinite(n)) return null;
-  const unit = String(unitLike||'').toLowerCase();
-  if(unit.includes('ratio')) return n*100;            // 比率 → ％
-  if(unit.includes('pct') || unit.includes('percent')) return n; // ％ → そのまま
-  // ヒューリスティック：|n|<=5 は比率（例 0.021 → 2.1%）、それ以上は％
-  return (Math.abs(n)<=5 ? n*100 : n);
-}
-async function pickPercent(key){
-  const base=ORIG[key], slug=SLUG[key], folder=FOLDER[key];
-
-  // a) サイト post（％がそのまま入っている）を最優先（当日条件）
-  if(folder){
-    const t = await fetchText(`${SITE}/${folder}/post_intraday.txt`);
-    if(t){
-      const tsM = t.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/);
-      const ts = parseJPDate(tsM?tsM[1]:null);
-      if(ts && sameDay(ts,new Date())){
-        const m = t.match(/[+\-]?\d+(?:\.\d+)?/);
-        if(m) return Number(m[0]); // ％をそのまま返す
-      }
-    }
-  }
-  // b) 指数 stats.json
-  if(base && slug){
-    const j=await fetchJson(`${base}/${slug}_stats.json`);
-    if(j){
-      const candidates = [
-        j.pct_intraday, j.rtn_intraday, j.intraday_pct,
-        j.pct, j.pct_today, j.change_pct, j.change_percent, j.today_pct, j.pct_1d
-      ];
-      for(const v of candidates){
-        if(v==null) continue;
-        const n = normalizePctFromStats(v, j.unit||j.scale||'');
-        if(n!=null) return n;
-      }
-    }
-  }
-  // c) 指数 post_intraday.txt（％文字列）
-  if(base && slug){
-    const t=await fetchText(`${base}/${slug}_post_intraday.txt`);
-    if(t){ const m = t.match(/[+\-]?\d+(?:\.\d+)?/); if(m) return Number(m[0]); }
-  }
-  return null;
-}
-
-/* ====== 描画 ====== */
-async function renderCard(meta){
-  const key=meta.key;
-
-  const pctVal = await pickPercent(key); // ここは「％」値
-  const pct = (pctVal==null)? {t:'N/A',c:'na'} : fmtPctFromPercentValue(pctVal);
-
-  const imgUrl = await pickIntradayImageURL(key);
-
-  const card=document.createElement('article');
-  card.className='card';
-  if(pct.c==='up') card.classList.add('pos');
-  if(pct.c==='down') card.classList.add('neg');
-
-  card.innerHTML=`
-    <div class="head">
-      <div class="flag">${meta.flag||'🏳️'}</div>
-      <div class="name">${meta.label||key}</div>
-      <div class="badge">${meta.badge||''}</div>
-      <div class="pct ${pct.c}">${pct.t}</div>
-      <div class="updatedAt"></div>
-    </div>
-    <div class="desc">${meta.description||''}</div>
-    <div class="chart">
-      ${imgUrl? `<img src="${imgUrl}" alt="${key} intraday">` : `<div style="color:#7890a0">No data</div>`}
-    </div>
-    <div class="actions">
-      <span class="chipbtn active">Intraday</span>
-      <span class="chipbtn" style="opacity:.5;pointer-events:none">7日</span>
-      <span class="chipbtn" style="opacity:.5;pointer-events:none">1ヶ月</span>
-      <span class="chipbtn" style="opacity:.5;pointer-events:none">1年</span>
-    </div>
-  `;
-  return card;
-}
-
-(async function init(){
-  $('#year').textContent=(new Date()).getFullYear();
-  $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
-
-  const grid=$('#cards');
-  for(const meta of IDX){
-    grid.appendChild(await renderCard(meta));
-  }
+(async()=>{
+ $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
+ const grid=$('#cards');
+ for(const m of IDX)grid.appendChild(await render(m));
 })();
 </script>
 </body>
