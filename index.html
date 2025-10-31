@@ -87,7 +87,7 @@ const ORIG={
 };
 const FOLDER={ 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
 
-/* カード定義（S-COIN+ の旗は 🇯🇵 ） */
+/* カード定義（S-COIN+ は 🇯🇵） */
 const IDX=[
   {key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP', description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
   {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵', badge:'地方銀行',      market:'JP', description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
@@ -107,7 +107,7 @@ function siteFolder(key){return FOLDER[key]||null}
 function originBase(key){return ORIG[key]||null}
 const enc = s => encodeURIComponent(String(s||''));
 
-/* ====== last_run 取得（フォルダ名は必ずエンコード） ====== */
+/* ====== last_run（キャッシュキー用） ====== */
 const LAST_RUN=new Map();
 async function getLastRun(key){
   const folder=siteFolder(key); if(!folder) return null;
@@ -117,11 +117,13 @@ async function getLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== 画像候補（サイト→原本の順。サイト側パスは必ずエンコード） ====== */
-const scoinPng=(suffix)=>[
-  `scoin_plus_${suffix}.png`,`s_coin_plus_${suffix}.png`,`s-coin_plus_${suffix}.png`,`s_coin__${suffix}.png`
-];
-const ainKeys=['ain10','ain_10','ain-10'];
+/* ====== 画像候補の順序
+   Intraday:  原本 → サイト（←今回ここを変更）
+   7d/1m/1y: サイト → 原本
+   サイト側フォルダは常に URL エンコード
+================================================= */
+const scoinPng = suf => [`scoin_plus_${suf}.png`,`s_coin_plus_${suf}.png`,`s-coin_plus_${suf}.png`,`s_coin__${suf}.png`];
+const ainKeys  = ['ain10','ain_10','ain-10'];
 
 function buildCandidates(tf,key){
   const folder=siteFolder(key);
@@ -129,43 +131,33 @@ function buildCandidates(tf,key){
   const base=originBase(key);
   const slug=toSlug(key);
 
-  const out=[];
-  // 1) サイト最優先
-  if(siteBase){
-    if(tf==='intraday') out.push(`${siteBase}/intraday.png`);
-    else out.push(`${siteBase}/${tf}.png`);
-  }
-  // 2) 原本
-  if(base){
+  const fromSite = () => {
+    if(!siteBase) return [];
+    return tf==='intraday' ? [`${siteBase}/intraday.png`] : [`${siteBase}/${tf}.png`];
+  };
+  const fromOrig = () => {
+    if(!base) return [];
     if(key==='S-COIN+'){
-      if(tf==='intraday') for(const p of scoinPng('intraday')) out.push(`${base}/${p}`);
-      else for(const p of scoinPng(tf)) out.push(`${base}/${p}`);
+      return tf==='intraday' ? scoinPng('intraday').map(p=>`${base}/${p}`) : scoinPng(tf).map(p=>`${base}/${p}`);
     }else if(key==='AIN-10'||key==='AIN10'){
-      if(tf==='intraday') for(const k of ainKeys) out.push(`${base}/${k}_intraday.png`);
-      else for(const k of ainKeys) out.push(`${base}/${k}_${tf}.png`);
+      return tf==='intraday' ? ainKeys.map(k=>`${base}/${k}_intraday.png`)
+                              : ainKeys.map(k=>`${base}/${k}_${tf}.png`);
     }else{
-      if(tf==='intraday') out.push(`${base}/${slug}_intraday.png`);
-      else out.push(`${base}/${slug}_${tf}.png`);
+      return tf==='intraday' ? [`${base}/${slug}_intraday.png`] : [`${base}/${slug}_${tf}.png`];
     }
-  }
-  return out;
-}
-
-/* ====== <img> の連鎖ローダー：候補 URL を onerror で順番に試す ====== */
-function loadWithFallback(img, urls, key, tf){
-  if(!urls || urls.length===0){ img.removeAttribute('src'); img.alt='画像が見つかりません'; return; }
-
-  const firstSite = urls[0] && urls[0].startsWith(SITE_CHARTS_BASE);
-  let idx=0;
-  const buster = async () => {
-    // サイト画像には last_run を、原本には時刻を付けてキャッシュバスターに
-    if(urls[idx] && urls[idx].startsWith(SITE_CHARTS_BASE)){
-      const lr=await getLastRun(key);
-      return lr ? encodeURIComponent(lr) : Date.now();
-    }
-    return Date.now();
   };
 
+  // ここが肝：Intraday は原本→サイト、長期はサイト→原本
+  return tf==='intraday' ? [...fromOrig(), ...fromSite()] : [...fromSite(), ...fromOrig()];
+}
+
+/* ====== <img> 連鎖ローダー（onerror で順に試す） ====== */
+function loadWithFallback(img, urls, key, tf){
+  if(!urls || urls.length===0){ img.removeAttribute('src'); img.alt='画像が見つかりません'; return; }
+  let idx=0;
+  const buster = async () => (urls[idx] && urls[idx].startsWith(SITE_CHARTS_BASE))
+      ? (await getLastRun(key)) ? encodeURIComponent(await getLastRun(key)) : Date.now()
+      : Date.now();
   const tryLoad = async () => {
     const v=await buster();
     const u = urls[idx] + (urls[idx].includes('?')?'&':'?') + 'v=' + v;
@@ -176,7 +168,7 @@ function loadWithFallback(img, urls, key, tf){
   tryLoad();
 }
 
-/* ====== 騰落率取得（サイト→原本の順。サイト側パスは必ずエンコード） ====== */
+/* ====== 騰落率（サイト → 原本） ====== */
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
   const s=(String(t).normalize?String(t).normalize('NFKC'):String(t));
@@ -201,7 +193,6 @@ function pickPctFromStat(j){
   }
   return null;
 }
-
 async function resolvePercent(key,market){
   const folder=siteFolder(key);
   const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
