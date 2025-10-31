@@ -139,7 +139,7 @@ async function getLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== ％（優先順位：S-COIN+ はサイト優先） ====== */
+/* ====== ％（S-COIN+ はサイト優先） ====== */
 const PCT_ORIGIN_PREF={
   'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig',
   'S-COIN+':'site'
@@ -204,7 +204,6 @@ async function resolvePercent(key,market){
   const {txts,stats}=percentSources(key,prefer);
   const lastRun=await getLastRun(key);
 
-  // 1) 新しいもの優先（stats→text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
     if(v!=null && (!lastRun || isFreshJP(ts,lastRun))) return {v:clamp(v,-cap,cap),ts}; }
@@ -212,7 +211,6 @@ async function resolvePercent(key,market){
     const {v,ts}=parsePctFromText(t);
     if(v!=null && (!lastRun || isFreshJP(ts,lastRun))) return {v:clamp(v,-cap,cap),ts}; }
 
-  // 2) 古くても出す（stats→text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
@@ -248,8 +246,11 @@ function imgCandidates(tf,key){
       if(tf==='intraday') arr.push(`${base}/${slug}_intraday.png`);
     }
   }
-  // 長期（7d/1m/1y）はサイト側も候補に入れる
-  if(site && tf!=='intraday') arr.push(`${site}/${timeframe}.png`);
+  // 🔧 追加：intraday でもサイト側を候補にする
+  if(site){
+    if(tf==='intraday') arr.push(`${site}/intraday.png`);
+    else               arr.push(`${site}/${timeframe}.png`);
+  }
   return arr;
 }
 
@@ -282,7 +283,7 @@ async function getOriginIntradayTS(key){
   return null;
 }
 
-/* intraday 画像：原本 → サイト側の順にプローブ（S-COIN+ の最新がサイトにあるため） */
+/* intraday 画像：原本→サイトの順でプローブ */
 async function pickBestIntradayImage(key){
   const urls=imgCandidates('intraday', key);
   const fromOrig = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE));
@@ -338,7 +339,7 @@ async function switchTf(key,img,tf){
 
   let url=null, origin='site';
   if(tf==='intraday'){
-    const pick=await pickBestIntradayImage(key); // ← 原本→サイトの順でプローブ
+    const pick=await pickBestIntradayImage(key);
     url=pick.url; origin=pick.origin;
   }else{
     const urls=imgCandidates(tf,key);
@@ -353,8 +354,13 @@ async function switchTf(key,img,tf){
   if(url){
     let v=Date.now();
     if(tf==='intraday'){
-      const ts=await getOriginIntradayTS(key);
-      if(ts) v=encodeURIComponent(ts);
+      if(origin==='orig'){
+        const ts=await getOriginIntradayTS(key);
+        if(ts) v=encodeURIComponent(ts);
+      }else{
+        const lr=await getLastRun(key); // 🔧 サイト画像は last_run をキーに
+        if(lr) v=encodeURIComponent(lr);
+      }
     }else{
       if(origin==='site'){ const lr=await getLastRun(key); if(lr) v=encodeURIComponent(lr); }
     }
