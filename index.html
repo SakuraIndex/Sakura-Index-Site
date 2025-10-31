@@ -102,7 +102,7 @@ const $=(s,el=document)=>el.querySelector(s);
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
-const probeImage=async(u)=>{try{const r=await fetch(u,{cache:'no-store'}); if(!r.ok) return false; const ct=r.headers.get('content-type')||''; return ct.includes('image');}catch{return false;}};
+const probeImage=async(u)=>{try{const r=await fetch(u,{cache:'no-store'}); return r.ok;}catch{return false;}};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 
@@ -139,11 +139,8 @@ async function getLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== ％（S-COIN+ はサイト優先） ====== */
-const PCT_ORIGIN_PREF={
-  'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig',
-  'S-COIN+':'site'
-};
+/* ====== ％（原本最優先＋確実フォールバック） ====== */
+const PCT_ORIGIN_PREF={ 'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig','S-COIN+':'site' };
 
 function percentSources(key,prefer){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
@@ -151,7 +148,7 @@ function percentSources(key,prefer){
   const slug=toSlug(key);
 
   const siteTxts=[site?`${site}/post_intraday.txt`:null,site?`${site}/intraday.txt`:null].filter(Boolean);
-  const origTxts=[base?`${base}/${slug}_post_intraday.txt`:null,base?`${base}/${slug}_intraday_post.txt`:null].filter(Boolean);
+  const origTxts=[base?`${base}/${slug}_post_intraday.txt`:null,base?`${base}/${slug}_intraday.txt`:null].filter(Boolean);
 
   if(key==='S-COIN+'){
     origTxts.unshift(
@@ -204,6 +201,7 @@ async function resolvePercent(key,market){
   const {txts,stats}=percentSources(key,prefer);
   const lastRun=await getLastRun(key);
 
+  // 1) 新しいもの優先（stats→text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
     if(v!=null && (!lastRun || isFreshJP(ts,lastRun))) return {v:clamp(v,-cap,cap),ts}; }
@@ -211,6 +209,7 @@ async function resolvePercent(key,market){
     const {v,ts}=parsePctFromText(t);
     if(v!=null && (!lastRun || isFreshJP(ts,lastRun))) return {v:clamp(v,-cap,cap),ts}; }
 
+  // 2) 古くても出す（stats→text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
@@ -246,11 +245,8 @@ function imgCandidates(tf,key){
       if(tf==='intraday') arr.push(`${base}/${slug}_intraday.png`);
     }
   }
-  // 追加：サイト側 PNG も候補（intraday 含む）
-  if(site){
-    if(tf==='intraday') arr.push(`${site}/intraday.png`);
-    else               arr.push(`${site}/${timeframe}.png`);
-  }
+  // 長期（7d/1m/1y）はサイト側も候補に入れる
+  if(site && tf!=='intraday') arr.push(`${site}/${timeframe}.png`);
   return arr;
 }
 
@@ -283,21 +279,31 @@ async function getOriginIntradayTS(key){
   return null;
 }
 
-/* intraday 画像：S-COIN+ はサイト→原本、他は原本→サイト */
+/* ==== intraday 最適画像（S-COIN+ はサイト最優先） ==== */
 async function pickBestIntradayImage(key){
-  const urls=imgCandidates('intraday', key);
-  const siteUrls  = urls.filter(u =>  u.startsWith(SITE_CHARTS_BASE));
-  const origUrls  = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE));
-  const order = (key === 'S-COIN+')
-    ? [...siteUrls, ...origUrls]   // ← ここがポイント（サイト優先）
-    : [...origUrls, ...siteUrls];
-
-  for (const u of order){
-    if(await probeImage(u)){
-      return {url:u, origin: u.startsWith(SITE_CHARTS_BASE)?'site':'orig'};
+  if (key === 'S-COIN+') {
+    const siteURL = `${SITE_CHARTS_BASE}/${siteFolder(key)}/intraday.png`;
+    // サイト画像そのままを優先
+    try {
+      const r = await fetch(siteURL, { cache:'no-store' });
+      if (r.ok) return { url: siteURL, origin: 'site' };
+    } catch(_) {}
+    // ダメなら原本候補（順に）
+    const origs = imgCandidates('intraday', key).filter(u => !u.startsWith(SITE_CHARTS_BASE));
+    for (const u of origs) {
+      try { const r = await fetch(u, { cache:'no-store' }); if (r.ok) return { url: u, origin: 'orig' }; } catch(_) {}
     }
+    return { url: null, origin: 'orig' };
   }
-  return {url:null,origin:'orig'};
+
+  // 他は 原本 -> サイト の順で可用画像を取得
+  const urls = imgCandidates('intraday', key);
+  const order = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE))
+                    .concat(urls.filter(u =>  u.startsWith(SITE_CHARTS_BASE)));
+  for (const u of order) {
+    try { const r = await fetch(u, { cache:'no-store' }); if (r.ok) return { url: u, origin: u.startsWith(SITE_CHARTS_BASE)?'site':'orig' }; } catch(_) {}
+  }
+  return { url:null, origin:'orig' };
 }
 
 /* ====== カード描画 ====== */
@@ -345,32 +351,42 @@ async function switchTf(key,img,tf){
   img.style.opacity='0.5';
 
   let url=null, origin='site';
+
   if(tf==='intraday'){
     const pick=await pickBestIntradayImage(key);
     url=pick.url; origin=pick.origin;
-  }else{
-    const urls=imgCandidates(tf,key);
-    const order=urls.filter(u=>!u.startsWith(SITE_CHARTS_BASE))
-      .concat(urls.filter(u=>u.startsWith(SITE_CHARTS_BASE)));
-    for(const u of order){ if(await probeImage(u)){ url=u; break; } }
-    origin=(url && url.startsWith(SITE_CHARTS_BASE))?'site':'orig';
-  }
 
-  if((IMG_SEQ.get(img)||0)!==req) return origin;
+    if((IMG_SEQ.get(img)||0)!==req) return origin;
 
-  if(url){
-    let v=Date.now();
-    if(tf==='intraday'){
-      if(origin==='orig'){
-        const ts=await getOriginIntradayTS(key);
-        if(ts) v=encodeURIComponent(ts);
-      }else{
+    if(url){
+      let v=Date.now();
+      // intraday キャッシュキー：サイト画像なら last_run、原本なら原本 post_intraday の時刻
+      if (origin==='site'){
         const lr=await getLastRun(key);
         if(lr) v=encodeURIComponent(lr);
+      } else {
+        const ts=await getOriginIntradayTS(key);
+        if(ts) v=encodeURIComponent(ts);
       }
+      img.src=url+(url.includes('?')?'&':'?')+'v='+v;
+      img.alt='';
     }else{
-      if(origin==='site'){ const lr=await getLastRun(key); if(lr) v=encodeURIComponent(lr); }
+      img.removeAttribute('src'); img.alt='画像が見つかりません';
     }
+    img.dataset.origin=origin; requestAnimationFrame(()=>img.style.opacity='1'); return origin;
+  }
+
+  // 7d/1m/1y：原本→サイトの順でプローブ
+  const urls=imgCandidates(tf,key);
+  const order=urls.filter(u=>!u.startsWith(SITE_CHARTS_BASE))
+                  .concat(urls.filter(u=>u.startsWith(SITE_CHARTS_BASE)));
+  for(const u of order){ if(await probeImage(u)){ url=u; break; } }
+  origin=(url && url.startsWith(SITE_CHARTS_BASE))?'site':'orig';
+
+  if((IMG_SEQ.get(img)||0)!==req) return origin;
+  if(url){
+    let v=Date.now();
+    if(origin==='site'){ const lr=await getLastRun(key); if(lr) v=encodeURIComponent(lr); }
     img.src=url+(url.includes('?')?'&':'?')+'v='+v;
     img.alt='';
   }else{
