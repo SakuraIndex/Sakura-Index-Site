@@ -139,8 +139,11 @@ async function getLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== ％（原本最優先＋確実フォールバック） ====== */
-const PCT_ORIGIN_PREF={ 'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig','S-COIN+':'orig' };
+/* ====== ％（優先順位：S-COIN+ はサイト優先） ====== */
+const PCT_ORIGIN_PREF={
+  'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig',
+  'S-COIN+':'site'
+};
 
 function percentSources(key,prefer){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
@@ -266,7 +269,7 @@ function originPostTxtCandidates(key){
     return [
       `${base}/ain10_post_intraday.txt`,`${base}/ain10_intraday_post.txt`,
       `${base}/ain_10_post_intraday.txt`,`${base}/ain_10_intraday_post.txt`,
-      `${base}/ain-10_post_intraday.txt`,`${base}/ain-10_intraday_post.txt`,
+      `${base}/ain-10_post_intraday.txt`,`${base}/ain-10_intraday_post.txt`
     ];
   }
   return [`${base}/${slug}_post_intraday.txt`, `${base}/${slug}_intraday_post.txt`];
@@ -279,13 +282,13 @@ async function getOriginIntradayTS(key){
   return null;
 }
 
-/* intraday 画像：原本のみ（サイト側には絶対に落ちない） */
-async function pickBestIntradayImageOriginOnly(key){
-  const urls=imgCandidates('intraday', key)
-    .filter(u=>!u.startsWith(SITE_CHARTS_BASE)); // 原本だけ
-  for(const u of urls){
-    if(await probeImage(u)) return {url:u,origin:'orig'};
-  }
+/* intraday 画像：原本 → サイト側の順にプローブ（S-COIN+ の最新がサイトにあるため） */
+async function pickBestIntradayImage(key){
+  const urls=imgCandidates('intraday', key);
+  const fromOrig = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE));
+  for (const u of fromOrig){ if(await probeImage(u)) return {url:u,origin:'orig'}; }
+  const fromSite = urls.filter(u =>  u.startsWith(SITE_CHARTS_BASE));
+  for (const u of fromSite){ if(await probeImage(u)) return {url:u,origin:'site'}; }
   return {url:null,origin:'orig'};
 }
 
@@ -296,7 +299,7 @@ function renderCard(meta){
   const head=document.createElement('div');head.className='head';
   head.innerHTML=`<div class="flag">${meta.flag||'🏳️'}</div>
     <div class="name">${meta.label||key}</div>
-    <div class="badge">${meta.badge||''}</div>
+    <div class="badge">${meta.category||''}</div>
     <div class="pct na" id="pct-${key}">N/A</div>
     <div class="updatedAt" id="upd-${key}"></div>`;
   card.appendChild(head);
@@ -335,11 +338,10 @@ async function switchTf(key,img,tf){
 
   let url=null, origin='site';
   if(tf==='intraday'){
-    const pick=await pickBestIntradayImageOriginOnly(key); // ← 原本のみ
+    const pick=await pickBestIntradayImage(key); // ← 原本→サイトの順でプローブ
     url=pick.url; origin=pick.origin;
   }else{
     const urls=imgCandidates(tf,key);
-    // 原本→サイトの順でプローブ
     const order=urls.filter(u=>!u.startsWith(SITE_CHARTS_BASE))
       .concat(urls.filter(u=>u.startsWith(SITE_CHARTS_BASE)));
     for(const u of order){ if(await probeImage(u)){ url=u; break; } }
@@ -351,7 +353,6 @@ async function switchTf(key,img,tf){
   if(url){
     let v=Date.now();
     if(tf==='intraday'){
-      // キャッシュキーは原本の post_intraday 時刻（あれば）
       const ts=await getOriginIntradayTS(key);
       if(ts) v=encodeURIComponent(ts);
     }else{
