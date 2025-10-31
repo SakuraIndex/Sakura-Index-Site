@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0            # rebase のため履歴全取得
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Pull latest charts from index repos
@@ -30,20 +30,71 @@ jobs:
           mkdir -p "$d_ast" "$d_rbk" "$d_ain" "$d_scp"
 
           # ---------- helpers ----------
-          fetch(){ url="$1"; out="$2"; echo "-> $out <= $url"; curl -fsSL "$url" -o "$out" || return 1; }
-          try_fetch(){ url="$1"; out="$2"; curl -fsSL "$url" -o "$out" >/dev/null 2>&1 || return 1; }
+          fetch()      { curl -fsSL "$1" -o "$2"; }
+          try_fetch()  { curl -fsSL "$1" -o "$2" >/dev/null 2>&1; }
 
-          copy_first_hit(){
+          has_no_data() {
+            # PNG 内の "No data" の文字列を検知
+            # (埋め込みテキストとして入っているため strings で検出可能)
+            strings -n 4 "$1" 2>/dev/null | grep -qi 'no data'
+          }
+
+          # 最初に取得できたものを tmp に保存し、No data の場合は上書きしない
+          fetch_first_png_safely() {
             local base="$1"; shift
             local out="$1"; shift
+            local tmp="_tmp.png"
+            rm -f "$tmp"
+
             local hit=""
             for p in "$@"; do
-              if try_fetch "${base}/${p}" "${out}"; then
-                echo "hit: ${base}/${p} -> ${out}"
-                hit="1"; break
+              if try_fetch "${base}/${p}" "$tmp"; then
+                hit="1"
+                # No data 画像なら既存が良品の場合は維持
+                if has_no_data "$tmp"; then
+                  if [[ -s "$out" ]] && ! has_no_data "$out"; then
+                    echo "WARN: No-data image detected for $out; keep existing file."
+                    rm -f "$tmp"
+                    return 0
+                  fi
+                  # 既存が無い/既存も No data の場合は一応置く
+                fi
+                mv "$tmp" "$out"
+                echo "OK: ${base}/$p -> $out"
+                return 0
               fi
             done
-            [[ -n "$hit" ]] || { echo "no match for ${out} (candidates tried)"; rm -f "$out" || true; }
+
+            if [[ -z "$hit" ]]; then
+              echo "MISS: no PNG matched for $out"
+              return 1
+            fi
+          }
+
+          fetch_first_text() {
+            local base="$1"; shift
+            local out="$1"; shift
+            for p in "$@"; do
+              if try_fetch "${base}/${p}" "$out"; then
+                echo "OK: ${base}/$p -> $out"
+                return 0
+              fi
+            done
+            echo "MISS: no TEXT matched for $out"
+            return 1
+          }
+
+          fetch_first_json() {
+            local base="$1"; shift
+            local out="$1"; shift
+            for p in "$@"; do
+              if try_fetch "${base}/${p}" "$out"; then
+                echo "OK: ${base}/$p -> $out"
+                return 0
+              fi
+            done
+            echo "MISS: no JSON matched for $out"
+            return 1
           }
 
           # ---------- src ----------
@@ -52,78 +103,74 @@ jobs:
           b_ain="https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs"
           b_scp="https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs"
 
-          # ---------- ASTRA4 ----------
-          fetch "$b_ast/astra4_1d.png" "$d_ast/intraday.png" || true
-          fetch "$b_ast/astra4_7d.png" "$d_ast/7d.png" || true
-          fetch "$b_ast/astra4_1m.png" "$d_ast/1m.png" || true
-          fetch "$b_ast/astra4_1y.png" "$d_ast/1y.png" || true
-          copy_first_hit "$b_ast" "$d_ast/intraday.txt" \
-            "astra4_post_intraday.txt" "astra4_intraday_post.txt" "astra4_intraday_am.txt" "astra4_intraday.txt"
-          fetch "$b_ast/astra4_stats.json" "$d_ast/stats.json" || true
+          # ---------- ASTRA4 (intraday優先、次点1d) ----------
+          fetch_first_png_safely "$b_ast" "$d_ast/intraday.png" \
+            "astra4_intraday.png" "astra4_1d.png"
+          try_fetch "$b_ast/astra4_7d.png" "$d_ast/7d.png"  || true
+          try_fetch "$b_ast/astra4_1m.png" "$d_ast/1m.png"  || true
+          try_fetch "$b_ast/astra4_1y.png" "$d_ast/1y.png"  || true
+          fetch_first_text "$b_ast" "$d_ast/intraday.txt" \
+            "astra4_post_intraday.txt" "astra4_intraday_post.txt" "astra4_intraday_am.txt" "astra4_intraday.txt" || true
+          fetch_first_json "$b_ast" "$d_ast/stats.json" \
+            "astra4_stats.json" || true
 
-          # ---------- R-BANK9 ----------
-          fetch "$b_rbk/rbank9_1d.png" "$d_rbk/intraday.png" || true
-          fetch "$b_rbk/rbank9_7d.png" "$d_rbk/7d.png" || true
-          fetch "$b_rbk/rbank9_1m.png" "$d_rbk/1m.png" || true
-          fetch "$b_rbk/rbank9_1y.png" "$d_rbk/1y.png" || true
-          copy_first_hit "$b_rbk" "$d_rbk/intraday.txt" \
-            "rbank9_post_intraday.txt" "rbank9_intraday_post.txt" "rbank9_intraday_am.txt" "rbank9_intraday.txt"
-          fetch "$b_rbk/rbank9_stats.json" "$d_rbk/stats.json" || true
+          # ---------- R-BANK9 (intraday優先、次点1d) ----------
+          fetch_first_png_safely "$b_rbk" "$d_rbk/intraday.png" \
+            "rbank9_intraday.png" "rbank9_1d.png"
+          try_fetch "$b_rbk/rbank9_7d.png" "$d_rbk/7d.png"   || true
+          try_fetch "$b_rbk/rbank9_1m.png" "$d_rbk/1m.png"   || true
+          try_fetch "$b_rbk/rbank9_1y.png" "$d_rbk/1y.png"   || true
+          fetch_first_text "$b_rbk" "$d_rbk/intraday.txt" \
+            "rbank9_post_intraday.txt" "rbank9_intraday_post.txt" "rbank9_intraday_am.txt" "rbank9_intraday.txt" || true
+          fetch_first_json "$b_rbk" "$d_rbk/stats.json" \
+            "rbank9_stats.json" || true
 
-          # ---------- AIN-10 ----------
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_1d.png" "$d_ain/intraday.png" && break || true
-          done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_7d.png" "$d_ain/7d.png" && break || true
-          done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_1m.png" "$d_ain/1m.png" && break || true
-          done
-          for n in ain10 ain_10 ain-10; do
-            try_fetch "$b_ain/${n}_1y.png" "$d_ain/1y.png" && break || true
-          done
-          copy_first_hit "$b_ain" "$d_ain/intraday.txt" \
+          # ---------- AIN-10 (名称ゆらぎあり、intraday優先) ----------
+          fetch_first_png_safely "$b_ain" "$d_ain/intraday.png" \
+            "ain10_intraday.png" "ain_10_intraday.png" "ain-10_intraday.png" \
+            "ain10_1d.png"      "ain_10_1d.png"      "ain-10_1d.png"
+          fetch_first_png_safely "$b_ain" "$d_ain/7d.png" \
+            "ain10_7d.png" "ain_10_7d.png" "ain-10_7d.png" || true
+          fetch_first_png_safely "$b_ain" "$d_ain/1m.png" \
+            "ain10_1m.png" "ain_10_1m.png" "ain-10_1m.png" || true
+          fetch_first_png_safely "$b_ain" "$d_ain/1y.png" \
+            "ain10_1y.png" "ain_10_1y.png" "ain-10_1y.png" || true
+          fetch_first_text "$b_ain" "$d_ain/intraday.txt" \
             "ain10_post_intraday.txt" "ain10_intraday_post.txt" "ain10_intraday_am.txt" "ain10_intraday.txt" \
             "ain_10_post_intraday.txt" "ain_10_intraday_post.txt" "ain_10_intraday_am.txt" "ain_10_intraday.txt" \
-            "ain-10_post_intraday.txt" "ain-10_intraday_post.txt" "ain-10_intraday_am.txt" "ain-10_intraday.txt"
-          copy_first_hit "$b_ain" "$d_ain/stats.json" \
-            "ain10_stats.json" "ain_10_stats.json" "ain-10_stats.json"
+            "ain-10_post_intraday.txt" "ain-10_intraday_post.txt" "ain-10_intraday_am.txt" "ain-10_intraday.txt" || true
+          fetch_first_json "$b_ain" "$d_ain/stats.json" \
+            "ain10_stats.json" "ain_10_stats.json" "ain-10_stats.json" || true
 
-          # ---------- S-COIN+ ----------
-          # 命名ゆらぎ: scoin_plus / s_coin_plus / s-coin_plus / s_coin__*
-          for n in scoin_plus s_coin_plus s-coin_plus s_coin__; do
-            try_fetch "$b_scp/${n}_1d.png" "$d_scp/intraday.png" && break || true
-          done
-          for n in scoin_plus s_coin_plus s-coin_plus s_coin__; do
-            try_fetch "$b_scp/${n}_7d.png" "$d_scp/7d.png" && break || true
-          done
-          for n in scoin_plus s_coin_plus s-coin_plus s_coin__; do
-            try_fetch "$b_scp/${n}_1m.png" "$d_scp/1m.png" && break || true
-          done
-          for n in scoin_plus s_coin_plus s-coin_plus s_coin__; do
-            try_fetch "$b_scp/${n}_1y.png" "$d_scp/1y.png" && break || true
-          done
-          copy_first_hit "$b_scp" "$d_scp/intraday.txt" \
+          # ---------- S-COIN+ (必ず intraday 系を最優先) ----------
+          fetch_first_png_safely "$b_scp" "$d_scp/intraday.png" \
+            "scoin_plus_intraday.png" "s_coin_plus_intraday.png" "s-coin_plus_intraday.png" "s_coin__intraday.png" \
+            "scoin_plus_1d.png"       "s_coin_plus_1d.png"       "s-coin_plus_1d.png"       "s_coin__1d.png"
+          fetch_first_png_safely "$b_scp" "$d_scp/7d.png" \
+            "scoin_plus_7d.png" "s_coin_plus_7d.png" "s-coin_plus_7d.png" "s_coin__7d.png" || true
+          fetch_first_png_safely "$b_scp" "$d_scp/1m.png" \
+            "scoin_plus_1m.png" "s_coin_plus_1m.png" "s-coin_plus_1m.png" "s_coin__1m.png" || true
+          fetch_first_png_safely "$b_scp" "$d_scp/1y.png" \
+            "scoin_plus_1y.png" "s_coin_plus_1y.png" "s-coin_plus_1y.png" "s_coin__1y.png" || true
+          fetch_first_text "$b_scp" "$d_scp/intraday.txt" \
             "scoin_plus_post_intraday.txt" "scoin_plus_intraday_post.txt" "scoin_plus_intraday_am.txt" "scoin_plus_intraday.txt" \
             "s_coin_plus_post_intraday.txt" "s_coin_plus_intraday_post.txt" "s_coin_plus_intraday_am.txt" "s_coin_plus_intraday.txt" \
             "s-coin_plus_post_intraday.txt" "s-coin_plus_intraday_post.txt" "s-coin_plus_intraday_am.txt" "s-coin_plus_intraday.txt" \
-            "s_coin__post_intraday.txt" "s_coin__intraday_post.txt" "s_coin__intraday_am.txt" "s_coin__intraday.txt"
-          copy_first_hit "$b_scp" "$d_scp/stats.json" \
-            "scoin_plus_stats.json" "s_coin_plus_stats.json" "s-coin_plus_stats.json" "s_coin__stats.json"
+            "s_coin__post_intraday.txt" "s_coin__intraday_post.txt" "s_coin__intraday_am.txt" "s_coin__intraday.txt" || true
+          fetch_first_json "$b_scp" "$d_scp/stats.json" \
+            "scoin_plus_stats.json" "s_coin_plus_stats.json" "s-coin_plus_stats.json" "s_coin__stats.json" || true
 
-          # ---------- キャッシュバスター ----------
-          date -u +'%Y-%m-%dT%H:%M:%SZ' | tee \
+          # ---------- last_run (JST基準の目安) ----------
+          TZ=Asia/Tokyo date +'%Y/%m/%d %H:%M' | tee \
             "$d_ast/last_run.txt" "$d_rbk/last_run.txt" "$d_ain/last_run.txt" "$d_scp/last_run.txt" >/dev/null
 
-          # ---------- 清掃 ----------
-          git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
-
-          # ---------- commit & safe push ----------
+      - name: Commit & Push
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add docs/charts/**/*
+          git add docs/charts/**/* || true
 
           if git diff --cached --quiet; then
             echo "No changes detected."
@@ -131,9 +178,6 @@ jobs:
           fi
 
           git commit -m "chore(site): sync intraday & long-term charts (7d/1m/1y) + stats + intraday.txt"
-
-          echo "Pulling latest main branch for rebase..."
+          # 競合回避（他ジョブ同時実行を考慮）
           git pull --rebase origin main || true
-
-          echo "Pushing updates safely..."
           git push --force-with-lease origin HEAD:main || echo "Push skipped or failed, likely concurrent run."
