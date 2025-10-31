@@ -87,7 +87,7 @@ const ORIG={
 };
 const FOLDER={ 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
 
-/* 日本株扱い（S-COIN+ は日本株の“関連株”指数） */
+/* 表示対象 */
 const IDX=[
   {key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP', description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
   {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵', badge:'地方銀行',      market:'JP', description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
@@ -102,6 +102,7 @@ const $=(s,el=document)=>el.querySelector(s);
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
+const probeImage=async(u)=>{try{const r=await fetch(u,{cache:'no-store'}); if(!r.ok) return false; const ct=r.headers.get('content-type')||''; return ct.includes('image');}catch{return false;}};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 
@@ -138,15 +139,17 @@ async function getLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== ％の出所（原本優先） ====== */
+/* ====== ％の出所（原本最優先） ====== */
 const PCT_ORIGIN_PREF={ 'ASTRA4':'orig','R-BANK9':'orig','AIN-10':'orig','AIN10':'orig','S-COIN+':'orig' };
 
 function percentSources(key,prefer){
-  const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
+  const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
   const base=originBase(key);
+  const slug=toSlug(key);
+
   const siteTxts=[site?`${site}/post_intraday.txt`:null,site?`${site}/intraday.txt`:null].filter(Boolean);
   const origTxts=[base?`${base}/${slug}_post_intraday.txt`:null,base?`${base}/${slug}_intraday.txt`:null].filter(Boolean);
-  // ゆらぎ
+
   if(key==='S-COIN+'){
     origTxts.unshift(
       `${base}/scoin_plus_post_intraday.txt`,`${base}/s_coin_plus_post_intraday.txt`,`${base}/s-coin_plus_post_intraday.txt`,`${base}/s_coin__post_intraday.txt`
@@ -159,8 +162,9 @@ function percentSources(key,prefer){
       `${base}/ain-10_post_intraday.txt`,`${base}/ain-10_intraday_post.txt`
     );
   }
+
   const siteStats=site?`${site}/stats.json`:null;
-  const origStats=base?`${base}/${toSlug(key)}_stats.json`:null;
+  const origStats=base?`${base}/${slug}_stats.json`:null;
 
   const txts=(prefer==='orig')?[...origTxts,...siteTxts]:[...siteTxts,...origTxts];
   const stats=(prefer==='orig')?[origStats,siteStats].filter(Boolean):[siteStats,origStats].filter(Boolean);
@@ -219,7 +223,6 @@ const scoinPng=(suffix)=>[
   `s_coin__${suffix}.png`
 ];
 
-// 原本→サイトの順に返す
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null;
   const base=originBase(key);
@@ -243,20 +246,7 @@ function imgCandidates(tf,key){
   return arr;
 }
 
-/* 画像ロード */
-const IMG_SEQ=new WeakMap();
-function tryLoad(url){
-  return new Promise(res=>{
-    const i=new Image();
-    i.onload=()=>res(true);
-    i.onerror=()=>res(false);
-    i.referrerPolicy='no-referrer';
-    i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();
-  });
-}
-async function loadFirst(urls){ for(const u of urls){ if(await tryLoad(u)) return u; } return null; }
-
-/* 原本の post_intraday.txt 候補（キャッシュバスター時刻用） */
+/* 原本の post_intraday.txt 候補（キャッシュバスター用） */
 function originPostTxtCandidates(key){
   const base=originBase(key); if(!base) return [];
   const slug=toSlug(key);
@@ -285,27 +275,35 @@ async function getOriginIntradayTS(key){
   return null;
 }
 
-/* intraday.png の選定（原本絶対優先） */
+/* intraday 画像決定（原本厳格優先 + fetchプローブ） */
 async function pickBestIntradayImage(key){
+  const urls=imgCandidates('intraday', key);
+  const originOnly=urls.filter(u=>!u.startsWith(SITE_CHARTS_BASE));
+  const siteOnly=urls.filter(u=> u.startsWith(SITE_CHARTS_BASE));
+
+  // 1) 原本に対して fetch プローブ
+  for(const u of originOnly){
+    if(await probeImage(u)) return {url:u,origin:'orig'};
+  }
+
+  // 2) サイト側は intraday.txt が No data でなく、かつ鮮度OKの時だけ
   const folder=siteFolder(key);
   const siteTxt = folder? await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`) : null;
   const lastRun = await getLastRun(key);
-  const siteOk  = !!(siteTxt && !/no\s*data/i.test(siteTxt) && isFreshJP(parsePctFromText(siteTxt).ts,lastRun));
+  const txtOk = !!(siteTxt && !/no\s*data/i.test(siteTxt));
+  const tsOk  = txtOk ? isFreshJP(parsePctFromText(siteTxt).ts,lastRun) : false;
 
-  const all = imgCandidates('intraday', key);
-  const originOnly = all.filter(u=>!u.startsWith(SITE_CHARTS_BASE));
-  const siteOnly   = all.filter(u=> u.startsWith(SITE_CHARTS_BASE));
-
-  let hit = await loadFirst(originOnly);
-  if(hit) return {url:hit,origin:'orig'};
-
-  if(siteOk){
-    hit = await loadFirst(siteOnly);
-    if(hit) return {url:hit,origin:'site'};
+  if(txtOk && tsOk){
+    for(const u of siteOnly){
+      if(await probeImage(u)) return {url:u,origin:'site'};
+    }
   }
 
-  hit = await loadFirst(all);
-  return {url:hit,origin:(hit && hit.startsWith(SITE_CHARTS_BASE))?'site':'orig'};
+  // 3) それでもダメなら最後に全候補を順に
+  for(const u of urls){
+    if(await probeImage(u)) return {url:u,origin:(u.startsWith(SITE_CHARTS_BASE)?'site':'orig')};
+  }
+  return {url:null,origin:'site'};
 }
 
 /* ====== カード描画 ====== */
@@ -346,6 +344,8 @@ function renderCard(meta){
   return card;
 }
 
+const IMG_SEQ=new WeakMap();
+
 async function switchTf(key,img,tf){
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
@@ -356,8 +356,10 @@ async function switchTf(key,img,tf){
     url=pick.url; origin=pick.origin;
   }else{
     const urls=imgCandidates(tf,key);
-    // 原本→サイトの順で
-    url=await loadFirst(urls);
+    // 原本→サイトの順にプローブ
+    const originFirst=urls.filter(u=>!u.startsWith(SITE_CHARTS_BASE))
+      .concat(urls.filter(u=>u.startsWith(SITE_CHARTS_BASE)));
+    for(const u of originFirst){ if(await probeImage(u)){ url=u; break; } }
     origin=(url && url.startsWith(SITE_CHARTS_BASE))?'site':'orig';
   }
 
