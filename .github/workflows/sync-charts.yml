@@ -17,13 +17,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Prepare tools
-        run: |
-          set -euo pipefail
-          echo "curl version:"
-          curl --version
-
-      - name: Pull latest charts from index repos (robust)
+      - name: Pull latest charts from index repos (robust, meta-gated)
         shell: bash
         run: |
           set -euo pipefail
@@ -42,7 +36,7 @@ jobs:
           b_scp="https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs"
 
           # ====== helpers ======
-          # HEAD検査：200 且つ image/* 且つ 4KB以上 を OK とみなす
+          # HEAD検査：200 且つ image/* 且つ 4KB以上 を OK
           head_ok () {
             local url="$1"
             local h status ctype clen
@@ -53,40 +47,33 @@ jobs:
             clen="$(printf '%s' "$h" | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {print $2}' | tr -d '\r')"
             [[ "$status" == "200" ]] || return 1
             [[ "$ctype" == image/* || "$ctype" =~ ^image/ ]] || return 1
-            # 4096 bytes threshold（小さすぎるPNGはだいたい 'No data' か壊れ）
             [[ "${clen:-0}" -ge 4096 ]] || return 1
             return 0
           }
-
-          # ファイルを安全に取得（head_okを通らなければ保存しない）
-          fetch_img () {
+          fetch_img () { # 保存は head_ok を通った場合のみ
             local url="$1" out="$2"
             if head_ok "$url"; then
-              echo "GET IMG OK: $url -> $out"
+              echo "IMG OK: $url"
               curl -fsSL "$url" -o "$out"
               return 0
             else
-              echo "SKIP IMG : $url (head check NG)"
+              echo "IMG NG: $url"
               return 1
             fi
           }
-
-          # テキストは 200 なら保存
-          fetch_txt () {
+          fetch_txt () { # 200 のみ保存
             local url="$1" out="$2"
             if curl -fsSL "$url" -o "$out.tmp"; then
               mv "$out.tmp" "$out"
-              echo "GET TXT OK: $url -> $out"
+              echo "TXT OK: $url"
               return 0
             else
-              echo "SKIP TXT : $url"
+              echo "TXT NG: $url"
               rm -f "$out.tmp" || true
               return 1
             fi
           }
-
-          # 候補リストから最初のヒットを保存（画像）
-          copy_first_img () {
+          copy_first_img () { # out, urls...
             local out="$1"; shift
             local hit=""
             for u in "$@"; do
@@ -94,9 +81,7 @@ jobs:
             done
             [[ -n "$hit" ]]
           }
-
-          # 候補リストから最初のヒットを保存（テキスト）
-          copy_first_txt () {
+          copy_first_txt () { # out, urls...
             local out="$1"; shift
             local hit=""
             for u in "$@"; do
@@ -105,80 +90,81 @@ jobs:
             [[ -n "$hit" ]]
           }
 
-          # ====== candidates ======
-          scoin_png() { # $1: suffix (1d/7d/1m/1y/intraday)
-            echo \
-              "$b_scp/scoin_plus_$1.png" \
-              "$b_scp/s_coin_plus_$1.png" \
-              "$b_scp/s-coin_plus_$1.png" \
-              "$b_scp/s_coin__${1}.png"
-          }
+          # 命名ゆらぎ
           ain_png() { # $1: suffix
-            echo \
-              "$b_ain/ain10_$1.png" \
-              "$b_ain/ain_10_$1.png" \
-              "$b_ain/ain-10_$1.png"
+            echo "$b_ain/ain10_$1.png" "$b_ain/ain_10_$1.png" "$b_ain/ain-10_$1.png"
           }
-          scoin_txt_post() {
-            echo \
-              "$b_scp/scoin_plus_post_intraday.txt" \
-              "$b_scp/s_coin_plus_post_intraday.txt" \
-              "$b_scp/s-coin_plus_post_intraday.txt" \
-              "$b_scp/s_coin__post_intraday.txt" \
-              "$b_scp/scoin_plus_intraday_post.txt" \
-              "$b_scp/s_coin_plus_intraday_post.txt" \
-              "$b_scp/s-coin_plus_intraday_post.txt" \
-              "$b_scp/s_coin__intraday_post.txt"
+          scoin_png() { # $1: suffix
+            echo "$b_scp/scoin_plus_$1.png" "$b_scp/s_coin_plus_$1.png" "$b_scp/s-coin_plus_$1.png" "$b_scp/s_coin__${1}.png"
           }
-          ain_txt_post() {
-            echo \
-              "$b_ain/ain10_post_intraday.txt" \
-              "$b_ain/ain10_intraday_post.txt" \
-              "$b_ain/ain_10_post_intraday.txt" \
-              "$b_ain/ain_10_intraday_post.txt" \
-              "$b_ain/ain-10_post_intraday.txt" \
-              "$b_ain/ain-10_intraday_post.txt"
+          ain_post_txts() {
+            echo "$b_ain/ain10_post_intraday.txt" "$b_ain/ain10_intraday_post.txt" \
+                 "$b_ain/ain_10_post_intraday.txt" "$b_ain/ain_10_intraday_post.txt" \
+                 "$b_ain/ain-10_post_intraday.txt" "$b_ain/ain-10_intraday_post.txt"
+          }
+          scoin_post_txts() {
+            echo "$b_scp/scoin_plus_post_intraday.txt" "$b_scp/scoin_plus_intraday_post.txt" \
+                 "$b_scp/s_coin_plus_post_intraday.txt" "$b_scp/s_coin_plus_intraday_post.txt" \
+                 "$b_scp/s-coin_plus_post_intraday.txt" "$b_scp/s-coin_plus_intraday_post.txt" \
+                 "$b_scp/s_coin__post_intraday.txt" "$b_scp/s_coin__intraday_post.txt"
           }
 
-          # ====== ASTRA4 ======
-          copy_first_img "$d_ast/intraday.png"   "$b_ast/astra4_1d.png"   || true
-          copy_first_img "$d_ast/7d.png"         "$b_ast/astra4_7d.png"   || true
-          copy_first_img "$d_ast/1m.png"         "$b_ast/astra4_1m.png"   || true
-          copy_first_img "$d_ast/1y.png"         "$b_ast/astra4_1y.png"   || true
-          copy_first_txt "$d_ast/intraday.txt"   "$b_ast/astra4_post_intraday.txt" "$b_ast/astra4_intraday_post.txt" "$b_ast/astra4_intraday.txt" || true
-          copy_first_txt "$d_ast/stats.json"     "$b_ast/astra4_stats.json" || true
+          # ====== gate logic: 「メタが取れたら intraday.png を更新」 ======
+          # 更新フラグ
+          upd_ast=0; upd_rbk=0; upd_ain=0; upd_scp=0
+
+          # ASTRA4 meta（どちらか片方でもOK）
+          copy_first_txt "$d_ast/intraday.txt" "$b_ast/astra4_post_intraday.txt" "$b_ast/astra4_intraday_post.txt" "$b_ast/astra4_intraday.txt" && upd_ast=1 || true
+          copy_first_txt "$d_ast/stats.json"   "$b_ast/astra4_stats.json" && upd_ast=1 || true
+          # R-BANK9
+          copy_first_txt "$d_rbk/intraday.txt" "$b_rbk/rbank9_post_intraday.txt" "$b_rbk/rbank9_intraday_post.txt" "$b_rbk/rbank9_intraday.txt" && upd_rbk=1 || true
+          copy_first_txt "$d_rbk/stats.json"   "$b_rbk/rbank9_stats.json" && upd_rbk=1 || true
+          # AIN-10
+          copy_first_txt "$d_ain/intraday.txt" $(ain_post_txts) && upd_ain=1 || true
+          copy_first_txt "$d_ain/stats.json"   "$b_ain/ain10_stats.json" "$b_ain/ain_10_stats.json" "$b_ain/ain-10_stats.json" && upd_ain=1 || true
+          # S-COIN+
+          copy_first_txt "$d_scp/intraday.txt" $(scoin_post_txts) && upd_scp=1 || true
+          copy_first_txt "$d_scp/stats.json"   "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" && upd_scp=1 || true
+
+          echo "META OK flags => AST:${upd_ast} RBK:${upd_rbk} AIN:${upd_ain} SCP:${upd_scp}"
+
+          # ====== long-term images は常に更新トライ（安全チェック付き） ======
+          copy_first_img "$d_ast/7d.png" "$b_ast/astra4_7d.png" || true
+          copy_first_img "$d_ast/1m.png" "$b_ast/astra4_1m.png" || true
+          copy_first_img "$d_ast/1y.png" "$b_ast/astra4_1y.png" || true
+
+          copy_first_img "$d_rbk/7d.png" "$b_rbk/rbank9_7d.png" || true
+          copy_first_img "$d_rbk/1m.png" "$b_rbk/rbank9_1m.png" || true
+          copy_first_img "$d_rbk/1y.png" "$b_rbk/rbank9_1y.png" || true
+
+          copy_first_img "$d_ain/7d.png" $(ain_png 7d) || true
+          copy_first_img "$d_ain/1m.png" $(ain_png 1m) || true
+          copy_first_img "$d_ain/1y.png" $(ain_png 1y) || true
+
+          copy_first_img "$d_scp/7d.png"  $(scoin_png 7d) || true
+          copy_first_img "$d_scp/1m.png"  $(scoin_png 1m) || true
+          copy_first_img "$d_scp/1y.png"  $(scoin_png 1y) || true
+
+          # ====== intraday（原本1dをメタゲートで更新） ======
+          if [[ $upd_ast -eq 1 ]]; then copy_first_img "$d_ast/intraday.png" "$b_ast/astra4_1d.png" || true; fi
+          if [[ $upd_rbk -eq 1 ]]; then copy_first_img "$d_rbk/intraday.png" "$b_rbk/rbank9_1d.png" || true; fi
+          if [[ $upd_ain -eq 1 ]]; then copy_first_img "$d_ain/intraday.png" $(ain_png 1d) || true; fi
+          if [[ $upd_scp -eq 1 ]]; then copy_first_img "$d_scp/intraday.png" $(scoin_png 1d) || true; fi
+
+          # ====== last_run （原本の _last_run があれば採用、なければUTC現在） ======
           fetch_txt "$b_ast/_last_run.txt" "$d_ast/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ast/last_run.txt"
-
-          # ====== R-BANK9 ======
-          copy_first_img "$d_rbk/intraday.png"   "$b_rbk/rbank9_1d.png"   || true
-          copy_first_img "$d_rbk/7d.png"         "$b_rbk/rbank9_7d.png"   || true
-          copy_first_img "$d_rbk/1m.png"         "$b_rbk/rbank9_1m.png"   || true
-          copy_first_img "$d_rbk/1y.png"         "$b_rbk/rbank9_1y.png"   || true
-          copy_first_txt "$d_rbk/intraday.txt"   "$b_rbk/rbank9_post_intraday.txt" "$b_rbk/rbank9_intraday_post.txt" "$b_rbk/rbank9_intraday.txt" || true
-          copy_first_txt "$d_rbk/stats.json"     "$b_rbk/rbank9_stats.json" || true
           fetch_txt "$b_rbk/_last_run.txt" "$d_rbk/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_rbk/last_run.txt"
-
-          # ====== AIN-10 ======
-          copy_first_img "$d_ain/intraday.png"   $(ain_png 1d)   || true
-          copy_first_img "$d_ain/7d.png"         $(ain_png 7d)   || true
-          copy_first_img "$d_ain/1m.png"         $(ain_png 1m)   || true
-          copy_first_img "$d_ain/1y.png"         $(ain_png 1y)   || true
-          copy_first_txt "$d_ain/intraday.txt"   $(ain_txt_post) || true
-          copy_first_txt "$d_ain/stats.json"     "$b_ain/ain10_stats.json" "$b_ain/ain_10_stats.json" "$b_ain/ain-10_stats.json" || true
           fetch_txt "$b_ain/_last_run.txt" "$d_ain/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ain/last_run.txt"
-
-          # ====== S-COIN+ ======
-          # intraday は原本 1d のみ（サイト側へは落とさない）
-          copy_first_img "$d_scp/intraday.png"   $(scoin_png 1d) || true
-          copy_first_img "$d_scp/7d.png"         $(scoin_png 7d) || true
-          copy_first_img "$d_scp/1m.png"         $(scoin_png 1m) || true
-          copy_first_img "$d_scp/1y.png"         $(scoin_png 1y) || true
-          copy_first_txt "$d_scp/intraday.txt"   $(scoin_txt_post) || true
-          copy_first_txt "$d_scp/stats.json"     "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" || true
           fetch_txt "$b_scp/_last_run.txt" "$d_scp/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_scp/last_run.txt"
 
-          # ====== cleanup (古いパスの残骸を掃除・あっても無視) ======
+          # ====== cleanup（旧パス掃除：あっても無視） ======
           git rm -f docs/charts/ain10_*.png docs/charts/*_history.csv docs/charts/*_intraday.png 2>/dev/null || true
+
+          echo "--- after sync ---"
+          ls -l docs/charts/ASTRA4 || true
+          ls -l docs/charts/R_BANK9 || true
+          ls -l docs/charts/AIN10 || true
+          ls -l docs/charts/S-COIN+ || true
 
       - name: Commit & push if changed
         shell: bash
@@ -191,7 +177,6 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
-          git commit -m "chore(site): robust sync charts (validate image type/size, origin-first intraday, safe text sync, preserve last good)"
-          # 安全にrebaseして競合最小化
+          git commit -m "chore(site): meta-gated intraday sync (only update when text/stats present) + safe image validation + preserve last good"
           git pull --rebase origin main || true
           git push --force-with-lease origin HEAD:main || echo "Push skipped or failed"
