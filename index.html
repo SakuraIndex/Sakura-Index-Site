@@ -1,190 +1,124 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>🌸 桜Index - 公式サイト</title>
-  <style>
-    :root{--bg:#0b1420;--panel:#0f1b28;--panel2:#0c1926;--border:#1c2a3a;--text:#d4e9f7;
-      --sub:#9fb6c7;--muted:#7890a0;--brand:#93c5fd;--up:#34d399;--down:#fb7185;--chip:#0b2233}
-    *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",
-      "Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
-    a{color:var(--brand);text-decoration:none}
-    .wrap{max-width:1160px;margin:32px auto;padding:0 16px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .title{display:flex;gap:12px;align-items:center}
-    .title h1{margin:0;font-size:24px;font-weight:700}
-    .meta{color:var(--muted);font-size:12px;margin-top:4px}
-    .btns{display:flex;gap:10px}
-    .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
-      padding:11px 16px;border-radius:12px;font-size:14px;display:inline-flex;gap:8px;align-items:center}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    @media (max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);
-      border-radius:16px;padding:14px;position:relative}
-    .card.pos{box-shadow:0 0 0 2px #34d39933 inset}.card.neg{box-shadow:0 0 0 2px #fb718533 inset}
-    .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .flag{font-size:18px}.name{font-size:18px;font-weight:700}
-    .badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);
-      padding:4px 8px;border-radius:999px}
-    .desc{color:var(--sub);font-size:12px;margin:2px 0 8px 28px}
-    .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px}
-    .pct.up{color:var(--up)}.pct.down{color:var(--down)}.pct.na{color:var(--muted)}
-    .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
-      background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .chart img{display:block;width:100%;height:100%;object-fit:contain}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌸 桜Index - 公式サイト</title>
+<style>
+:root{--bg:#0b1420;--panel:#0f1b28;--panel2:#0c1926;--border:#1c2a3a;
+--text:#d4e9f7;--sub:#9fb6c7;--muted:#7890a0;--brand:#93c5fd;
+--up:#34d399;--down:#fb7185;--chip:#0b2233;}
+body{margin:0;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;}
+.wrap{max-width:1160px;margin:32px auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.title{display:flex;align-items:center;gap:12px}
+.title h1{margin:0;font-size:24px;font-weight:700}
+.meta{color:var(--muted);font-size:12px;margin-top:4px}
+.btns{display:flex;gap:10px}
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+padding:10px 14px;border-radius:10px;font-size:14px;text-decoration:none}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+border:1px solid var(--border);border-radius:14px;padding:14px;position:relative}
+.card.pos{box-shadow:0 0 0 2px #34d39933 inset}
+.card.neg{box-shadow:0 0 0 2px #fb718533 inset}
+.head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.flag{font-size:18px}.name{font-size:18px;font-weight:700}
+.badge{font-size:11px;color:var(--sub);background:var(--chip);border:1px solid var(--border);
+padding:4px 8px;border-radius:999px}
+.desc{color:var(--sub);font-size:12px;margin:0 0 8px 28px}
+.pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px}
+.pct.up{color:var(--up)}.pct.down{color:var(--down)}.pct.na{color:var(--muted)}
+.chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
+background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.chart img{width:100%;height:100%;object-fit:contain}
+</style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
-      <div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
-    </div>
-    <div class="btns">
-      <a class="btn" href="https://x.com">公式X（Twitter）</a>
-      <a class="btn" href="https://note.com">公式note</a>
-    </div>
-  </header>
-
-  <section class="grid" id="cards"></section>
+<header>
+<div>
+<div class="title"><div style="font-size:22px">🌸</div><h1>桜Index - 公式サイト</h1></div>
+<div class="meta" id="syncMeta">同期完了：-- ／ データ: charts/*</div>
+</div>
+<div class="btns">
+<a class="btn" href="https://x.com">公式X（Twitter）</a>
+<a class="btn" href="https://note.com">公式note</a>
+</div>
+</header>
+<section class="grid" id="cards"></section>
 </div>
 
 <script>
-/* ------- 定義 ------- */
 const SITE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
 const ORIG={
-  'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+ 'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+ 'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+ 'AIN-10':'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+ 'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
 };
 const FOLDER={'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','S-COIN+':'S-COIN+'};
-const SLUG  ={'ASTRA4':'astra4','R-BANK9':'rbank9','AIN-10':'ain10','S-COIN+':'scoin_plus'};
-
+const SLUG={'ASTRA4':'astra4','R-BANK9':'rbank9','AIN-10':'ain10','S-COIN+':'scoin_plus'};
 const IDX=[
-  {key:'ASTRA4',flag:'🇯🇵',badge:'宇宙ベンチャー',desc:'宇宙関連4銘柄の等ウェイト指数。'},
-  {key:'R-BANK9',flag:'🇯🇵',badge:'地方銀行',desc:'地方銀行9銘柄の等ウェイト指数。'},
-  {key:'AIN-10',flag:'🇺🇸',badge:'AI関連10',desc:'米AI関連10銘柄の等ウェイト指数。'},
-  {key:'S-COIN+',flag:'🪙',badge:'仮想資産関連',desc:'暗号資産関連の等ウェイト指数（日本株）。'},
+ {key:'ASTRA4',flag:'🇯🇵',badge:'宇宙ベンチャー',desc:'宇宙関連4銘柄の等ウェイト指数。'},
+ {key:'R-BANK9',flag:'🇯🇵',badge:'地方銀行',desc:'地方銀行9銘柄の等ウェイト指数。'},
+ {key:'AIN-10',flag:'🇺🇸',badge:'AI関連10',desc:'米AI関連10銘柄の等ウェイト指数。'},
+ {key:'S-COIN+',flag:'🪙',badge:'仮想資産関連',desc:'暗号資産関連の等ウェイト指数（日本株）。'}
 ];
-
-/* ------- util ------- */
 const $=(s,el=document)=>el.querySelector(s);
 const nowJP=()=>new Date().toLocaleString('ja-JP',{hour12:false});
 async function ftxt(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null}catch{return null}}
 async function fjson(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null}catch{return null}}
 function pJP(s){const m=s?.match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[ T](\d{2}):(\d{2})/);return m?new Date(m[1],m[2]-1,m[3],m[4],m[5]):null}
-function sameDay(a,b){return !!(a&&b) && a.toDateString()===b.toDateString()}
+function sameDay(a,b){if(!a||!b)return false;return Math.abs(a-b)<1000*60*60*6*4;} // ±6h許容
 function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
-function pctDisp(v){return{t:(v>=0?'+':'')+v.toFixed(2)+'%',c:v>0?'up':v<0?'down':'na'}}
+function fmt(v){return{t:(v>=0?'+':'')+v.toFixed(2)+'%',c:v>0?'up':v<0?'down':'na'}}
 
-/* ------- 鮮度つきテキスト％抽出 ------- */
-async function readPostWithTs(baseUrl){
-  const t = await ftxt(baseUrl);
-  if(!t) return null;
-  const ts = pJP(t.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/)?.[1]||'');
-  const n  = parseFloat((t.match(/[+\-]?\d+(?:\.\d+)?\s*%/)||[])[0]?.replace('%',''));
-  return (isFinite(n)&&ts)?{v:n,ts}:null;
+async function pickPct(key){
+ const fold=FOLDER[key],base=ORIG[key],slug=SLUG[key],today=new Date();
+ const cand=[];
+ if(fold){const t=await ftxt(`${SITE}/${fold}/post_intraday.txt`);
+   if(t){const ts=pJP(t.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/)?.[1]||'');
+   const n=parseFloat((t.match(/[+\-]?\d+(?:\.\d+)?/)||[])[0]);if(!isNaN(n))cand.push({v:n,ts});}}
+ if(base&&slug){const t=await ftxt(`${base}/${slug}_post_intraday.txt`);
+   if(t){const ts=pJP(t.match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/)?.[1]||'');
+   const n=parseFloat((t.match(/[+\-]?\d+(?:\.\d+)?/)||[])[0]);if(!isNaN(n))cand.push({v:n,ts});}}
+ const valid=cand.filter(x=>x.ts&&sameDay(x.ts,today));
+ if(valid.length){valid.sort((a,b)=>b.ts-a.ts);let v=valid[0].v;if(Math.abs(v)<2)v*=100;return clamp(v,-30,30);}
+ if(base&&slug){const j=await fjson(`${base}/${slug}_stats.json`);
+   if(j){const fields=['pct_intraday','rtn_intraday','pct','change_pct','change_percent'];
+   for(const f of fields){if(j[f]!=null){let v=j[f];if(Math.abs(v)<2)v*=100;return clamp(v,-30,30);}}}}
+ return null;
 }
 
-/* ------- ％の決定（最新優先） ------- */
-async function pickPercent(key){
-  const fold=FOLDER[key], base=ORIG[key], slug=SLUG[key], today=new Date();
-
-  // 1) post_intraday.txt：サイトと指数リポの新しい方
-  const cand=[];
-  if(fold) cand.push(await readPostWithTs(`${SITE}/${fold}/post_intraday.txt`));
-  if(base&&slug) cand.push(await readPostWithTs(`${base}/${slug}_post_intraday.txt`));
-  const valid=cand.filter(x=>x && sameDay(x.ts,today));
-  if(valid.length){
-    valid.sort((a,b)=>b.ts-a.ts);
-    return clamp(valid[0].v,-15,15);
-  }
-
-  // 2) stats.json（フィールド広め＆スケール自動判定）
-  if(base&&slug){
-    const j=await fjson(`${base}/${slug}_stats.json`);
-    if(j){
-      const fields=['pct_intraday','rtn_intraday','pct','change_pct','change_percent','today_pct','pct_1d'];
-      for(const f of fields){
-        if(j[f]==null) continue;
-        let v=Number(j[f]); if(!isFinite(v)) continue;
-        // |v|<=1.2 なら比率→％とみなして ×100（それ以外は％とみなす）
-        if(Math.abs(v)<=1.2) v*=100;
-        return clamp(v,-15,15);
-      }
-    }
-  }
-  return null;
+async function testImg(u){return new Promise(res=>{const i=new Image();i.onload=()=>res(true);i.onerror=()=>res(false);i.src=u+'?t='+Date.now();});}
+async function pickImg(key){
+ const fold=FOLDER[key],base=ORIG[key],slug=SLUG[key];
+ if(key==='S-COIN+'&&base&&slug){const u=`${base}/${slug}_intraday.png`;if(await testImg(u))return u;}
+ if(fold){const t=await ftxt(`${SITE}/${fold}/intraday.txt`);
+   const nod=/no\s*data/i.test(t||'');const ts=pJP((t||'').match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/)?.[1]||'');
+   if(!nod&&sameDay(ts,new Date())){const u=`${SITE}/${fold}/intraday.png`;if(await testImg(u))return u;}}
+ if(base&&slug){const u=`${base}/${slug}_intraday.png`;if(await testImg(u))return u;}
+ return null;
 }
 
-/* ------- intraday 画像の決定 ------- */
-async function testImg(u){return new Promise(res=>{const i=new Image();i.onload=()=>res(true);i.onerror=()=>res(false);i.referrerPolicy='no-referrer';i.src=u+(u.includes('?')?'&':'?')+'t='+(Date.now())})}
-
-async function pickIntradayImg(key){
-  const fold=FOLDER[key], base=ORIG[key], slug=SLUG[key], today=new Date();
-
-  // S-COIN+ は指数PNG最優先（サイトは no data が多い）
-  if(key==='S-COIN+' && base && slug){
-    const u=`${base}/${slug}_intraday.png`;
-    if(await testImg(u)) return u;
-  }
-
-  // サイトの intraday.txt を確認（no data / 当日）
-  if(fold){
-    const t=await ftxt(`${SITE}/${fold}/intraday.txt`);
-    const nodata=/no\s*data/i.test(t||'');
-    const ts = pJP((t||'').match(/\((\d{4}\/\d{2}\/\d{2}\s\d{2}:\d{2})\)/)?.[1]||'');
-    const same=sameDay(ts,today);
-    if(!nodata && same){
-      const u=`${SITE}/${fold}/intraday.png`;
-      if(await testImg(u)) return u;
-    }
-  }
-
-  // 指数リポ intraday.png
-  if(base&&slug){
-    const u=`${base}/${slug}_intraday.png`;
-    if(await testImg(u)) return u;
-  }
-
-  // それでもダメならサイト intraday.png（最終手段、鮮度問わず）※1d へは絶対フォールバックしない
-  if(fold){
-    const u=`${SITE}/${fold}/intraday.png`;
-    if(await testImg(u)) return u;
-  }
-  return null;
+async function render(m){
+ const v=await pickPct(m.key);
+ const pf=v==null?{t:'N/A',c:'na'}:fmt(v);
+ const img=await pickImg(m.key);
+ const card=document.createElement('div');
+ card.className='card '+(pf.c==='up'?'pos':pf.c==='down'?'neg':'');
+ card.innerHTML=`<div class="head"><div class="flag">${m.flag}</div><div class="name">${m.key}</div>
+ <div class="badge">${m.badge}</div><div class="pct ${pf.c}">${pf.t}</div></div>
+ <div class="desc">${m.desc}</div><div class="chart">${img?`<img src="${img}">`:`<div style="color:#7890a0">No data</div>`}</div>`;
+ return card;
 }
-
-/* ------- 描画 ------- */
-async function renderCard(meta){
-  const key=meta.key;
-  const v=await pickPercent(key);
-  const disp = v==null ? {t:'N/A',c:'na'} : pctDisp(v);
-  const img=await pickIntradayImg(key);
-
-  const card=document.createElement('article');
-  card.className='card '+(disp.c==='up'?'pos':disp.c==='down'?'neg':'');
-  card.innerHTML=`
-    <div class="head">
-      <div class="flag">${meta.flag}</div>
-      <div class="name">${key}</div>
-      <div class="badge">${meta.badge}</div>
-      <div class="pct ${disp.c}">${disp.t}</div>
-    </div>
-    <div class="desc">${meta.desc}</div>
-    <div class="chart">${img?`<img src="${img}">`:`<div style="color:#7890a0">No data</div>`}</div>
-  `;
-  return card;
-}
-
 (async()=>{
-  $('#syncMeta').textContent = `同期完了：${nowJP()} ／ データ: charts/*`;
-  const grid=$('#cards');
-  for(const m of IDX){ grid.appendChild(await renderCard(m)); }
+ $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
+ const grid=$('#cards');
+ for(const m of IDX)grid.appendChild(await render(m));
 })();
 </script>
 </body>
