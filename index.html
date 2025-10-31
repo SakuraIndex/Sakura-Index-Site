@@ -103,26 +103,32 @@ const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 
-// 全角→半角正規化を前提にした日付パーサ（例: （2025/10/30 13:00））
+/* --- 日付パーサ拡張: ISO も対応 --- */
 function parseJPDate(str){
   if(!str) return null;
-  const s=(String(str).normalize ? String(str).normalize('NFKC') : String(str));
-  const m=s.match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[ T](\d{2}):(\d{2})/);
-  if(!m) return null;
-  const [_,y,mo,d,h,mi]=m.map(Number);
-  return new Date(y,mo-1,d,h,mi,0);
+  const s=String(str).normalize ? String(str).normalize('NFKC') : String(str);
+
+  // ISO: 2025-10-31T09:10:41Z / 2025-10-31T09:10
+  let m=s.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(m){ const [_,y,mo,d,h,mi,ss]=m.map(Number); return new Date(y,mo-1,d,h,mi,ss||0); }
+
+  // JP: 2025/10/31 09:10
+  m=s.match(/(\d{4})[\/.](\d{2})[\/.](\d{2})[ T](\d{2}):(\d{2})/);
+  if(m){ const [_,y,mo,d,h,mi]=m.map(Number); return new Date(y,mo-1,d,h,mi,0); }
+
+  return null;
 }
 function sameDayJST(a,b){
   if(!a||!b) return false;
   const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
   return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
-/* 当日±2hを“鮮度OK”とみなす（市場ズレ対策） */
+/* 当日±2hを“鮮度OK” */
 function isFreshJP(postTsStr,lastRunStr){
   if(!postTsStr) return false;
-  if(!lastRunStr) return true;
-  const post=parseJPDate(postTsStr), last=parseJPDate(lastRunStr);
-  if(!post||!last) return true;
+  const post=parseJPDate(postTsStr);
+  const last=parseJPDate(lastRunStr||'');
+  if(!post||!last) return false;           // ← 失敗時に常にtrueにならないよう修正
   if(!sameDayJST(post,last)) return false;
   return Math.abs(post.getTime()-last.getTime())<=2*60*60*1000;
 }
@@ -143,43 +149,37 @@ const PCT_ORIGIN_PREF={
   'AIN-10':'orig','AIN10':'orig','S-COIN+':'orig',
   'ASTRA4':'orig','R-BANK9':'orig'
 };
-
-function percentSources(key, prefer/* 'site'|'orig' */){
+function percentSources(key, prefer){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
 
   const siteTxts=[site?`${site}/post_intraday.txt`:null,site?`${site}/intraday.txt`:null].filter(Boolean);
   const origTxts=[base?`${base}/${slug}_post_intraday.txt`:null,base?`${base}/${slug}_intraday.txt`:null].filter(Boolean);
-
   const siteStats=site?`${site}/stats.json`:null;
   const origStats=base?`${base}/${slug}_stats.json`:null;
 
   // S-COIN+ 命名ゆらぎ
-  const extras = (key==='S-COIN+' ? [
-    'scoin_plus_stats.json',
-    's_coin_plus_stats.json',
-    's-coin_plus_stats.json',
-    's_coin__stats.json'
-  ] : []);
+  const scoinStats = (key==='S-COIN+' && base) ? [
+    `${base}/scoin_plus_stats.json`,
+    `${base}/s_coin_plus_stats.json`,
+    `${base}/s-coin_plus_stats.json`,
+    `${base}/s_coin__stats.json`
+  ] : [];
 
   const txts=(prefer==='orig')?[...origTxts,...siteTxts]:[...siteTxts,...origTxts];
-  const stats=(prefer==='orig')
-    ? [origStats,siteStats,...extras.map(e=>base?`${base}/${e}`:null)].filter(Boolean)
-    : [siteStats,origStats,...extras.map(e=>base?`${base}/${e}`:null)].filter(Boolean);
+  const stats=(prefer==='orig')?[origStats,siteStats,...scoinStats].filter(Boolean):[siteStats,origStats,...scoinStats].filter(Boolean);
   return {txts,stats};
 }
-
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
-  const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t));
+  const s=String(t).normalize ? String(t).normalize('NFKC') : String(t);
   if(/no\s*data/i.test(s)) return {v:null,ts:null};
   const m=s.match(/[+\-]?\d+(?:\.\d+)?\s*%/);
   const v=m?Number(m[0].replace('%','')):null;
-  const tsM=s.match(/\((\d{4}[\/-]\d{2}[\/-]\d{2}[\sT]\d{2}:\d{2})\)/);
+  const tsM=s.match(/\((\d{4}[-\/.]\d{2}[-\/.]\d{2}[ T]\d{2}:\d{2}(?::\d{2})?)\)/);
   const ts=tsM?tsM[1]:null;
   return {v,ts};
 }
-/* statsの正規化（unit/scaleを優先して判定） */
 function pickPctFromStat(j){
   if(!j) return null;
   const fields=['pct_intraday','rtn_intraday','intraday_pct','pct','pct_today','change_pct','change_percent','rtn_pct','today_pct','pct_1d','pct_1d_intraday'];
@@ -194,15 +194,13 @@ function pickPctFromStat(j){
   }
   return null;
 }
-
-/* ％決定：鮮度OK→テキスト/Statsどちらでも、鮮度NG→Statsを優先 */
-async function resolvePercent(key,market,preferHint/* 'site'|'orig' */){
+async function resolvePercent(key,market,preferHint){
   const cap={JP:8,US:8,CRYPTO:30}[market]??8;
   const prefer=PCT_ORIGIN_PREF[key]||preferHint||'site';
   const {txts,stats}=percentSources(key,prefer);
   const lastRun=await getLastRun(key);
 
-  // 1) 鮮度OKのものを優先（stats→textの順）
+  // 鮮度OK を優先（stats → text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); const ts=j.updated_at||null;
     if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap),ts}; }
@@ -210,7 +208,7 @@ async function resolvePercent(key,market,preferHint/* 'site'|'orig' */){
     const {v,ts}=parsePctFromText(t);
     if(v!=null && isFreshJP(ts,lastRun)) return {v:clamp(v,-cap,cap),ts}; }
 
-  // 2) 鮮度条件を外して「stats → text」の順で拾う
+  // 鮮度NGでも一番マシなもの（stats → text）
   for(const u of stats){ const j=await fetchJson(u); if(!j) continue;
     const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:j.updated_at||null}; }
   for(const u of txts){ const t=await fetchText(u); if(!t) continue;
@@ -219,47 +217,45 @@ async function resolvePercent(key,market,preferHint/* 'site'|'orig' */){
   return {v:null,ts:null};
 }
 
-/* ====== 画像ロジック（S-COIN+ 命名ゆらぎ＋鮮度比較で原本優先切替） ====== */
-// S-COIN+ の png 候補（suffix: '1d','7d','1m','1y','intraday'）
+/* ====== 画像（S-COIN+ 命名ゆらぎ＋原本優先） ====== */
 const scoinPng = (suffix)=>[
   `scoin_plus_${suffix}.png`,
   `s_coin_plus_${suffix}.png`,
   `s-coin_plus_${suffix}.png`,
   `s_coin__${suffix}.png`
 ];
-
 function imgCandidates(tf,key){
   const folder=siteFolder(key), site=folder?`${SITE_CHARTS_BASE}/${folder}`:null, slug=toSlug(key);
   const base=originBase(key);
-
   if(tf==='intraday'){
     const arr=[];
-    if(site) arr.push(`${site}/intraday.png`);
+    // 1) 原本（優先）
     if(base){
-      if(key==='S-COIN+'){
-        for(const p of scoinPng('1d')) arr.push(`${base}/${p}`);
-        for(const p of scoinPng('intraday')) arr.push(`${base}/${p}`);
-      }else{
-        arr.push(`${base}/${slug}_1d.png`, `${base}/${slug}_intraday.png`);
-      }
+      if(key==='S-COIN+') for(const p of scoinPng('1d')) arr.push(`${base}/${p}`);
+      else arr.push(`${base}/${slug}_1d.png`);
+    }
+    // 2) サイト intraday（フォールバック）
+    if(site) arr.push(`${site}/intraday.png`);
+    // 3) 原本の“intraday”名（保険）
+    if(base){
+      if(key==='S-COIN+') for(const p of scoinPng('intraday')) arr.push(`${base}/${p}`);
+      else arr.push(`${base}/${slug}_intraday.png`);
     }
     return arr;
   }
   const suff=tf==='7d'?'7d':(tf==='1m'?'1m':'1y');
   const arr=[];
-  if(site) arr.push(`${site}/${suff}.png`);
+  // 原本→サイトの順
   if(base){
-    if(key==='S-COIN+'){ for(const p of scoinPng(suff)) arr.push(`${base}/${p}`); }
-    else { arr.push(`${base}/${slug}_${suff}.png`); }
+    if(key==='S-COIN+') for(const p of scoinPng(suff)) arr.push(`${base}/${p}`);
+    else arr.push(`${base}/${slug}_${suff}.png`);
   }
+  if(site) arr.push(`${site}/${suff}.png`);
   return arr;
 }
-
-// 原本 post_intraday.txt 候補（TS 抜き出し用）
 function originPostTxtCandidates(key){
   const base = originBase(key); if(!base) return [];
   const slug = toSlug(key);
-
   if(key==='S-COIN+'){
     return [
       `${base}/scoin_plus_post_intraday.txt`,
@@ -280,10 +276,7 @@ function originPostTxtCandidates(key){
 async function getOriginIntradayTS(key){
   for(const u of originPostTxtCandidates(key)){
     const t = await fetchText(u);
-    if(t){
-      const {ts} = parsePctFromText(t);
-      if(ts) return ts;
-    }
+    if(t){ const o=parsePctFromText(t); if(o.ts) return o.ts; }
   }
   return null;
 }
@@ -313,33 +306,34 @@ async function shouldUseSiteIntraday(key){
 async function pickBestIntradayImage(key){
   const folder=siteFolder(key);
   const siteUrl = folder ? `${SITE_CHARTS_BASE}/${folder}/intraday.png` : null;
-  const siteOk = siteUrl ? await shouldUseSiteIntraday(key) : false;
-  const siteTS = siteOk ? (await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`).then(parsePctFromText).then(o=>o.ts).catch(()=>null)) : null;
 
-  const origTS = await getOriginIntradayTS(key);
+  const siteTxt = folder ? await fetchText(`${SITE_CHARTS_BASE}/${folder}/intraday.txt`) : null;
+  const siteTS  = siteTxt ? parsePctFromText(siteTxt).ts : null;
+  const origTS  = await getOriginIntradayTS(key);
 
-  const urls = imgCandidates('intraday', key);
+  // デフォルトは「原本優先」
+  let preferOrigin = true;
 
-  let preferOrigin = false;
-  if(origTS && siteTS){
-    const o = parseJPDate(origTS), s = parseJPDate(siteTS);
-    if(o && s && o.getTime()>s.getTime()) preferOrigin = true;
-  }else if(origTS && !siteTS){
-    preferOrigin = true;
-  }else if(!siteOk){
-    preferOrigin = true;
+  // サイトの方が明確に新しい場合のみ、サイト優先へ
+  if(siteTS && origTS){
+    const s=parseJPDate(siteTS), o=parseJPDate(origTS);
+    if(s && o && s.getTime() > o.getTime()) preferOrigin=false;
+  }else if(siteTS && !origTS){
+    preferOrigin=false;
   }
 
-  if(preferOrigin){
-    const originFirst = urls.filter(u=>!siteUrl || !u.startsWith(`${SITE_CHARTS_BASE}/`));
-    const siteRest   = siteUrl ? urls.filter(u=>u===siteUrl) : [];
-    const ordered = [...originFirst, ...siteRest, ...urls.filter(u=>!originFirst.includes(u)&&!siteRest.includes(u))];
-    const hit = await loadFirst(ordered);
-    return {url: hit, origin: hit && !siteUrl ? 'orig' : (hit && !hit.startsWith(`${SITE_CHARTS_BASE}/`) ? 'orig' : 'site')};
-  }else{
-    const hit = await loadFirst(urls);
-    return {url: hit, origin: hit && !hit.startsWith(`${SITE_CHARTS_BASE}/`) ? 'orig' : 'site'};
-  }
+  const urls=imgCandidates('intraday',key);
+  const ordered = preferOrigin
+    ? urls  // 既に 原本→サイト の順で作成済み
+    : (()=>{
+        // サイトを先頭に、それ以外を後ろへ
+        const a=[], b=[];
+        urls.forEach(u => (siteUrl && u===siteUrl ? a : b).push(u));
+        return [...a, ...b];
+      })();
+
+  const hit = await loadFirst(ordered);
+  return {url: hit, origin: hit && siteUrl && hit===siteUrl ? 'site' : 'orig'};
 }
 
 async function switchTf(key,img,tf){
@@ -379,7 +373,7 @@ function renderCard(meta){
   const head=document.createElement('div');head.className='head';
   head.innerHTML=`<div class="flag">${meta.flag||'🏳️'}</div>
     <div class="name">${meta.label||key}</div>
-    <div class="badge">${meta.category||meta.badge||''}</div>
+    <div class="badge">${meta.badge||''}</div>
     <div class="pct na" id="pct-${key}">N/A</div>
     <div class="updatedAt" id="upd-${key}"></div>`;
   card.appendChild(head);
@@ -405,7 +399,6 @@ function renderCard(meta){
 
   return card;
 }
-
 async function applyPercent(key,market,card,preferOrigin){
   const pctEl=$(`#pct-${key}`), updEl=$(`#upd-${key}`);
   const {v,ts}=await resolvePercent(key,market,preferOrigin||'site');
