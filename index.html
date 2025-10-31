@@ -246,7 +246,7 @@ function imgCandidates(tf,key){
       if(tf==='intraday') arr.push(`${base}/${slug}_intraday.png`);
     }
   }
-  // 🔧 追加：intraday でもサイト側を候補にする
+  // 追加：サイト側 PNG も候補（intraday 含む）
   if(site){
     if(tf==='intraday') arr.push(`${site}/intraday.png`);
     else               arr.push(`${site}/${timeframe}.png`);
@@ -270,7 +270,7 @@ function originPostTxtCandidates(key){
     return [
       `${base}/ain10_post_intraday.txt`,`${base}/ain10_intraday_post.txt`,
       `${base}/ain_10_post_intraday.txt`,`${base}/ain_10_intraday_post.txt`,
-      `${base}/ain-10_post_intraday.txt`,`${base}/ain-10_intraday_post.txt`
+      `${base}/ain-10_post_intraday.txt`,`${base}/ain-10_intraday_post.txt`,
     ];
   }
   return [`${base}/${slug}_post_intraday.txt`, `${base}/${slug}_intraday_post.txt`];
@@ -283,13 +283,20 @@ async function getOriginIntradayTS(key){
   return null;
 }
 
-/* intraday 画像：原本→サイトの順でプローブ */
+/* intraday 画像：S-COIN+ はサイト→原本、他は原本→サイト */
 async function pickBestIntradayImage(key){
   const urls=imgCandidates('intraday', key);
-  const fromOrig = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE));
-  for (const u of fromOrig){ if(await probeImage(u)) return {url:u,origin:'orig'}; }
-  const fromSite = urls.filter(u =>  u.startsWith(SITE_CHARTS_BASE));
-  for (const u of fromSite){ if(await probeImage(u)) return {url:u,origin:'site'}; }
+  const siteUrls  = urls.filter(u =>  u.startsWith(SITE_CHARTS_BASE));
+  const origUrls  = urls.filter(u => !u.startsWith(SITE_CHARTS_BASE));
+  const order = (key === 'S-COIN+')
+    ? [...siteUrls, ...origUrls]   // ← ここがポイント（サイト優先）
+    : [...origUrls, ...siteUrls];
+
+  for (const u of order){
+    if(await probeImage(u)){
+      return {url:u, origin: u.startsWith(SITE_CHARTS_BASE)?'site':'orig'};
+    }
+  }
   return {url:null,origin:'orig'};
 }
 
@@ -358,7 +365,7 @@ async function switchTf(key,img,tf){
         const ts=await getOriginIntradayTS(key);
         if(ts) v=encodeURIComponent(ts);
       }else{
-        const lr=await getLastRun(key); // 🔧 サイト画像は last_run をキーに
+        const lr=await getLastRun(key);
         if(lr) v=encodeURIComponent(lr);
       }
     }else{
