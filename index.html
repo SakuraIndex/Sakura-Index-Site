@@ -100,60 +100,80 @@ const $=(s,el=document)=>el.querySelector(s);
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
-const probe=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok;}catch{return false;}};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
-
 function toSlug(k){return String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'')}
 function siteFolder(key){return FOLDER[key]||null}
 function originBase(key){return ORIG[key]||null}
-const encodeSeg = s => encodeURIComponent(String(s||''));
+const enc = s => encodeURIComponent(String(s||''));
 
 /* ====== last_run 取得（フォルダ名は必ずエンコード） ====== */
 const LAST_RUN=new Map();
 async function getLastRun(key){
   const folder=siteFolder(key); if(!folder) return null;
   if(LAST_RUN.has(folder)) return LAST_RUN.get(folder);
-  const url=`${SITE_CHARTS_BASE}/${encodeSeg(folder)}/last_run.txt`;
+  const url=`${SITE_CHARTS_BASE}/${enc(folder)}/last_run.txt`;
   const txt=await fetchText(url);
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
 
-/* ====== 画像候補（サイト側パスは必ずエンコード） ====== */
+/* ====== 画像候補（サイト→原本の順。サイト側パスは必ずエンコード） ====== */
 const scoinPng=(suffix)=>[
   `scoin_plus_${suffix}.png`,`s_coin_plus_${suffix}.png`,`s-coin_plus_${suffix}.png`,`s_coin__${suffix}.png`
 ];
 const ainKeys=['ain10','ain_10','ain-10'];
 
-function imgCandidates(tf,key){
+function buildCandidates(tf,key){
   const folder=siteFolder(key);
-  const siteBase = folder?`${SITE_CHARTS_BASE}/${encodeSeg(folder)}`:null;
+  const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
   const base=originBase(key);
   const slug=toSlug(key);
 
-  const listSite=siteBase?([tf==='intraday'?`${siteBase}/intraday.png`:`${siteBase}/${tf}.png`]):[];
-  const listOrig=[];
+  const out=[];
+  // 1) サイト最優先
+  if(siteBase){
+    if(tf==='intraday') out.push(`${siteBase}/intraday.png`);
+    else out.push(`${siteBase}/${tf}.png`);
+  }
+  // 2) 原本
   if(base){
     if(key==='S-COIN+'){
-      if(tf==='intraday') for(const p of scoinPng('intraday')) listOrig.push(`${base}/${p}`);
-      else for(const p of scoinPng(tf)) listOrig.push(`${base}/${p}`);
+      if(tf==='intraday') for(const p of scoinPng('intraday')) out.push(`${base}/${p}`);
+      else for(const p of scoinPng(tf)) out.push(`${base}/${p}`);
     }else if(key==='AIN-10'||key==='AIN10'){
-      if(tf==='intraday') for(const k of ainKeys) listOrig.push(`${base}/${k}_intraday.png`);
-      else for(const k of ainKeys) listOrig.push(`${base}/${k}_${tf}.png`);
+      if(tf==='intraday') for(const k of ainKeys) out.push(`${base}/${k}_intraday.png`);
+      else for(const k of ainKeys) out.push(`${base}/${k}_${tf}.png`);
     }else{
-      if(tf==='intraday') listOrig.push(`${base}/${slug}_intraday.png`);
-      else listOrig.push(`${base}/${slug}_${tf}.png`);
+      if(tf==='intraday') out.push(`${base}/${slug}_intraday.png`);
+      else out.push(`${base}/${slug}_${tf}.png`);
     }
   }
-  // サイト最優先 → 原本
-  return [...listSite, ...listOrig];
+  return out;
 }
 
-/* ====== Intraday 画像選択（サイト最優先） ====== */
-async function pickIntradayImageURL(key){
-  const urls=imgCandidates('intraday',key);
-  for(const u of urls){ if(await probe(u)) return u; }
-  return null;
+/* ====== <img> の連鎖ローダー：候補 URL を onerror で順番に試す ====== */
+function loadWithFallback(img, urls, key, tf){
+  if(!urls || urls.length===0){ img.removeAttribute('src'); img.alt='画像が見つかりません'; return; }
+
+  const firstSite = urls[0] && urls[0].startsWith(SITE_CHARTS_BASE);
+  let idx=0;
+  const buster = async () => {
+    // サイト画像には last_run を、原本には時刻を付けてキャッシュバスターに
+    if(urls[idx] && urls[idx].startsWith(SITE_CHARTS_BASE)){
+      const lr=await getLastRun(key);
+      return lr ? encodeURIComponent(lr) : Date.now();
+    }
+    return Date.now();
+  };
+
+  const tryLoad = async () => {
+    const v=await buster();
+    const u = urls[idx] + (urls[idx].includes('?')?'&':'?') + 'v=' + v;
+    img.onerror = () => { idx++; if(idx<urls.length) tryLoad(); else { img.alt='画像が見つかりません'; } };
+    img.onload  = () => { img.alt=''; };
+    img.src = u;
+  };
+  tryLoad();
 }
 
 /* ====== 騰落率取得（サイト→原本の順。サイト側パスは必ずエンコード） ====== */
@@ -184,7 +204,7 @@ function pickPctFromStat(j){
 
 async function resolvePercent(key,market){
   const folder=siteFolder(key);
-  const siteBase = folder?`${SITE_CHARTS_BASE}/${encodeSeg(folder)}`:null;
+  const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
   const base=originBase(key);
   const slug=toSlug(key);
   const cap={JP:8,US:12,CRYPTO:30}[market]??10;
@@ -204,7 +224,6 @@ async function resolvePercent(key,market){
     }
   }
 
-  // サイト→原本の順で、最初に数値が出たものを採用
   if(siteStats){ const j=await fetchJson(siteStats); const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:(j&&j.updated_at)||null}; }
   for(const u of siteTxts){ const t=await fetchText(u); if(t){ const {v,ts}=parsePctFromText(t); if(v!=null) return {v:clamp(v,-cap,cap),ts}; } }
   if(origStats){ const j=await fetchJson(origStats); const v=pickPctFromStat(j); if(v!=null) return {v:clamp(v,-cap,cap),ts:(j&&j.updated_at)||null}; }
@@ -257,27 +276,10 @@ async function switchTf(key,img,tf){
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
   img.style.opacity='0.5';
 
-  let url=null;
-  if(tf==='intraday'){
-    url = await pickIntradayImageURL(key);  // サイト最優先
-  }else{
-    const urls=imgCandidates(tf,key);
-    for(const u of urls){ if(await probe(u)){ url=u; break; } }
-  }
-
+  const urls = buildCandidates(tf,key);
   if((IMG_SEQ.get(img)||0)!==req) return;
+  loadWithFallback(img, urls, key, tf);
 
-  if(url){
-    let v=Date.now();
-    const isSite=url.startsWith(SITE_CHARTS_BASE);
-    if(isSite){
-      const lr=await getLastRun(key); if(lr) v=encodeURIComponent(lr);
-    }
-    img.src=url+(url.includes('?')?'&':'?')+'v='+v;
-    img.alt='';
-  }else{
-    img.removeAttribute('src'); img.alt='画像が見つかりません';
-  }
   requestAnimationFrame(()=>img.style.opacity='1');
 }
 
