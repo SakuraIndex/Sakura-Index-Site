@@ -50,17 +50,44 @@ jobs:
             [[ "${clen:-0}" -ge 4096 ]] || return 1
             return 0
           }
-          fetch_img () { # 保存は head_ok を通った場合のみ
+
+          # 画像バリデーション（“No data” や極端に小さいPNGを弾く）
+          validate_img () {
+            local f="$1"
+            # 30KB未満は弾く（プレースホルダーを想定）
+            local sz="$(wc -c <"$f" 2>/dev/null || echo 0)"
+            [[ "$sz" -ge 30000 ]] || return 1
+            # 埋め込みテキストに "No data" が含まれていれば弾く
+            if command -v strings >/dev/null 2>&1; then
+              if strings "$f" | grep -qi 'No data'; then
+                return 1
+              fi
+            fi
+            return 0
+          }
+
+          fetch_img () { # 保存は head_ok + validate_img を通った場合のみ
             local url="$1" out="$2"
-            if head_ok "$url"; then
-              echo "IMG OK: $url"
-              curl -fsSL "$url" -o "$out"
-              return 0
-            else
-              echo "IMG NG: $url"
+            if ! head_ok "$url"; then
+              echo "IMG NG(head): $url"
               return 1
             fi
+            local tmp="$out.__dl__"
+            if ! curl -fsSL "$url" -o "$tmp"; then
+              echo "IMG NG(dl): $url"
+              rm -f "$tmp" || true
+              return 1
+            fi
+            if ! validate_img "$tmp"; then
+              echo "IMG NG(validate): $url"
+              rm -f "$tmp" || true
+              return 1
+            fi
+            mv -f "$tmp" "$out"
+            echo "IMG OK: $url -> $out"
+            return 0
           }
+
           fetch_txt () { # 200 のみ保存
             local url="$1" out="$2"
             if curl -fsSL "$url" -o "$out.tmp"; then
@@ -73,6 +100,7 @@ jobs:
               return 1
             fi
           }
+
           copy_first_img () { # out, urls...
             local out="$1"; shift
             local hit=""
@@ -81,6 +109,7 @@ jobs:
             done
             [[ -n "$hit" ]]
           }
+
           copy_first_txt () { # out, urls...
             local out="$1"; shift
             local hit=""
@@ -95,7 +124,12 @@ jobs:
             echo "$b_ain/ain10_$1.png" "$b_ain/ain_10_$1.png" "$b_ain/ain-10_$1.png"
           }
           scoin_png() { # $1: suffix
-            echo "$b_scp/scoin_plus_$1.png" "$b_scp/s_coin_plus_$1.png" "$b_scp/s-coin_plus_$1.png" "$b_scp/s_coin__${1}.png"
+            # intraday は intraday 固有ファイルを探す（※1dは使わない）
+            if [[ "$1" == "intraday" ]]; then
+              echo "$b_scp/scoin_plus_intraday.png" "$b_scp/s_coin_plus_intraday.png" "$b_scp/s-coin_plus_intraday.png" "$b_scp/s_coin__intraday.png"
+            else
+              echo "$b_scp/scoin_plus_$1.png" "$b_scp/s_coin_plus_$1.png" "$b_scp/s-coin_plus_$1.png" "$b_scp/s_coin__${1}.png"
+            fi
           }
           ain_post_txts() {
             echo "$b_ain/ain10_post_intraday.txt" "$b_ain/ain10_intraday_post.txt" \
@@ -110,7 +144,6 @@ jobs:
           }
 
           # ====== gate logic: 「メタが取れたら intraday.png を更新」 ======
-          # 更新フラグ
           upd_ast=0; upd_rbk=0; upd_ain=0; upd_scp=0
 
           # ASTRA4 meta（どちらか片方でもOK）
@@ -145,11 +178,13 @@ jobs:
           copy_first_img "$d_scp/1m.png"  $(scoin_png 1m) || true
           copy_first_img "$d_scp/1y.png"  $(scoin_png 1y) || true
 
-          # ====== intraday（原本1dをメタゲートで更新） ======
+          # ====== intraday ======
+          # ※ AST/ RBK / AIN は 1d を使用（原本は 1d=intraday の仕様）
           if [[ $upd_ast -eq 1 ]]; then copy_first_img "$d_ast/intraday.png" "$b_ast/astra4_1d.png" || true; fi
           if [[ $upd_rbk -eq 1 ]]; then copy_first_img "$d_rbk/intraday.png" "$b_rbk/rbank9_1d.png" || true; fi
           if [[ $upd_ain -eq 1 ]]; then copy_first_img "$d_ain/intraday.png" $(ain_png 1d) || true; fi
-          if [[ $upd_scp -eq 1 ]]; then copy_first_img "$d_scp/intraday.png" $(scoin_png 1d) || true; fi
+          # ※ S-COIN+ は intraday 専用ファイルのみを使う（1dは使わない）
+          if [[ $upd_scp -eq 1 ]]; then copy_first_img "$d_scp/intraday.png" $(scoin_png intraday) || true; fi
 
           # ====== last_run （原本の _last_run があれば採用、なければUTC現在） ======
           fetch_txt "$b_ast/_last_run.txt" "$d_ast/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ast/last_run.txt"
@@ -177,6 +212,6 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
-          git commit -m "chore(site): meta-gated intraday sync (only update when text/stats present) + safe image validation + preserve last good"
+          git commit -m "chore(site): protect S-COIN+ intraday from 1d overwrite; validate images (skip 'No data'); meta-gated sync"
           git pull --rebase origin main || true
           git push --force-with-lease origin HEAD:main || echo "Push skipped or failed"
