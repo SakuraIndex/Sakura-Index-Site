@@ -155,9 +155,10 @@ jobs:
           # AIN-10
           copy_first_txt "$d_ain/intraday.txt" $(ain_post_txts) && upd_ain=1 || true
           copy_first_txt "$d_ain/stats.json"   "$b_ain/ain10_stats.json" "$b_ain/ain_10_stats.json" "$b_ain/ain-10_stats.json" && upd_ain=1 || true
-          # S-COIN+
-          copy_first_txt "$d_scp/intraday.txt" $(scoin_post_txts) && upd_scp=1 || true
-          copy_first_txt "$d_scp/stats.json"   "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" && upd_scp=1 || true
+          # S-COIN+（intraday/post_intraday の両名を保存しておく）
+          copy_first_txt "$d_scp/intraday.txt"      $(scoin_post_txts) && upd_scp=1 || true
+          copy_first_txt "$d_scp/post_intraday.txt" $(scoin_post_txts) || true
+          copy_first_txt "$d_scp/stats.json"        "$b_scp/scoin_plus_stats.json" "$b_scp/s_coin_plus_stats.json" "$b_scp/s-coin_plus_stats.json" "$b_scp/s_coin__stats.json" && upd_scp=1 || true
 
           echo "META OK flags => AST:${upd_ast} RBK:${upd_rbk} AIN:${upd_ain} SCP:${upd_scp}"
 
