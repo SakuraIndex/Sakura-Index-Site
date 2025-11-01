@@ -112,7 +112,13 @@ const IDX=[
 /* ====== util ====== */
 const enc = encodeURIComponent;
 const toSlug=k=>String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-const $=(s,el=document)=>el.querySelector(s);
+const $=(s,el=document)=>el.querySelector(s); // 汎用セレクタ（#year 等）
+const byId=(id)=>document.getElementById(id);
+// セレクタ安全なID（S-COIN+ → s-coin_plus など）
+const safeId = (key)=> String(key).toLowerCase()
+  .replace(/\+/g,'_plus')
+  .replace(/[^a-z0-9_-]/g,'_');
+
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
@@ -343,13 +349,14 @@ async function resolvePercent(key,market){
 /* ====== カード描画 ====== */
 function renderCard(meta){
   const key=meta.key, market=meta.market||'JP';
+  const idBase = safeId(key);
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
   head.innerHTML=`<div class="flag">${meta.flag||'🏳️'}</div>
     <div class="name">${meta.label||key}</div>
     <div class="badge">${meta.badge||''}</div>
-    <div class="pct na" id="pct-${key}">N/A</div>
-    <div class="updatedAt" id="upd-${key}"></div>`;
+    <div class="pct na" id="pct-${idBase}">N/A</div>
+    <div class="updatedAt" id="upd-${idBase}"></div>`;
   card.appendChild(head);
 
   const desc=document.createElement('div');desc.className='desc';desc.textContent=meta.description||'';card.appendChild(desc);
@@ -379,7 +386,9 @@ function renderCard(meta){
 }
 
 async function applyPercent(key,market,card){
-  const pctEl=$(`#pct-${key}`), updEl=$(`#upd-${key}`);
+  const idBase = safeId(key);
+  const pctEl = byId(`pct-${idBase}`);
+  const updEl = byId(`upd-${idBase}`);
   const {v,ts}=await resolvePercent(key,market);
   if(v==null){ pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return; }
   const {t,c}=fmtPct(v); pctEl.textContent=t; pctEl.className='pct '+c;
