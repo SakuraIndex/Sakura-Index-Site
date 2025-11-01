@@ -140,10 +140,8 @@ jobs:
           ts_from_text () { # file -> epoch or 0
             local f="$1"
             [[ -s "$f" ]] || { echo 0; return; }
-            # 全角→半角などの揺れはここでは省略、数値抜き出し
             local line="$(cat "$f" | tr -d '\r')"
-            # 例: (... 2025/10/27 14:52)
-            local y m d H M
+            local y
             y="$(echo "$line" | grep -oE '[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}' | head -n1)"
             if [[ -z "${y:-}" ]]; then echo 0; return; fi
             date -d "$y" +%s 2>/dev/null || echo 0
@@ -156,7 +154,7 @@ jobs:
           # ====== gate logic: 「メタが取れたら intraday.png を更新」 ======
           upd_ast=0; upd_rbk=0; upd_ain=0; upd_scp=0
 
-          # ASTRA4 / R-BANK9 / AIN-10 は従来どおり
+          # ASTRA4 / R-BANK9 / AIN-10
           copy_first_txt "$d_ast/intraday.txt" "$b_ast/astra4_post_intraday.txt" "$b_ast/astra4_intraday_post.txt" "$b_ast/astra4_intraday.txt" && upd_ast=1 || true
           copy_first_txt "$d_ast/stats.json"   "$b_ast/astra4_stats.json" && upd_ast=1 || true
 
@@ -167,7 +165,6 @@ jobs:
           copy_first_txt "$d_ain/stats.json"   "$b_ain/ain10_stats.json" "$b_ain/ain_10_stats.json" "$b_ain/ain-10_stats.json" && upd_ain=1 || true
 
           # ====== S-COIN+：時刻比較して新しいときだけ更新（巻き戻り禁止） ======
-          # 1) 元の post_intraday を一時取得
           tmp_scp_meta="$(mktemp)"
           got_meta=0
           for u in $(scoin_post_txts); do
@@ -182,8 +179,9 @@ jobs:
           echo "S-COIN+ meta epoch (orig=${orig_meta_epoch}, site=${site_meta_epoch})"
 
           if newer_or_equal "$orig_meta_epoch" "$site_meta_epoch" && [[ "$orig_meta_epoch" -gt 0 ]]; then
-            # メタが新しい場合だけ「メタ保存 → intraday画像を取得」
+            # メタが新しい場合だけ保存し、テキストを両方そろえる（%表示の安定化）
             cp -f "$tmp_scp_meta" "$d_scp/post_intraday.txt"
+            cp -f "$tmp_scp_meta" "$d_scp/intraday.txt"   # ← 追加：騰落率N/A対策
             upd_scp=1
           else
             echo "S-COIN+ meta is not newer; keep current files (no overwrite)."
@@ -217,12 +215,12 @@ jobs:
           if [[ $upd_rbk -eq 1 ]]; then copy_first_img "$d_rbk/intraday.png" "$b_rbk/rbank9_1d.png" || true; fi
           if [[ $upd_ain -eq 1 ]]; then copy_first_img "$d_ain/intraday.png" $(ain_png 1d) || true; fi
 
-          # S-COIN+ は "intraday.png" 専用のみ、かつ meta が新しい場合のみ更新
+          # S-COIN+ は intraday専用のみ、かつ meta が新しい場合のみ更新
           if [[ $upd_scp -eq 1 ]]; then
             copy_first_img "$d_scp/intraday.png" $(scoin_png intraday) || true
           fi
 
-          # ====== last_run：元の _last_run があれば採用、なければUTC現在 ======
+          # ====== last_run：原本の _last_run があれば採用、なければUTC現在 ======
           fetch_txt "$b_ast/_last_run.txt" "$d_ast/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ast/last_run.txt"
           fetch_txt "$b_rbk/_last_run.txt" "$d_rbk/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_rbk/last_run.txt"
           fetch_txt "$b_ain/_last_run.txt" "$d_ain/last_run.txt" || date -u +'%Y-%m-%dT%H:%M:%SZ' > "$d_ain/last_run.txt"
@@ -248,6 +246,6 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
-          git commit -m "chore(site): S-COIN+ freshness gate (no rollback), meta-gated intraday only, image validation"
+          git commit -m "chore(site): S-COIN+ freshness gate (no rollback), meta-gated intraday only, image validation, sync intraday.txt"
           git pull --rebase origin main || true
           git push --force-with-lease origin HEAD:main || echo "Push skipped or failed"
