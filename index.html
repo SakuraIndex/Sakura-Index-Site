@@ -48,20 +48,11 @@
     .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
     .updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
 
-    /* === チャート === */
     .chart{
       width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
       background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden
     }
-    /* 長期（7d/1m/1y）は少し背を高く */
-    .chart.long{ height:320px; }
-    .chart img{
-      display:block;width:100%;height:100%;
-      object-fit:contain;               /* 画像の切れ防止 */
-      object-position:left center;      /* 左寄せで軸が見切れにくい */
-      image-rendering:-webkit-optimize-contrast; /* ぼやけ対策（WebKit） */
-      image-rendering:crisp-edges;      /* くっきり寄り */
-    }
+    .chart img{display:block;width:100%;height:100%;object-fit:contain}
 
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
@@ -121,7 +112,13 @@ const IDX=[
 /* ====== util ====== */
 const enc = encodeURIComponent;
 const toSlug=k=>String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-const $=(s,el=document)=>el.querySelector(s);
+const $=(s,el=document)=>el.querySelector(s); // 汎用セレクタ（#year 等）
+const byId=(id)=>document.getElementById(id);
+// セレクタ安全なID（S-COIN+ → s-coin_plus など）
+const safeId = (key)=> String(key).toLowerCase()
+  .replace(/\+/g,'_plus')
+  .replace(/[^a-z0-9_-]/g,'_');
+
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
@@ -136,6 +133,13 @@ function parseJPDate(str){
   if(!m) return null;
   const [_,y,mo,d,h,mi] = m.map(Number);
   return new Date(y, mo-1, d, h, mi, 0);
+}
+
+/* 等価・日付ロジック */
+function sameDayJST(a,b){
+  if(!a||!b) return false;
+  const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
+  return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
 
 /* サイト charts/* の last_run.txt キャッシュ */
@@ -243,9 +247,11 @@ async function buildCandidates(tf, key){
   })();
 
   if(tf !== 'intraday'){
+    // 長期：サイト→原本（サイトはlast_runで心拍管理されているため）
     return [...siteImgs, ...origImgs];
   }
 
+  // intraday：サイト/原本の post_intraday 時刻を比較して新しい方を先頭に
   const siteTxts   = siteBase ? [`${siteBase}/post_intraday.txt`, `${siteBase}/intraday.txt`] : [];
   const origTxts   = originPostTxtCandidates(key);
   const siteTs     = await firstTsFromTextFiles(siteTxts);
@@ -262,12 +268,8 @@ async function buildCandidates(tf, key){
 const IMG_SEQ=new WeakMap();
 async function switchTf(key,img,tf){
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
-
-  // 長期タブは背を高く（CSSクラス切替）
-  const box = img.parentElement;
-  box.classList.toggle('long', tf!=='intraday');
-
   img.style.opacity='0.5';
+
   const urls = await buildCandidates(tf,key);
   if((IMG_SEQ.get(img)||0)!==req) return;
 
@@ -336,6 +338,7 @@ async function resolvePercent(key,market){
 
   if(candidates.length===0) return {v:null,ts:null};
 
+  // ts を Date にして比較（null は最下位）
   candidates.forEach(c => c.dt = parseJPDate(c.ts) || new Date(0));
   candidates.sort((a,b)=> b.dt - a.dt); // 新しい順
 
@@ -346,13 +349,14 @@ async function resolvePercent(key,market){
 /* ====== カード描画 ====== */
 function renderCard(meta){
   const key=meta.key, market=meta.market||'JP';
+  const idBase = safeId(key);
   const card=document.createElement('article');card.className='card';
   const head=document.createElement('div');head.className='head';
   head.innerHTML=`<div class="flag">${meta.flag||'🏳️'}</div>
     <div class="name">${meta.label||key}</div>
     <div class="badge">${meta.badge||''}</div>
-    <div class="pct na" id="pct-${key}">N/A</div>
-    <div class="updatedAt" id="upd-${key}"></div>`;
+    <div class="pct na" id="pct-${idBase}">N/A</div>
+    <div class="updatedAt" id="upd-${idBase}"></div>`;
   card.appendChild(head);
 
   const desc=document.createElement('div');desc.className='desc';desc.textContent=meta.description||'';card.appendChild(desc);
@@ -382,7 +386,9 @@ function renderCard(meta){
 }
 
 async function applyPercent(key,market,card){
-  const pctEl=$(`#pct-${key}`), updEl=$(`#upd-${key}`);
+  const idBase = safeId(key);
+  const pctEl = byId(`pct-${idBase}`);
+  const updEl = byId(`upd-${idBase}`);
   const {v,ts}=await resolvePercent(key,market);
   if(v==null){ pctEl.textContent='N/A'; pctEl.className='pct na'; updEl.textContent=''; card.classList.remove('pos','neg'); return; }
   const {t,c}=fmtPct(v); pctEl.textContent=t; pctEl.className='pct '+c;
