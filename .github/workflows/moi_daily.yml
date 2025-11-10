@@ -1,13 +1,19 @@
-name: MOI Daily
+name: MOI Daily (07:00 JST)
 
 on:
   schedule:
-    # 22:00 UTC = 07:00 JST
-    - cron: '0 22 * * *'
+    - cron: '0 22 * * *'   # 22:00 UTC = 07:00 JST
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: moi-daily
+  cancel-in-progress: true
+
 jobs:
-  build-moi:
+  run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,16 +26,15 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          # 必要なら requirements に分離
           pip install requests pandas numpy
 
-      - name: Calc MOI
-        run: python scripts/moi/calc_moi.py
+      # Pages を docs/ で配信しているなら --output-dir docs/data に変更
+      - name: Calc MOI (daily snapshot)
+        run: |
+          python scripts/moi/calc_moi.py --snapshot --output-dir data
 
       - name: Commit & Push
         uses: EndBug/add-and-commit@v9
         with:
-          add: 'data/moi.json data/moi_state.json'
-          message: 'chore(moi): daily update'
-
-      # 既存のサイト公開ジョブが別workflowなら不要。静的生成が必要なら呼ぶ。
+          add: 'data/moi.json data/moi_state.json data/moi_daily.json'
+          message: 'chore(moi): daily snapshot'
