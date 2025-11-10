@@ -29,6 +29,35 @@
     }
     .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
 
+    /* ===== MOI（Market Overheat Index）追加スタイル ===== */
+    .moi-card{
+      background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
+      border:1px solid var(--border);border-radius:16px;
+      padding:14px 16px; margin:0 0 18px 0;
+    }
+    .moi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+    .moi-title{font-weight:700;letter-spacing:.2px}
+    .moi-updated{color:var(--sub);font-size:12px}
+    .moi-num{display:flex;align-items:baseline;gap:10px}
+    .moi-value{font-size:36px;font-weight:800;letter-spacing:.02em}
+    .moi-label{font-size:14px;color:var(--sub)}
+    .moi-delta{font-size:14px}
+    .moi-bar{position:relative;height:26px;border-radius:999px;overflow:hidden;margin-top:12px}
+    /* 左=赤(100) → 右=緑(0) */
+    .moi-grad{position:absolute;inset:0;
+      background:linear-gradient(90deg,#ef4444 0%, #f59e0b 50%, #10b981 100%);
+    }
+    .moi-ticks{position:absolute;inset:0;font-size:10px;color:#ffffffb3;pointer-events:none}
+    .moi-ticks span{position:absolute;bottom:-18px;transform:translateX(-50%)}
+    .moi-marker{position:absolute;top:0;bottom:0;width:3px;background:#fff;
+      box-shadow:0 0 6px rgba(255,255,255,.6)}
+    .moi-factors{margin-top:10px;font-size:13px;color:#b7c2ca}
+    .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+      padding:3px 8px;border-radius:999px;margin-right:6px}
+    @media (max-width:900px){
+      .moi-value{font-size:30px}
+    }
+    /* ===== 既存 ===== */
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
@@ -76,6 +105,37 @@
       </div>
     </header>
 
+    <!-- ===== MOI（Market Overheat Index）カード：追加セクション ===== -->
+    <section id="moi-section" class="moi-card">
+      <div class="moi-row">
+        <div class="moi-title">MOI｜市場温度 <small style="color:var(--sub)">(0＝冷静 / 100＝過熱)</small></div>
+        <div class="moi-updated" id="moi-updated"></div>
+      </div>
+      <div class="moi-row" style="margin-top:6px">
+        <div class="moi-num">
+          <div id="moi-value" class="moi-value">--</div>
+          <div id="moi-label" class="moi-label">--</div>
+        </div>
+        <div id="moi-delta" class="moi-delta"></div>
+      </div>
+
+      <!-- 長方形バー：左=赤(100)／右=緑(0) -->
+      <div class="moi-bar" aria-label="市場温度バー（左が過熱、右が冷静）">
+        <div class="moi-grad"></div>
+        <div class="moi-ticks" aria-hidden="true">
+          <span style="left:0%">100</span>
+          <span style="left:25%">75</span>
+          <span style="left:50%">50</span>
+          <span style="left:75%">25</span>
+          <span style="left:100%">0</span>
+        </div>
+        <div id="moi-marker" class="moi-marker" style="left:50%"></div>
+      </div>
+
+      <div id="moi-factors" class="moi-factors">主因: 読み込み中...</div>
+    </section>
+    <!-- ===== /MOI ここまで ===== -->
+
     <section class="grid" id="cards"></section>
 
     <div class="hint">
@@ -112,12 +172,9 @@ const IDX=[
 /* ====== util ====== */
 const enc = encodeURIComponent;
 const toSlug=k=>String(k||'').toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
-const $=(s,el=document)=>el.querySelector(s); // 汎用セレクタ（#year 等）
+const $=(s,el=document)=>el.querySelector(s);
 const byId=(id)=>document.getElementById(id);
-// セレクタ安全なID（S-COIN+ → s-coin_plus など）
-const safeId = (key)=> String(key).toLowerCase()
-  .replace(/\+/g,'_plus')
-  .replace(/[^a-z0-9_-]/g,'_');
+const safeId = (key)=> String(key).toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_-]/g,'_');
 
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
@@ -125,8 +182,6 @@ const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return 
 const probeImage=async(u)=>{try{const r=await fetch(u,{cache:'no-store'}); if(!r.ok) return false; const ct=r.headers.get('content-type')||''; return ct.includes('image');}catch{return false;}};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
-
-/* JST "YYYY/MM/DD HH:MM" をDate化 */
 function parseJPDate(str){
   if(!str) return null;
   const m = String(str).match(/(\d{4})[\/-](\d{2})[\/-](\d{2})[ T](\d{2}):(\d{2})/);
@@ -134,15 +189,11 @@ function parseJPDate(str){
   const [_,y,mo,d,h,mi] = m.map(Number);
   return new Date(y, mo-1, d, h, mi, 0);
 }
-
-/* 等価・日付ロジック */
 function sameDayJST(a,b){
   if(!a||!b) return false;
   const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
   return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
-
-/* サイト charts/* の last_run.txt キャッシュ */
 function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 const LAST_RUN=new Map();
@@ -152,8 +203,6 @@ async function getLastRun(key){
   const txt=await fetchText(`${SITE_CHARTS_BASE}/${enc(folder)}/last_run.txt`);
   const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
 }
-
-/* %テキスト → 値/時刻 */
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
   const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t));
@@ -178,8 +227,6 @@ function pickPctFromStat(j){
   }
   return null;
 }
-
-/* 原本の post_intraday テキスト候補（S-COIN+/AIN-10 名称ゆらぎ吸収） */
 function originPostTxtCandidates(key){
   const base = originBase(key);
   const slug = toSlug(key);
@@ -207,8 +254,6 @@ function originPostTxtCandidates(key){
     `${base}/${slug}_intraday_post.txt`,
   ];
 }
-
-/* 最初に見つかったテキストのTS */
 async function firstTsFromTextFiles(urls){
   for(const u of urls){
     const t = await fetchText(u);
@@ -219,8 +264,6 @@ async function firstTsFromTextFiles(urls){
   }
   return null;
 }
-
-/* 画像候補（tfごと）— intraday は“新しさ比較で並べ替え” */
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
@@ -247,11 +290,9 @@ async function buildCandidates(tf, key){
   })();
 
   if(tf !== 'intraday'){
-    // 長期：サイト→原本（サイトはlast_runで心拍管理されているため）
     return [...siteImgs, ...origImgs];
   }
 
-  // intraday：サイト/原本の post_intraday 時刻を比較して新しい方を先頭に
   const siteTxts   = siteBase ? [`${siteBase}/post_intraday.txt`, `${siteBase}/intraday.txt`] : [];
   const origTxts   = originPostTxtCandidates(key);
   const siteTs     = await firstTsFromTextFiles(siteTxts);
@@ -263,8 +304,6 @@ async function buildCandidates(tf, key){
 
   return siteFirst ? [...siteImgs, ...origImgs] : [...origImgs, ...siteImgs];
 }
-
-/* 画像切り替え（buildCandidates は async） */
 const IMG_SEQ=new WeakMap();
 async function switchTf(key,img,tf){
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
@@ -273,7 +312,6 @@ async function switchTf(key,img,tf){
   const urls = await buildCandidates(tf,key);
   if((IMG_SEQ.get(img)||0)!==req) return;
 
-  // キャッシュバスター：サイト=last_run / 原本=Date.now()
   let idx=0;
   const buster = async (u) => (u.startsWith(SITE_CHARTS_BASE))
       ? (await getLastRun(key)) ? encodeURIComponent(await getLastRun(key)) : Date.now()
@@ -291,9 +329,7 @@ async function switchTf(key,img,tf){
 
   requestAnimationFrame(()=>img.style.opacity='1');
 }
-
-/* 騰落率：サイト/原本・stats/text を集め、最新の1件を採用 */
-async function resolvePercent(key,market){
+async function resolvePercent(key,market,card){
   const folder=siteFolder(key);
   const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
   const base=originBase(key);
@@ -302,7 +338,6 @@ async function resolvePercent(key,market){
 
   const candidates = [];
 
-  // サイト側候補
   if(siteBase){
     const sStats = await fetchJson(`${siteBase}/stats.json`);
     if(sStats){
@@ -319,7 +354,6 @@ async function resolvePercent(key,market){
     }
   }
 
-  // 原本側候補
   if(base){
     const oStats = await fetchJson(`${base}/${slug}_stats.json`);
     if(oStats){
@@ -338,12 +372,47 @@ async function resolvePercent(key,market){
 
   if(candidates.length===0) return {v:null,ts:null};
 
-  // ts を Date にして比較（null は最下位）
   candidates.forEach(c => c.dt = parseJPDate(c.ts) || new Date(0));
-  candidates.sort((a,b)=> b.dt - a.dt); // 新しい順
+  candidates.sort((a,b)=> b.dt - a.dt);
 
   const pick = candidates[0];
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
+}
+
+/* ====== MOI 読み込みと描画 ====== */
+async function renderMOI(){
+  try{
+    const j = await fetchJson('/data/moi.json');
+    if(!j) throw new Error('moi.json not found');
+
+    // 数値・ラベル
+    byId('moi-value').textContent = Number(j.value).toFixed(0);
+    byId('moi-label').textContent = j.label || '';
+    byId('moi-updated').textContent = j.updated_at ? `更新: ${j.updated_at}` : '';
+
+    // 前日比（上昇=赤、下降=緑）
+    if(typeof j.delta === 'number'){
+      const d = j.delta;
+      const el = byId('moi-delta');
+      el.textContent = `前日比 ${d>0?'+':''}${d.toFixed(1)}`;
+      el.style.color = d >= 0 ? '#fca5a5' : '#6ee7b7';
+    }else{
+      byId('moi-delta').textContent = '';
+    }
+
+    // マーカー：左端=100（赤）/ 右端=0（緑） → left=(100 - value)%
+    const v = Math.max(0, Math.min(100, Number(j.value)));
+    byId('moi-marker').style.left = (100 - v) + '%';
+
+    // 主因
+    const f = Array.isArray(j.main_factors) ? j.main_factors : [];
+    byId('moi-factors').innerHTML = f.length
+      ? ('主因: ' + f.slice(0,3).map(x=>`<span class="moi-chip">${x}</span>`).join(''))
+      : '主因: 特筆すべき経済イベントなし';
+  }catch(e){
+    console.error('MOI load error', e);
+    byId('moi-factors').textContent = '主因: 取得エラー';
+  }
 }
 
 /* ====== カード描画 ====== */
@@ -400,6 +469,11 @@ async function applyPercent(key,market,card){
 (async function init(){
   $('#year').textContent=(new Date()).getFullYear();
   $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
+
+  // 先にMOIを描画
+  await renderMOI();
+
+  // 既存カードを配置
   const grid=$('#cards'); IDX.forEach(m=>grid.appendChild(renderCard(m)));
 })();
 </script>
