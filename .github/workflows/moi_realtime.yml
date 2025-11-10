@@ -1,0 +1,40 @@
+name: MOI Realtime (5min)
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 5分間隔
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: moi-realtime
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas numpy
+
+      # Pages を docs/ で配信しているなら --output-dir docs/data に変更
+      - name: Calc MOI (light / realtime)
+        run: |
+          python scripts/moi/calc_moi.py --light --output-dir data
+
+      - name: Commit & Push
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'data/moi.json data/moi_state.json'
+          message: 'chore(moi): 5min refresh'
