@@ -1,0 +1,91 @@
+<div id="moi-card" class="moi-card">
+  <div class="moi-head">
+    <div class="moi-title">MOI｜市場温度 <small>(0＝冷静 / 100＝過熱)</small></div>
+    <div class="moi-updated" id="moi-updated"></div>
+  </div>
+
+  <div class="moi-toprow">
+    <div class="moi-number">
+      <span id="moi-value">--</span>
+      <span id="moi-label" class="moi-label">--</span>
+    </div>
+    <div class="moi-delta" id="moi-delta"></div>
+  </div>
+
+  <!-- 温度バー：左=赤=100、右=緑=0 -->
+  <div class="moi-bar">
+    <div class="moi-gradient"></div>
+    <div class="moi-ticks">
+      <span style="left:0%">100</span>
+      <span style="left:25%">75</span>
+      <span style="left:50%">50</span>
+      <span style="left:75%">25</span>
+      <span style="left:100%">0</span>
+    </div>
+    <div id="moi-marker" class="moi-marker" style="left:50%"></div>
+  </div>
+
+  <div class="moi-factors" id="moi-factors"></div>
+</div>
+
+<style>
+  .moi-card{background:#0b0f14;border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:16px;color:#e8f0f5}
+  .moi-head{display:flex;justify-content:space-between;align-items:center}
+  .moi-title{font-weight:600}
+  .moi-updated{font-size:12px;color:#9ba3aa}
+  .moi-toprow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+  .moi-number span#moi-value{font-size:44px;font-weight:800;letter-spacing:.02em}
+  .moi-label{margin-left:8px;font-size:14px}
+  .moi-delta{font-size:14px}
+  .moi-bar{position:relative;height:24px;border-radius:999px;overflow:hidden;margin-top:14px}
+  .moi-gradient{position:absolute;inset:0;
+    background:linear-gradient(90deg,#ef4444 0%,#f59e0b 50%,#10b981 100%)}
+  .moi-ticks{position:absolute;inset:0;font-size:10px;color:#fff8;pointer-events:none}
+  .moi-ticks span{position:absolute;bottom:-18px;transform:translateX(-50%)}
+  .moi-marker{position:absolute;top:0;bottom:0;width:3px;background:#fff;
+    box-shadow:0 0 6px rgba(255,255,255,.6)}
+  .moi-factors{margin-top:10px;font-size:13px;color:#b7c2ca}
+  .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    padding:3px 8px;border-radius:999px;margin-right:6px}
+  @media (max-width:640px){.moi-number span#moi-value{font-size:36px}}
+</style>
+
+<script>
+(async function(){
+  try{
+    const res = await fetch("/data/moi.json", {cache: "no-store"});
+    const j = await res.json();
+
+    // 数値・ラベル・更新時刻
+    document.getElementById("moi-value").textContent = j.value.toFixed(0);
+    document.getElementById("moi-label").textContent = j.label || "";
+    document.getElementById("moi-updated").textContent = "更新: " + (j.updated_at||"");
+
+    // 前日比（上昇=赤/下降=緑）
+    const d = (typeof j.delta === "number") ? j.delta : null;
+    const deltaEl = document.getElementById("moi-delta");
+    if(d !== null){
+      deltaEl.textContent = `前日比 ${d>0?"+":""}${d.toFixed(1)}`;
+      deltaEl.style.color = d >= 0 ? "#fca5a5" : "#6ee7b7";
+    }else{
+      deltaEl.textContent = "";
+    }
+
+    // マーカー位置：左端=100、右端=0 なので left = (100 - value)%
+    const leftPct = (100 - Math.max(0, Math.min(100, j.value))) + "%";
+    document.getElementById("moi-marker").style.left = leftPct;
+
+    // 主因
+    const f = Array.isArray(j.main_factors) ? j.main_factors : [];
+    const box = document.getElementById("moi-factors");
+    if(f.length){
+      box.innerHTML = "主因: " + f.slice(0,3).map(x=>`<span class=\"moi-chip\">${x}</span>`).join("");
+    }else{
+      box.textContent = "主因: 特筆すべき経済イベントなし";
+    }
+  }catch(e){
+    console.error("MOI load error", e);
+  }
+})();
+</script>
