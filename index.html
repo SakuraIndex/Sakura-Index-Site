@@ -29,7 +29,7 @@
     }
     .btn:hover{border-color:var(--brand);box-shadow:0 0 0 3px #93c5fd22}
 
-    /* ===== MOI（Market Overheat Index）追加スタイル ===== */
+    /* ===== MOI（Market Overheat Index） ===== */
     .moi-card{
       background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
       border:1px solid var(--border);border-radius:16px;
@@ -43,21 +43,16 @@
     .moi-label{font-size:14px;color:var(--sub)}
     .moi-delta{font-size:14px}
     .moi-bar{position:relative;height:26px;border-radius:999px;overflow:hidden;margin-top:12px}
-    /* 左=赤(100) → 右=緑(0) */
-    .moi-grad{position:absolute;inset:0;
-      background:linear-gradient(90deg,#ef4444 0%, #f59e0b 50%, #10b981 100%);
-    }
+    .moi-grad{position:absolute;inset:0;background:linear-gradient(90deg,#ef4444 0%, #f59e0b 50%, #10b981 100%)}
     .moi-ticks{position:absolute;inset:0;font-size:10px;color:#ffffffb3;pointer-events:none}
     .moi-ticks span{position:absolute;bottom:-18px;transform:translateX(-50%)}
-    .moi-marker{position:absolute;top:0;bottom:0;width:3px;background:#fff;
-      box-shadow:0 0 6px rgba(255,255,255,.6)}
+    .moi-marker{position:absolute;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6)}
     .moi-factors{margin-top:10px;font-size:13px;color:#b7c2ca}
     .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
       padding:3px 8px;border-radius:999px;margin-right:6px}
-    @media (max-width:900px){
-      .moi-value{font-size:30px}
-    }
-    /* ===== 既存 ===== */
+    @media (max-width:900px){ .moi-value{font-size:30px} }
+
+    /* ===== カード ===== */
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
@@ -105,7 +100,7 @@
       </div>
     </header>
 
-    <!-- ===== MOI（Market Overheat Index）カード：追加セクション ===== -->
+    <!-- MOI -->
     <section id="moi-section" class="moi-card">
       <div class="moi-row">
         <div class="moi-title">MOI｜市場温度 <small style="color:var(--sub)">(0＝冷静 / 100＝過熱)</small></div>
@@ -118,23 +113,16 @@
         </div>
         <div id="moi-delta" class="moi-delta"></div>
       </div>
-
-      <!-- 長方形バー：左=赤(100)／右=緑(0) -->
       <div class="moi-bar" aria-label="市場温度バー（左が過熱、右が冷静）">
         <div class="moi-grad"></div>
         <div class="moi-ticks" aria-hidden="true">
-          <span style="left:0%">100</span>
-          <span style="left:25%">75</span>
-          <span style="left:50%">50</span>
-          <span style="left:75%">25</span>
-          <span style="left:100%">0</span>
+          <span style="left:0%">100</span><span style="left:25%">75</span>
+          <span style="left:50%">50</span><span style="left:75%">25</span><span style="left:100%">0</span>
         </div>
         <div id="moi-marker" class="moi-marker" style="left:50%"></div>
       </div>
-
       <div id="moi-factors" class="moi-factors">主因: 読み込み中...</div>
     </section>
-    <!-- ===== /MOI ここまで ===== -->
 
     <section class="grid" id="cards"></section>
 
@@ -148,25 +136,48 @@
 <script>
 /* ====== 設定 ====== */
 const SITE_CHARTS_BASE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Index-Site/main/docs/charts';
-const ORIG={
-  'ASTRA4':'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9':'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
-  'AIN-10' :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'AIN10'  :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
-  'S-COIN+':'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
-};
-const FOLDER={ 'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+' };
 
-/* 表示対象 */
+/* 各リポ outputs ルート */
+const ORIG={
+  'ASTRA4'   :'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
+  'R-BANK9'  :'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  'AIN-10'   :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'AIN10'    :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
+  'S-COIN+'  :'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
+
+  /* 追加指数 */
+  'QBIT-5'   :'https://raw.githubusercontent.com/SakuraIndex/QBIT-5_Sakura-Index/main/docs/outputs',
+  'SKYTECH-3':'https://raw.githubusercontent.com/SakuraIndex/SKYTECH-3_Sakura-Index/main/docs/outputs',
+  'RETAIL-7' :'https://raw.githubusercontent.com/SakuraIndex/RETAIL-7/main/docs/outputs',
+  'HINOSEMI' :'https://raw.githubusercontent.com/SakuraIndex/HINOMARU_SEMI_Sakura-Index/main/docs/outputs',
+};
+
+/* サイト内 charts フォルダ名（ある場合だけ使う） */
+const FOLDER={
+  'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+',
+  'QBIT-5':'QBIT5','SKYTECH-3':'SKYTECH3','RETAIL-7':'RETAIL7','HINOSEMI':'HINOSEMI'
+};
+
+/* 表示対象（カード順） */
 const IDX=[
-  {key:'ASTRA4', label:'ASTRA4', flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
-   description:'宇宙関連4銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
-  {key:'R-BANK9',label:'R-BANK9',flag:'🇯🇵', badge:'地方銀行',      market:'JP',
-   description:'地方銀行9銘柄の等ウェイト指数。日中は%、長期はレベル推移を表示。'},
-  {key:'AIN-10', label:'AIN-10', flag:'🇺🇸', badge:'AI関連10',      market:'US',
+  {key:'ASTRA4',   label:'ASTRA4',    flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
+   description:'宇宙関連4銘柄の等ウェイト指数。日中は騰落率％、長期はレベル推移を表示。'},
+  {key:'R-BANK9',  label:'R-BANK9',   flag:'🇯🇵', badge:'地方銀行',       market:'JP',
+   description:'地方銀行9銘柄の等ウェイト指数。日中は騰落率％、長期はレベル推移を表示。'},
+  {key:'AIN-10',   label:'AIN-10',    flag:'🇺🇸', badge:'AI関連10',       market:'US',
    description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
-  {key:'S-COIN+',label:'S-COIN+',flag:'🇯🇵',  badge:'仮想資産関連',  market:'JP',
+  {key:'S-COIN+',  label:'S-COIN+',   flag:'🇯🇵', badge:'仮想資産関連',    market:'JP',
    description:'暗号資産関連の等ウェイト指数（日本株）。日中は騰落率、長期はレベル推移を表示。'},
+
+  /* 追加指数 */
+  {key:'QBIT-5',   label:'QBIT-5',    flag:'🇺🇸', badge:'量子コンピュータ', market:'US',
+   description:'米量子計算関連5銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'},
+  {key:'SKYTECH-3',label:'SKYTECH-3', flag:'🇯🇵', badge:'ドローン',        market:'JP',
+   description:'日本ドローン関連3銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'},
+  {key:'RETAIL-7', label:'RETAIL-7',  flag:'🇯🇵', badge:'小売業',          market:'JP',
+   description:'日本小売主要7銘柄の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'},
+  {key:'HINOSEMI', label:'日の丸半導体', flag:'🇯🇵', badge:'半導体',       market:'JP',
+   description:'国内半導体関連の等ウェイト指数。日中は騰落率、長期はレベル推移を表示。'},
 ];
 
 /* ====== util ====== */
@@ -179,7 +190,6 @@ const safeId = (key)=> String(key).toLowerCase().replace(/\+/g,'_plus').replace(
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
-const probeImage=async(u)=>{try{const r=await fetch(u,{cache:'no-store'}); if(!r.ok) return false; const ct=r.headers.get('content-type')||''; return ct.includes('image');}catch{return false;}};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 function parseJPDate(str){
@@ -188,11 +198,6 @@ function parseJPDate(str){
   if(!m) return null;
   const [_,y,mo,d,h,mi] = m.map(Number);
   return new Date(y, mo-1, d, h, mi, 0);
-}
-function sameDayJST(a,b){
-  if(!a||!b) return false;
-  const aj=new Date(a.getTime()+9*3600*1000), bj=new Date(b.getTime()+9*3600*1000);
-  return aj.getUTCFullYear()===bj.getUTCFullYear() && aj.getUTCMonth()===bj.getUTCMonth() && aj.getUTCDate()===bj.getUTCDate();
 }
 function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
@@ -227,48 +232,44 @@ function pickPctFromStat(j){
   }
   return null;
 }
+
+/* ====== ファイル名の特別マッピング ======
+   リポ内の実ファイル名： qbit_5_*, skytech_3_*, retail_7_*, hinosemi_* を解決する */
+function baseNameFor(key){
+  switch(key){
+    case 'QBIT-5':    return 'qbit_5';
+    case 'SKYTECH-3': return 'skytech_3';
+    case 'RETAIL-7':  return 'retail_7';
+    case 'HINOSEMI':  return 'hinosemi';
+    default:          return toSlug(key);
+  }
+}
+
+/* ポスト文テキスト候補 */
 function originPostTxtCandidates(key){
   const base = originBase(key);
-  const slug = toSlug(key);
   if(!base) return [];
   if(key==='S-COIN+'){
-    return [
-      `${base}/scoin_plus_post_intraday.txt`,
-      `${base}/s_coin_plus_post_intraday.txt`,
-      `${base}/s-coin_plus_post_intraday.txt`,
-      `${base}/s_coin__post_intraday.txt`,
-    ];
+    const s = ['scoin_plus_post_intraday.txt','s_coin_plus_post_intraday.txt','s-coin_plus_post_intraday.txt','s_coin__post_intraday.txt'];
+    return s.map(p=>`${base}/${p}`);
   }
   if(key==='AIN-10' || key==='AIN10'){
-    return [
-      `${base}/ain10_post_intraday.txt`,
-      `${base}/ain10_intraday_post.txt`,
-      `${base}/ain_10_post_intraday.txt`,
-      `${base}/ain_10_intraday_post.txt`,
-      `${base}/ain-10_post_intraday.txt`,
-      `${base}/ain-10_intraday_post.txt`,
-    ];
+    const ks = ['ain10','ain_10','ain-10'];
+    return ks.flatMap(k=>[
+      `${base}/${k}_post_intraday.txt`,
+      `${base}/${k}_intraday_post.txt`
+    ]);
   }
-  return [
-    `${base}/${slug}_post_intraday.txt`,
-    `${base}/${slug}_intraday_post.txt`,
-  ];
+  const b = baseNameFor(key);
+  return [`${base}/${b}_post_intraday.txt`, `${base}/${b}_intraday_post.txt`];
 }
-async function firstTsFromTextFiles(urls){
-  for(const u of urls){
-    const t = await fetchText(u);
-    if(!t) continue;
-    const {ts} = parsePctFromText(t);
-    const dt = parseJPDate(ts);
-    if(dt) return dt;
-  }
-  return null;
-}
+
+/* 画像候補（サイトキャッシュ優先の判定ロジック付） */
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
   const base = originBase(key);
-  const slug = toSlug(key);
+  const bname = baseNameFor(key);
 
   const siteImgs = siteBase
     ? (tf==='intraday' ? [`${siteBase}/intraday.png`] : [`${siteBase}/${tf}.png`])
@@ -281,11 +282,9 @@ async function buildCandidates(tf, key){
       return tf==='intraday' ? s('intraday') : s(tf);
     }else if(key==='AIN-10'||key==='AIN10'){
       const ks = ['ain10','ain_10','ain-10'];
-      return tf==='intraday'
-        ? ks.map(k=>`${base}/${k}_intraday.png`)
-        : ks.map(k=>`${base}/${k}_${tf}.png`);
+      return ks.map(k=>`${base}/${k}_${tf}.png`);
     }else{
-      return tf==='intraday' ? [`${base}/${slug}_intraday.png`] : [`${base}/${slug}_${tf}.png`];
+      return [`${base}/${bname}_${tf}.png`];
     }
   })();
 
@@ -293,6 +292,17 @@ async function buildCandidates(tf, key){
     return [...siteImgs, ...origImgs];
   }
 
+  // Intraday はサイトと原本の新しさで優先を決める
+  async function firstTsFromTextFiles(urls){
+    for(const u of urls){
+      const t = await fetchText(u);
+      if(!t) continue;
+      const {ts} = parsePctFromText(t);
+      const dt = parseJPDate(ts);
+      if(dt) return dt;
+    }
+    return null;
+  }
   const siteTxts   = siteBase ? [`${siteBase}/post_intraday.txt`, `${siteBase}/intraday.txt`] : [];
   const origTxts   = originPostTxtCandidates(key);
   const siteTs     = await firstTsFromTextFiles(siteTxts);
@@ -304,6 +314,7 @@ async function buildCandidates(tf, key){
 
   return siteFirst ? [...siteImgs, ...origImgs] : [...origImgs, ...siteImgs];
 }
+
 const IMG_SEQ=new WeakMap();
 async function switchTf(key,img,tf){
   const prev=IMG_SEQ.get(img)||0, req=prev+1; IMG_SEQ.set(img,req);
@@ -313,14 +324,15 @@ async function switchTf(key,img,tf){
   if((IMG_SEQ.get(img)||0)!==req) return;
 
   let idx=0;
-  const buster = async (u) => (u.startsWith(SITE_CHARTS_BASE))
-      ? (await getLastRun(key)) ? encodeURIComponent(await getLastRun(key)) : Date.now()
-      : Date.now();
+  const cacheBuster = async () => {
+    const lr = await getLastRun(key);
+    return lr ? encodeURIComponent(lr) : Date.now();
+  };
 
   const tryLoad = async () => {
     const u = urls[idx];
     if(!u){ img.alt='画像が見つかりません'; return; }
-    const v = await buster(u);
+    const v = await cacheBuster();
     img.onerror = () => { idx++; tryLoad(); };
     img.onload  = () => { img.alt=''; };
     img.src = u + (u.includes('?')?'&':'?') + 'v=' + v;
@@ -329,11 +341,13 @@ async function switchTf(key,img,tf){
 
   requestAnimationFrame(()=>img.style.opacity='1');
 }
-async function resolvePercent(key,market,card){
+
+/* 騰落率取得（サイト stats.json / 原本 *_stats.json とポスト文から） */
+async function resolvePercent(key,market){
   const folder=siteFolder(key);
   const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
   const base=originBase(key);
-  const slug=toSlug(key);
+  const bname = baseNameFor(key);
   const cap={JP:8,US:12,CRYPTO:30}[market]??10;
 
   const candidates = [];
@@ -355,7 +369,7 @@ async function resolvePercent(key,market,card){
   }
 
   if(base){
-    const oStats = await fetchJson(`${base}/${slug}_stats.json`);
+    const oStats = await fetchJson(`${base}/${bname}_stats.json`);
     if(oStats){
       const v = pickPctFromStat(oStats);
       const ts = oStats.updated_at || null;
@@ -382,18 +396,14 @@ async function resolvePercent(key,market,card){
 /* ====== MOI 読み込みと描画 ====== */
 async function renderMOI(){
   try{
-    // ★ 修正：絶対パスではなく、現在ページ基準で解決
     const moiUrl = new URL('data/moi.json', location.href);
     const j = await fetchJson(moiUrl);
-
     if(!j) throw new Error('moi.json not found');
 
-    // 数値・ラベル
     byId('moi-value').textContent = Number(j.value).toFixed(0);
     byId('moi-label').textContent = j.label || '';
     byId('moi-updated').textContent = j.updated_at ? `更新: ${j.updated_at}` : '';
 
-    // 前日比（上昇=赤、下降=緑）
     if(typeof j.delta === 'number'){
       const d = j.delta;
       const el = byId('moi-delta');
@@ -403,11 +413,9 @@ async function renderMOI(){
       byId('moi-delta').textContent = '';
     }
 
-    // マーカー：左端=100（赤）/ 右端=0（緑） → left=(100 - value)%
     const v = Math.max(0, Math.min(100, Number(j.value)));
     byId('moi-marker').style.left = (100 - v) + '%';
 
-    // 主因
     const f = Array.isArray(j.main_factors) ? j.main_factors : [];
     byId('moi-factors').innerHTML = f.length
       ? ('主因: ' + f.slice(0,3).map(x=>`<span class="moi-chip">${x}</span>`).join(''))
@@ -473,10 +481,8 @@ async function applyPercent(key,market,card){
   $('#year').textContent=(new Date()).getFullYear();
   $('#syncMeta').textContent=`同期完了：${nowJP()} ／ データ: charts/*`;
 
-  // 先にMOIを描画
   await renderMOI();
 
-  // 既存カードを配置
   const grid=$('#cards'); IDX.forEach(m=>grid.appendChild(renderCard(m)));
 })();
 </script>
