@@ -1,83 +1,111 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MOI（Market Overheat Index） MVP
-- 出力: data/moi.json
-- 値域: 0–100（0=冷静, 100=過熱）
-- ここではMVP用の簡易計算（Surprise/Reaction/Decayの枠だけ用意）
+MOI（Market Overheat Index） 計算スクリプト v2
+- 0 = 冷静, 100 = 過熱
+- 出力:
+    data/moi.json            … 現在値（リアルタイム/5分）
+    data/moi_state.json      … 前回値の保持（自然減衰用）
+    data/moi_daily.json      … 日次スナップショット（--snapshot 時のみ）
+- 使い方:
+    python scripts/moi/calc_moi.py                 # 通常（5分更新など）
+    python scripts/moi/calc_moi.py --snapshot     # 毎朝7時の確定値
+    python scripts/moi/calc_moi.py --output-dir docs/data   # Pagesをdocs配信にしている場合
 """
 
-import json, os, math, datetime as dt
+import argparse, json, os, math, datetime as dt
 from pathlib import Path
-
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-OUT = DATA_DIR / "moi.json"
-STATE = DATA_DIR / "moi_state.json"  # 自然減衰用に前回値を保持
 
 JST = dt.timezone(dt.timedelta(hours=9))
 
 def clamp(x, lo=0.0, hi=100.0): return max(lo, min(hi, x))
 
-def load_prev():
-    if STATE.exists():
+def normalize_to_0_100(z, mean=50, sigma=15):
+    """ z(=0基準) を 0–100 に正規化（平均=50, 1σ=15pt 相当） """
+    return clamp(mean + sigma * z, 0, 100)
+
+def label_for(v: float) -> str:
+    if v >= 90: return "過熱(極)"
+    if v >= 75: return "過熱"
+    if v >= 60: return "やや過熱"
+    if v >= 40: return "平常"
+    if v >= 20: return "やや冷静"
+    return "静穏"
+
+def load_state(state_path: Path) -> float:
+    if state_path.exists():
         try:
-            o = json.loads(STATE.read_text())
+            o = json.loads(state_path.read_text())
             return float(o.get("value", 50.0))
         except Exception:
             pass
     return 50.0
 
-def save_state(v):
-    STATE.write_text(json.dumps({"value": v}, ensure_ascii=False, indent=2))
+def save_state(state_path: Path, v: float):
+    state_path.write_text(json.dumps({"value": float(v)}, ensure_ascii=False, indent=2))
 
-def normalize(z):
-    # 平常=50, 標準偏差=15 相当のスケーリング（MVP簡易版）
-    return clamp(50 + 15 * z)
-
-def calc_mvp_today(prev_value: float):
+def calc_moi(prev_value: float, light: bool) -> tuple[float, list[str]]:
     """
-    MVP: イベント寄与が無い日は自然減衰、ちょっとした市場の動きで±微調整。
-    本実装では、あなたの既存パイプに接続して Surprise/Reaction を差し替えてください。
+    MVP実装：
+      - 自然減衰（平均=50へ戻る）
+      - 軽い市場ノイズ（例: 為替/先物/件数）を擬似的に +α
+    本実装に差し替えるときは、ここで Surprise/Reaction/Decay を計算してください。
     """
-    # ---- TODO: ここを本実装で置換 ----
-    # 例: 既存の為替/先物・ニュース件数などから擬似zスコアを作る
-    pseudo_event_z = 0.0     # 例: CPIなど材料が無ければ0
-    market_noise = 0.0       # 例: USDJPYや先物の変化をATRで割ったもの
+    # --- decay 設計（週末は冷却強め） ---
+    today = dt.datetime.now(JST).weekday()  # Mon=0 .. Sun=6
+    decay = 0.05 if today not in (5, 6) else 0.08
 
-    # デモ：週末は冷却、平日たまに小幅+（あとで削除OK）
-    today = dt.datetime.now(JST).weekday()
-    if today in (5,6):  # Sat/Sun
-        decay = 0.08
-    else:
-        decay = 0.05
-        market_noise = 0.2  # 微加熱
-    # ---------------------------------
+    # --- 擬似ノイズ（軽量時は小さめ） ---
+    market_noise_z = 0.15 if not light else 0.05  # z値として足し込み
 
-    # 自然減衰（平均50へ）
-    cooled = prev_value*(1-decay) + 50*decay
-    # イベント/反応の寄与（とりあえずZ= ±1相当を±15pt）
-    moi = normalize((cooled-50)/15 + pseudo_event_z + market_noise)
-    return moi, ["特筆すべき経済イベントなし"] if abs(pseudo_event_z) < 0.01 else ["米CPI上振れ"]
+    cooled = prev_value * (1 - decay) + 50 * decay
+    # zへ変換 → ノイズ加算 → 0-100へ
+    z = (cooled - 50) / 15 + market_noise_z
+    value = normalize_to_0_100(z)
+
+    # 主因（本実装時は寄与ランキングの上位を返す）
+    factors = ["特筆すべき経済イベントなし"]
+    return value, factors
 
 def main():
-    prev = load_prev()
-    value, factors = calc_mvp_today(prev)
-    now = dt.datetime.now(JST)
-    # 前日比（STATEの値と比較）
-    delta = round(value - prev, 1)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--snapshot", action="store_true",
+                    help="日次スナップショット（moi_daily.json）も出力")
+    ap.add_argument("--output-dir", default=os.environ.get("MOI_OUTPUT_DIR", "data"),
+                    help="出力先ディレクトリ（既定: data）")
+    ap.add_argument("--light", action="store_true",
+                    help="軽量計算モード（5分更新向け）")
+    args = ap.parse_args()
 
+    out_dir = Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    state_path = out_dir / "moi_state.json"
+    moi_path   = out_dir / "moi.json"
+    daily_path = out_dir / "moi_daily.json"
+
+    prev = load_state(state_path)
+    value, factors = calc_moi(prev, light=args.light)
+
+    now = dt.datetime.now(JST)
+    delta = round(value - prev, 1)
     out = {
         "value": round(value, 1),
         "delta": delta,
         "main_factors": factors[:2],
         "updated_at": now.strftime("%Y/%m/%d %H:%M"),
-        "label": ("過熱" if value>=75 else "やや過熱" if value>=60 else
-                  "平常" if value>=40 else "やや冷静" if value>=20 else "静穏")
+        "label": label_for(value),
     }
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2))
-    save_state(value)
-    print(f"Wrote {OUT}")
+
+    moi_path.write_text(json.dumps(out, ensure_ascii=False, indent=2))
+    save_state(state_path, value)
+
+    # スナップショット（毎朝7時用）
+    if args.snapshot:
+        daily_path.write_text(json.dumps(out, ensure_ascii=False, indent=2))
+
+    print(f"Wrote {moi_path}")
+    if args.snapshot:
+        print(f"Wrote {daily_path}")
 
 if __name__ == "__main__":
     main()
