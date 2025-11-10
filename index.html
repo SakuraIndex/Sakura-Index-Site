@@ -382,7 +382,10 @@ async function resolvePercent(key,market,card){
 /* ====== MOI 読み込みと描画 ====== */
 async function renderMOI(){
   try{
-    const j = await fetchJson('/data/moi.json');
+    // ★ 修正：絶対パスではなく、現在ページ基準で解決
+    const moiUrl = new URL('data/moi.json', location.href);
+    const j = await fetchJson(moiUrl);
+
     if(!j) throw new Error('moi.json not found');
 
     // 数値・ラベル
