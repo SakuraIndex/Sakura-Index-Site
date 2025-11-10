@@ -1,7 +1,9 @@
 {
-  "value": 73.4,
-  "delta": 2.5,
-  "main_factors": ["米CPI上振れ","円安進行"],
-  "updated_at": "2025/11/09 07:00",
-  "label": "やや過熱"
+  "value": 53.0,
+  "delta": 3.0,
+  "main_factors": [
+    "特筆すべき経済イベントなし"
+  ],
+  "updated_at": "2025/11/10 12:33",
+  "label": "平常"
 }
