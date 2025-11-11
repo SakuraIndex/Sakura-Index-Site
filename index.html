@@ -83,6 +83,27 @@
       padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
     .chipbtn.active{outline:2px solid var(--brand)}
 
+    /* ===== 詳細開閉 ===== */
+    .details{
+      margin-top:10px;border-top:1px dashed var(--border);padding-top:10px
+    }
+    .details-toggle{
+      width:100%;text-align:left;background:#0d2231;border:1px solid var(--border);
+      color:#cfe6f3;padding:8px 10px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px
+    }
+    .details-toggle:hover{border-color:var(--brand)}
+    .chev{transition:transform .15s}
+    .details-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+    .details-body{
+      overflow:hidden;max-height:0;transition:max-height .25s ease;padding-left:2px
+    }
+    .details-body.open{padding-top:10px;max-height:800px}
+    .kv{font-size:13px;color:#b7c2ca;display:grid;grid-template-columns:120px 1fr;gap:6px 12px}
+    .pill{
+      display:inline-block;background:#0c1a27;border:1px solid var(--border);
+      padding:4px 8px;border-radius:999px;margin:4px 6px 0 0;font-size:12px;color:#cfe6f3
+    }
+    .small-note{color:#8fa4b3;font-size:12px;margin-top:6px}
     .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
     footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
   </style>
@@ -122,6 +143,14 @@
         <div id="moi-marker" class="moi-marker" style="left:50%"></div>
       </div>
       <div id="moi-factors" class="moi-factors">主因: 読み込み中...</div>
+
+      <!-- MOI 詳細 -->
+      <div class="details" id="moi-details">
+        <button type="button" class="details-toggle" aria-expanded="false">
+          <span class="chev">▾</span><span>詳細（MOIとは？算出方法）</span>
+        </button>
+        <div class="details-body" id="moi-details-body"></div>
+      </div>
     </section>
 
     <section class="grid" id="cards"></section>
@@ -393,6 +422,20 @@ async function resolvePercent(key,market){
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
 }
 
+/* ====== meta.json 取得（サイト優先→元リポ） ====== */
+async function fetchMetaFor(key){
+  const folder=siteFolder(key);
+  const siteMeta = folder ? await fetchJson(`${SITE_CHARTS_BASE}/${enc(folder)}/meta.json`) : null;
+  if(siteMeta) return siteMeta;
+  const base=originBase(key);
+  if(base){
+    // 一般に docs/outputs/meta.json として配置
+    const meta1 = await fetchJson(`${base}/meta.json`);
+    if(meta1) return meta1;
+  }
+  return null;
+}
+
 /* ====== MOI 読み込みと描画 ====== */
 async function renderMOI(){
   try{
@@ -420,10 +463,60 @@ async function renderMOI(){
     byId('moi-factors').innerHTML = f.length
       ? ('主因: ' + f.slice(0,3).map(x=>`<span class="moi-chip">${x}</span>`).join(''))
       : '主因: 特筆すべき経済イベントなし';
+
+    // MOI詳細：/data/moi_meta.json があれば使う
+    const meta = await fetchJson(new URL('data/moi_meta.json', location.href));
+    const $body = byId('moi-details-body');
+    $body.innerHTML = meta ? renderMetaHtml(meta) : `
+      <div class="kv">
+        <div>指数名</div><div>MOI（Market Overheat Index）</div>
+        <div>概要</div><div>市場の「熱さ（過熱/冷静）」を 0–100 のスケールで可視化する独自指標。</div>
+        <div>算出</div><div>複数の市場データを正規化し合成。詳細は後日公開予定。</div>
+      </div>`;
+    setupToggle(byId('moi-details'));
   }catch(e){
     console.error('MOI load error', e);
     byId('moi-factors').textContent = '主因: 取得エラー';
   }
+}
+
+/* ====== 詳細UI：HTML生成 ====== */
+function renderMetaHtml(meta){
+  const w = (x)=> (x==null?'':(typeof x==='number'? (x*100).toFixed(2)+'%' : String(x)));
+  const method = meta.method||{};
+  const comps = Array.isArray(meta.components)?meta.components:[];
+  const compHtml = comps.map(c=>{
+    const nm = c.name_ja || c.name || '';
+    const tkr = [c.ticker, c.exchange].filter(Boolean).join(' ');
+    const wt = (typeof c.weight==='number') ? ` · ${ (c.weight*100).toFixed(2) }%` : '';
+    return `<span class="pill">${tkr}${nm?` / ${nm}`:''}${wt}</span>`;
+  }).join('');
+  return `
+    <div class="kv">
+      <div>指数名</div><div>${meta.label || meta.index_key || ''}</div>
+      <div>カテゴリ</div><div>${meta.category || '-'}</div>
+      <div>概要</div><div>${meta.description || '-'}</div>
+      <div>算出方式</div><div>
+        重み付け: <b>${(method.weighting||'equal')}</b> ／
+        リバランス: <b>${(method.rebalancing||'-')}</b><br>
+        計算: ${method.calc || '-'}
+        ${method.notes?`<div class="small-note">${method.notes}</div>`:''}
+      </div>
+      <div>構成銘柄</div><div>${compHtml || '-'}</div>
+    </div>`;
+}
+
+/* 詳細UI：トグル制御を付与 */
+function setupToggle(root){
+  const btn = root.querySelector('.details-toggle');
+  const body = root.querySelector('.details-body');
+  const toggle = ()=>{
+    const exp = btn.getAttribute('aria-expanded') === 'true';
+    const next = !exp;
+    btn.setAttribute('aria-expanded', String(next));
+    if(next) body.classList.add('open'); else body.classList.remove('open');
+  };
+  btn.addEventListener('click', toggle);
 }
 
 /* ====== カード描画 ====== */
@@ -450,9 +543,23 @@ function renderCard(meta){
     .map(([k,l],i)=>`<span class="chipbtn ${i===0?'active':''}" data-tf="${k}">${l}</span>`).join('');
   card.appendChild(acts);
 
+  // 詳細パネル
+  const det=document.createElement('div');det.className='details';
+  det.innerHTML=`
+    <button type="button" class="details-toggle" aria-expanded="false">
+      <span class="chev">▾</span><span>詳細を表示（指数の説明・構成銘柄・算出方式）</span>
+    </button>
+    <div class="details-body" id="body-${idBase}"></div>`;
+  card.appendChild(det);
+
   (async()=>{
     await switchTf(key,img,'intraday');
     await applyPercent(key,market,card);
+    // meta.json 読み込み
+    const m = await fetchMetaFor(key);
+    const $body = byId(`body-${idBase}`);
+    $body.innerHTML = m ? renderMetaHtml(m) : '<div class="small-note">meta.json が見つかりませんでした。</div>';
+    setupToggle(det);
   })();
 
   acts.addEventListener('click',async e=>{
