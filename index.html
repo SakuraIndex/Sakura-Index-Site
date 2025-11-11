@@ -32,8 +32,7 @@
     /* MOI */
     .moi-card{
       background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
-      border:1px solid var(--border);border-radius:16px;
-      padding:14px 16px; margin:0 0 18px 0;
+      border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:0 0 18px 0;
     }
     .moi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
     .moi-title{font-weight:700;letter-spacing:.2px}
@@ -48,21 +47,14 @@
     .moi-ticks span{position:absolute;bottom:-18px;transform:translateX(-50%)}
     .moi-marker{position:absolute;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6)}
     .moi-factors{margin-top:10px;font-size:13px;color:#b7c2ca}
-    .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-      padding:3px 8px;border-radius:999px;margin-right:6px}
+    .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:3px 8px;border-radius:999px;margin-right:6px}
     @media (max-width:900px){ .moi-value{font-size:30px} }
 
     /* カード */
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
-
-    .card{
-      background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
-      border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative
-    }
-    .card.pos{ box-shadow:0 0 0 2px #34d39933 inset }
-    .card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
-
+    .card{background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative}
+    .card.pos{ box-shadow:0 0 0 2px #34d39933 inset } .card.neg{ box-shadow:0 0 0 2px #fb718533 inset }
     .head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
     .flag{font-size:18px;line-height:1}
     .name{font-size:18px;font-weight:700;letter-spacing:.2px}
@@ -71,32 +63,22 @@
     .pct{position:absolute;top:10px;right:12px;font-weight:800;font-size:16px;letter-spacing:.2px}
     .pct.up{color:var(--up)} .pct.down{color:var(--down)} .pct.na{color:var(--muted)}
     .updatedAt{position:absolute;top:32px;right:12px;color:var(--sub);font-size:11px}
-
-    .chart{
-      width:100%;height:260px;border-radius:10px;border:1px solid var(--border);
-      background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden
-    }
+    .chart{width:100%;height:260px;border-radius:10px;border:1px solid var(--border);background:#091421;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .chart img{display:block;width:100%;height:100%;object-fit:contain}
-
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);
-      padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
+    .chipbtn{font-size:12px;color:#cfe6f3;background:#0d2231;border:1px solid var(--border);padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
     .chipbtn.active{outline:2px solid var(--brand)}
 
     /* 詳細 */
     .details{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px}
-    .details-toggle{
-      width:100%;text-align:left;background:#0d2231;border:1px solid var(--border);
-      color:#cfe6f3;padding:8px 10px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px
-    }
+    .details-toggle{width:100%;text-align:left;background:#0d2231;border:1px solid var(--border);color:#cfe6f3;padding:8px 10px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px}
     .details-toggle:hover{border-color:var(--brand)}
     .chev{transition:transform .15s}
     .details-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
     .details-body{overflow:hidden;max-height:0;transition:max-height .25s ease;padding-left:2px}
     .details-body.open{padding-top:10px;max-height:800px}
     .kv{font-size:13px;color:#b7c2ca;display:grid;grid-template-columns:120px 1fr;gap:6px 12px}
-    .pill{display:inline-block;background:#0c1a27;border:1px solid var(--border);
-      padding:4px 8px;border-radius:999px;margin:4px 6px 0 0;font-size:12px;color:#cfe6f3}
+    .pill{display:inline-block;background:#0c1a27;border:1px solid var(--border);padding:4px 8px;border-radius:999px;margin:4px 6px 0 0;font-size:12px;color:#cfe6f3}
     .small-note{color:#8fa4b3;font-size:12px;margin-top:6px}
     .hint{color:var(--muted);font-size:12px;text-align:center;margin:22px 0 10px}
     footer{color:var(--muted);font-size:12px;text-align:center;margin:12px 0 40px}
@@ -212,6 +194,22 @@ const safeId = (key)=> String(key).toLowerCase().replace(/\+/g,'_plus').replace(
 const nowJP=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
 const fetchText=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.text():null;}catch{return null;}};
 const fetchJson=async(u)=>{try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null;}catch{return null;}};
+
+/* ゆるい JSON ローダー（コメント/BOM/末尾カンマ対応） */
+async function fetchJsonLoose(u){
+  try{
+    const r = await fetch(u,{cache:'no-store'});
+    if(!r.ok) return null;
+    let s = await r.text();
+    if(!s) return null;
+    s = s.replace(/^\uFEFF/,'')
+         .replace(/\/\*[\s\S]*?\*\//g,'')
+         .replace(/(^|[^:])\/\/.*$/mg,'$1')   // 行コメント
+         .replace(/,\s*([}\]])/g,'$1');       // 末尾カンマ
+    return JSON.parse(s);
+  }catch{ return null; }
+}
+
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function fmtPct(v){const s=(v>=0?'+':'')+(Math.round(v*100)/100).toFixed(2)+'%';return{t:s,c:v>0?'up':v<0?'down':'na'};}
 function parseJPDate(str){
@@ -224,7 +222,7 @@ function parseJPDate(str){
 function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 
-/* last_run.txt: サイト/原本の両方を参照可能 */
+/* last_run.txt */
 const LAST_RUN_SITE=new Map(), LAST_RUN_ORIG=new Map();
 async function getSiteLastRun(key){
   const folder=siteFolder(key); if(!folder) return null;
@@ -239,7 +237,7 @@ async function getOriginLastRun(key){
   const v=(txt||'').trim()||null; LAST_RUN_ORIG.set(base,v); return v;
 }
 
-/* ％抽出など */
+/* ％抽出 */
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
   const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t));
@@ -295,7 +293,7 @@ function originPostTxtCandidates(key){
   return [`${base}/${b}_post_intraday.txt`, `${base}/${b}_intraday_post.txt`];
 }
 
-/* 画像候補：intraday は指定キーだけ原本優先、それ以外はサイト優先 */
+/* 画像候補 */
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
@@ -334,15 +332,14 @@ async function switchTf(key,img,tf){
   const urls = await buildCandidates(tf,key);
   if((IMG_SEQ.get(img)||0)!==req) return;
 
-  let idx=0;
   const cacheBuster = async () => {
-    // intraday かつ原本優先キー → 原本 last_run、その他はサイト last_run（なければ原本）
     if(tf==='intraday' && FORCE_ORIGIN_INTRADAY.has(key)){
       return (await getOriginLastRun(key)) || (await getSiteLastRun(key)) || Date.now();
     }
     return (await getSiteLastRun(key)) || (await getOriginLastRun(key)) || Date.now();
   };
 
+  let idx=0;
   const tryLoad = async () => {
     const u = urls[idx];
     if(!u){ img.alt='画像が見つかりません'; return; }
@@ -356,7 +353,7 @@ async function switchTf(key,img,tf){
   requestAnimationFrame(()=>img.style.opacity='1');
 }
 
-/* 騰落率の取得（サイト/原本の新しい方） */
+/* 騰落率（新しい方） */
 async function resolvePercent(key,market){
   const folder=siteFolder(key);
   const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
@@ -407,7 +404,7 @@ async function resolvePercent(key,market){
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
 }
 
-/* ====== meta.json の探索を強化 ====== */
+/* ====== meta.json の探索（＋ゆるいパーサ） ====== */
 async function fetchMetaFor(key){
   const folder=siteFolder(key);
   const base=originBase(key);
@@ -423,6 +420,10 @@ async function fetchMetaFor(key){
       `${sb}/${name}/meta.json`
     );
   }
+  // サイトローカル（assets に置いた場合）
+  siteCandidates.push(
+    new URL(`assets/meta/${name}.json`, location.href).toString()
+  );
 
   const originCandidates = [];
   if(base){
@@ -435,7 +436,7 @@ async function fetchMetaFor(key){
   }
 
   for(const u of [...siteCandidates, ...originCandidates]){
-    const j = await fetchJson(u);
+    const j = await fetchJsonLoose(u);
     if(j) return j;
   }
   return null;
@@ -445,7 +446,7 @@ async function fetchMetaFor(key){
 async function renderMOI(){
   try{
     const moiUrl = new URL('data/moi.json', location.href);
-    const j = await fetchJson(moiUrl);
+    const j = await fetchJsonLoose(moiUrl);
     if(!j) throw new Error('moi.json not found');
 
     byId('moi-value').textContent = Number(j.value).toFixed(0);
@@ -469,7 +470,7 @@ async function renderMOI(){
       ? ('主因: ' + f.slice(0,3).map(x=>`<span class="moi-chip">${x}</span>`).join(''))
       : '主因: 特筆すべき経済イベントなし';
 
-    const meta = await fetchJson(new URL('data/moi_meta.json', location.href));
+    const meta = await fetchJsonLoose(new URL('data/moi_meta.json', location.href));
     const $body = byId('moi-details-body');
     $body.innerHTML = meta ? renderMetaHtml(meta) : `
       <div class="kv">
@@ -489,27 +490,21 @@ function asArray(x){ return Array.isArray(x)?x:(x? [x] : []); }
 
 function renderMetaHtml(meta){
   const method = meta.method||{};
-  // components の別名も吸収
   const candidates = [
     meta.components, meta.constituents, meta.members, meta.stocks, meta.symbols
   ].flatMap(asArray).filter(Boolean);
 
   const comps = candidates.map(c=>{
-    // オブジェクト or 文字列の両対応
-    if(typeof c === 'string'){
-      return { ticker:c, exchange:'', name_ja:'', weight:undefined };
-    }
+    if(typeof c === 'string'){ return { ticker:c, exchange:'', name_ja:'', weight:undefined }; }
     return c||{};
   });
 
   const compHtml = comps.map(c=>{
     const nm = c.name_ja || c.name || '';
     const tkr = [c.ticker, c.exchange].filter(Boolean).join(' ');
-    const wt = (typeof c.weight==='number')
-      ? ` · ${(c.weight*100).toFixed(2)}%`
-      : (typeof c.weight==='string' ? ` · ${c.weight}` : '');
-    const text = [tkr, nm ? ` / ${nm}` : '', wt].join('');
-    return `<span class="pill">${text}</span>`;
+    const wt = (typeof c.weight==='number') ? ` · ${(c.weight*100).toFixed(2)}%`
+             : (typeof c.weight==='string' ? ` · ${c.weight}` : '');
+    return `<span class="pill">${tkr}${nm?` / ${nm}`:''}${wt}</span>`;
   }).join('');
 
   return `
