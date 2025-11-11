@@ -26,6 +26,44 @@
   </div>
 
   <div class="moi-factors" id="moi-factors"></div>
+
+  <!-- ▼ 詳細（説明・算出方式など） -->
+  <details class="moi-details" id="moi-details" data-index-key="MOI">
+    <summary>
+      <span class="caret">⬇️</span>
+      <span>詳細（指数説明・算出方式）</span>
+    </summary>
+    <div class="details-body">
+      <div class="details-row">
+        <div class="details-label">指数名</div>
+        <div class="details-value" id="moi-meta-name">MOI</div>
+      </div>
+      <div class="details-row">
+        <div class="details-label">構成銘柄</div>
+        <div class="details-value" id="moi-meta-universe">構成銘柄なし（合成指数）</div>
+      </div>
+      <div class="details-row">
+        <div class="details-label">説明</div>
+        <div class="details-value" id="moi-meta-desc">
+          短期〜中期の市場シグナルを統合した独自センチメント指数。高いほど過熱、低いほど冷え込みを示します。
+        </div>
+      </div>
+      <div class="details-row">
+        <div class="details-label">算出方式</div>
+        <div class="details-value" id="moi-meta-method">
+          <ul class="method-list">
+            <li>先物・オプション板から算出した短期センチメント</li>
+            <li>主要セクターの等ウェイト・モメンタム</li>
+            <li>為替・金利トレンド寄与</li>
+            <li>ボラティリティ（IV/RV）スコア</li>
+          </ul>
+          <div class="meta-kv"><b>スケール:</b> 0〜100（約50が平常、&gt;70=過熱、&lt;30=冷え）</div>
+          <div class="meta-kv"><b>更新頻度:</b> 15〜60分ごとに自動更新</div>
+          <div class="meta-kv"><b>注記:</b> 構成比・式は随時チューニングされます。</div>
+        </div>
+      </div>
+    </div>
+  </details>
 </div>
 
 <style>
@@ -48,44 +86,104 @@
   .moi-factors{margin-top:10px;font-size:13px;color:#b7c2ca}
   .moi-chip{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
     padding:3px 8px;border-radius:999px;margin-right:6px}
+  /* details */
+  .moi-details{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+  .moi-details summary{cursor:pointer;display:flex;align-items:center;gap:8px;
+    list-style:none;color:#cdd6dd;font-weight:600}
+  .moi-details summary::-webkit-details-marker{display:none}
+  .moi-details .caret{display:inline-block;transition:transform .18s ease}
+  .moi-details[open] .caret{transform:rotate(180deg)}
+  .details-body{margin-top:10px;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px}
+  .details-row{display:flex;gap:10px;margin:8px 0}
+  .details-label{width:86px;min-width:86px;color:#94a3af;font-size:12px}
+  .details-value{flex:1;color:#e5eef5;font-size:13px}
+  .method-list{margin:.2rem 0 .4rem 1.1rem}
+  .meta-kv{font-size:12px;color:#c9d7e1;margin:.2rem 0}
   @media (max-width:640px){.moi-number span#moi-value{font-size:36px}}
 </style>
 
 <script>
-(async function(){
-  try{
-    const res = await fetch("/data/moi.json", {cache: "no-store"});
-    const j = await res.json();
+(function(){
+  // ---- main MOI numbers ----
+  (async function(){
+    try{
+      const res = await fetch("/data/moi.json", {cache: "no-store"});
+      const j = await res.json();
 
-    // 数値・ラベル・更新時刻
-    document.getElementById("moi-value").textContent = j.value.toFixed(0);
-    document.getElementById("moi-label").textContent = j.label || "";
-    document.getElementById("moi-updated").textContent = "更新: " + (j.updated_at||"");
+      // 数値・ラベル・更新時刻
+      document.getElementById("moi-value").textContent = j.value.toFixed(0);
+      document.getElementById("moi-label").textContent = j.label || "";
+      document.getElementById("moi-updated").textContent = "更新: " + (j.updated_at||"");
 
-    // 前日比（上昇=赤/下降=緑）
-    const d = (typeof j.delta === "number") ? j.delta : null;
-    const deltaEl = document.getElementById("moi-delta");
-    if(d !== null){
-      deltaEl.textContent = `前日比 ${d>0?"+":""}${d.toFixed(1)}`;
-      deltaEl.style.color = d >= 0 ? "#fca5a5" : "#6ee7b7";
-    }else{
-      deltaEl.textContent = "";
+      // 前日比（上昇=赤/下降=緑）
+      const d = (typeof j.delta === "number") ? j.delta : null;
+      const deltaEl = document.getElementById("moi-delta");
+      if(d !== null){
+        deltaEl.textContent = `前日比 ${d>0?"+":""}${d.toFixed(1)}`;
+        deltaEl.style.color = d >= 0 ? "#fca5a5" : "#6ee7b7";
+      }else{
+        deltaEl.textContent = "";
+      }
+
+      // マーカー位置：左端=100、右端=0 なので left = (100 - value)%
+      const leftPct = (100 - Math.max(0, Math.min(100, j.value))) + "%";
+      document.getElementById("moi-marker").style.left = leftPct;
+
+      // 主因
+      const f = Array.isArray(j.main_factors) ? j.main_factors : [];
+      const box = document.getElementById("moi-factors");
+      if(f.length){
+        box.innerHTML = "主因: " + f.slice(0,3).map(x=>`<span class="moi-chip">${escapeHtml(String(x))}</span>`).join("");
+      }else{
+        box.textContent = "主因: 特筆すべき経済イベントなし";
+      }
+    }catch(e){
+      console.error("MOI load error", e);
     }
+  })();
 
-    // マーカー位置：左端=100、右端=0 なので left = (100 - value)%
-    const leftPct = (100 - Math.max(0, Math.min(100, j.value))) + "%";
-    document.getElementById("moi-marker").style.left = leftPct;
+  // ---- meta (説明・算出方式) ----
+  (async function loadMeta(){
+    const set = (id, v) => { const el = document.getElementById(id); if(el) el.innerHTML = v; };
+    try{
+      const res = await fetch("/charts/MOI/meta.json", {cache:"no-store"});
+      if(!res.ok) return; // なくても問題なく動作
+      const m = await res.json();
 
-    // 主因
-    const f = Array.isArray(j.main_factors) ? j.main_factors : [];
-    const box = document.getElementById("moi-factors");
-    if(f.length){
-      box.innerHTML = "主因: " + f.slice(0,3).map(x=>`<span class=\"moi-chip\">${x}</span>`).join("");
-    }else{
-      box.textContent = "主因: 特筆すべき経済イベントなし";
+      set("moi-meta-name", escapeHtml(m.label || m.name || "MOI"));
+
+      // 構成銘柄
+      const uni = Array.isArray(m.universe) ? m.universe : [];
+      set(
+        "moi-meta-universe",
+        uni.length ? uni.map(x=>`<span class="moi-chip">${escapeHtml(String(x))}</span>`).join(" ")
+                   : "構成銘柄なし（合成指数）"
+      );
+
+      // 説明
+      if(m.description) set("moi-meta-desc", escapeHtml(String(m.description)));
+
+      // 算出方式
+      const parts = [];
+      const md = m.methodology || {};
+      if(Array.isArray(md.components) && md.components.length){
+        parts.push('<ul class="method-list">' +
+          md.components.map(x=>`<li>${escapeHtml(String(x))}</li>`).join("") +
+        '</ul>');
+      }
+      if(md.scale)   parts.push(`<div class="meta-kv"><b>スケール:</b> ${escapeHtml(String(md.scale))}</div>`);
+      if(md.refresh) parts.push(`<div class="meta-kv"><b>更新頻度:</b> ${escapeHtml(String(md.refresh))}</div>`);
+      if(md.notes)   parts.push(`<div class="meta-kv"><b>注記:</b> ${escapeHtml(String(md.notes))}</div>`);
+      if(parts.length) set("moi-meta-method", parts.join(""));
+    }catch(e){
+      console.warn("MOI meta load skipped", e);
     }
-  }catch(e){
-    console.error("MOI load error", e);
+  })();
+
+  // ---- helpers ----
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 })();
 </script>
