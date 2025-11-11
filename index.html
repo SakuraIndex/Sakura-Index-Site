@@ -252,14 +252,15 @@ function pickPctFromStat(j){
   return null;
 }
 
-/* 実ファイル名のマッピング */
+/* === 実ファイル名のマッピング（R-BANK9 特例を追加） === */
 function baseNameFor(key){
   switch(key){
-    case 'QBIT-5':    return 'qbit_5';
-    case 'SKYTECH-3': return 'skytech_3';
-    case 'RETAIL-7':  return 'retail_7';
-    case 'HINOSEMI':  return 'hinosemi';
-    default:          return toSlug(key);
+    case 'R-BANK9':  return 'rbank9';     // ← 追加（intraday等は rbank9_*.png/json）
+    case 'QBIT-5':   return 'qbit_5';
+    case 'SKYTECH-3':return 'skytech_3';
+    case 'RETAIL-7': return 'retail_7';
+    case 'HINOSEMI': return 'hinosemi';
+    default:         return toSlug(key);
   }
 }
 
@@ -282,7 +283,7 @@ function originPostTxtCandidates(key){
   return [`${base}/${b}_post_intraday.txt`, `${base}/${b}_intraday_post.txt`];
 }
 
-/* 画像候補：intraday は常にサイト優先（404時のみオリジンにフォールバック） */
+/* 画像候補：intraday はサイト優先（404時のみオリジンにフォールバック） */
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
@@ -306,7 +307,6 @@ async function buildCandidates(tf, key){
     }
   })();
 
-  // intraday はサイト→オリジン、その他はサイト→オリジンの固定順
   return [...siteImgs, ...origImgs];
 }
 
@@ -389,11 +389,14 @@ async function resolvePercent(key,market){
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
 }
 
-/* ====== meta.json の探索を強化 ====== */
+/* ====== meta.json の探索を強化（docs/・repo直下も探索） ====== */
 async function fetchMetaFor(key){
-  const folder=siteFolder(key);
-  const base=originBase(key);
-  const name=baseNameFor(key);
+  const folder = siteFolder(key);
+  const base   = originBase(key);       // .../docs/outputs
+  const name   = baseNameFor(key);
+
+  // リポ root を推定（.../docs/outputs を除去）
+  const repoRoot = base ? base.replace(/\/docs\/outputs\/?$/,'') : null;
 
   const siteCandidates = [];
   if(folder){
@@ -408,6 +411,7 @@ async function fetchMetaFor(key){
 
   const originCandidates = [];
   if(base){
+    // outputs 配下
     originCandidates.push(
       `${base}/meta.json`,
       `${base}/${name}_meta.json`,
@@ -415,8 +419,18 @@ async function fetchMetaFor(key){
       `${base}/${name}/meta.json`
     );
   }
+  if(repoRoot){
+    // docs/ や リポ直下
+    originCandidates.push(
+      `${repoRoot}/docs/meta.json`,
+      `${repoRoot}/docs/${name}_meta.json`,
+      `${repoRoot}/docs/meta/${name}.json`,
+      `${repoRoot}/docs/charts/${enc(folder||name)}/meta.json`,
+      `${repoRoot}/meta.json`,
+      `${repoRoot}/${name}_meta.json`
+    );
+  }
 
-  // 順番に試す
   for(const u of [...siteCandidates, ...originCandidates]){
     const j = await fetchJson(u);
     if(j) return j;
@@ -458,8 +472,9 @@ async function renderMOI(){
     $body.innerHTML = meta ? renderMetaHtml(meta) : `
       <div class="kv">
         <div>指数名</div><div>MOI（Market Overheat Index）</div>
+        <div>カテゴリ</div><div>市場温度</div>
         <div>概要</div><div>市場の「熱さ（過熱/冷静）」を 0–100 のスケールで可視化する独自指標。</div>
-        <div>算出</div><div>複数の市場データを正規化し合成。詳細は後日公開予定。</div>
+        <div>算出方式</div><div>複数の市場データを正規化し合成。詳細は後日公開予定。</div>
       </div>`;
     setupToggle(byId('moi-details'));
   }catch(e){
