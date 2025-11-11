@@ -179,6 +179,9 @@ const FOLDER={
   'QBIT-5':'QBIT5','SKYTECH-3':'SKYTECH3','RETAIL-7':'RETAIL7','HINOSEMI':'HINOSEMI'
 };
 
+/* intraday を原本最優先にする指数 */
+const FORCE_ORIGIN_INTRADAY = new Set(['ASTRA4','R-BANK9','AIN-10','AIN10']);
+
 /* 表示カード順 */
 const IDX=[
   {key:'ASTRA4',   label:'ASTRA4',    flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
@@ -220,13 +223,23 @@ function parseJPDate(str){
 }
 function siteFolder(key){return FOLDER[key]||FOLDER[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
 function originBase(key){return ORIG[key]||ORIG[key.replace(/[^A-Z0-9+]/gi,'')]||null;}
-const LAST_RUN=new Map();
-async function getLastRun(key){
+
+/* last_run.txt: サイト/原本の両方を参照可能 */
+const LAST_RUN_SITE=new Map(), LAST_RUN_ORIG=new Map();
+async function getSiteLastRun(key){
   const folder=siteFolder(key); if(!folder) return null;
-  if(LAST_RUN.has(folder)) return LAST_RUN.get(folder);
+  if(LAST_RUN_SITE.has(folder)) return LAST_RUN_SITE.get(folder);
   const txt=await fetchText(`${SITE_CHARTS_BASE}/${enc(folder)}/last_run.txt`);
-  const v=(txt||'').trim()||null; LAST_RUN.set(folder,v); return v;
+  const v=(txt||'').trim()||null; LAST_RUN_SITE.set(folder,v); return v;
 }
+async function getOriginLastRun(key){
+  const base=originBase(key); if(!base) return null;
+  if(LAST_RUN_ORIG.has(base)) return LAST_RUN_ORIG.get(base);
+  const txt=await fetchText(`${base}/last_run.txt`);
+  const v=(txt||'').trim()||null; LAST_RUN_ORIG.set(base,v); return v;
+}
+
+/* ％抽出など */
 function parsePctFromText(t){
   if(!t) return {v:null,ts:null};
   const s=(String(t).normalize ? String(t).normalize('NFKC') : String(t));
@@ -252,15 +265,14 @@ function pickPctFromStat(j){
   return null;
 }
 
-/* === 実ファイル名のマッピング（R-BANK9 特例を追加） === */
+/* 実ファイル名のマッピング */
 function baseNameFor(key){
   switch(key){
-    case 'R-BANK9':  return 'rbank9';     // ← 追加（intraday等は rbank9_*.png/json）
-    case 'QBIT-5':   return 'qbit_5';
-    case 'SKYTECH-3':return 'skytech_3';
-    case 'RETAIL-7': return 'retail_7';
-    case 'HINOSEMI': return 'hinosemi';
-    default:         return toSlug(key);
+    case 'QBIT-5':    return 'qbit_5';
+    case 'SKYTECH-3': return 'skytech_3';
+    case 'RETAIL-7':  return 'retail_7';
+    case 'HINOSEMI':  return 'hinosemi';
+    default:          return toSlug(key);
   }
 }
 
@@ -283,7 +295,7 @@ function originPostTxtCandidates(key){
   return [`${base}/${b}_post_intraday.txt`, `${base}/${b}_intraday_post.txt`];
 }
 
-/* 画像候補：intraday はサイト優先（404時のみオリジンにフォールバック） */
+/* 画像候補：intraday は指定キーだけ原本優先、それ以外はサイト優先 */
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
@@ -307,7 +319,10 @@ async function buildCandidates(tf, key){
     }
   })();
 
-  return [...siteImgs, ...origImgs];
+  if(tf==='intraday' && FORCE_ORIGIN_INTRADAY.has(key)){
+    return [...origImgs, ...siteImgs]; // 原本→サイト
+  }
+  return [...siteImgs, ...origImgs];   // サイト→原本
 }
 
 /* 表示のための読み込み（競合防止） */
@@ -321,8 +336,11 @@ async function switchTf(key,img,tf){
 
   let idx=0;
   const cacheBuster = async () => {
-    const lr = await getLastRun(key);
-    return lr ? encodeURIComponent(lr) : Date.now();
+    // intraday かつ原本優先キー → 原本 last_run、その他はサイト last_run（なければ原本）
+    if(tf==='intraday' && FORCE_ORIGIN_INTRADAY.has(key)){
+      return (await getOriginLastRun(key)) || (await getSiteLastRun(key)) || Date.now();
+    }
+    return (await getSiteLastRun(key)) || (await getOriginLastRun(key)) || Date.now();
   };
 
   const tryLoad = async () => {
@@ -331,14 +349,14 @@ async function switchTf(key,img,tf){
     const v = await cacheBuster();
     img.onerror = () => { idx++; tryLoad(); };
     img.onload  = () => { img.alt=''; };
-    img.src = u + (u.includes('?')?'&':'?') + 'v=' + v;
+    img.src = u + (u.includes('?')?'&':'?') + 'v=' + encodeURIComponent(v);
   };
   tryLoad();
 
   requestAnimationFrame(()=>img.style.opacity='1');
 }
 
-/* 騰落率の取得 */
+/* 騰落率の取得（サイト/原本の新しい方） */
 async function resolvePercent(key,market){
   const folder=siteFolder(key);
   const siteBase = folder?`${SITE_CHARTS_BASE}/${enc(folder)}`:null;
@@ -389,14 +407,11 @@ async function resolvePercent(key,market){
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
 }
 
-/* ====== meta.json の探索を強化（docs/・repo直下も探索） ====== */
+/* ====== meta.json の探索を強化 ====== */
 async function fetchMetaFor(key){
-  const folder = siteFolder(key);
-  const base   = originBase(key);       // .../docs/outputs
-  const name   = baseNameFor(key);
-
-  // リポ root を推定（.../docs/outputs を除去）
-  const repoRoot = base ? base.replace(/\/docs\/outputs\/?$/,'') : null;
+  const folder=siteFolder(key);
+  const base=originBase(key);
+  const name=baseNameFor(key);
 
   const siteCandidates = [];
   if(folder){
@@ -411,23 +426,11 @@ async function fetchMetaFor(key){
 
   const originCandidates = [];
   if(base){
-    // outputs 配下
     originCandidates.push(
       `${base}/meta.json`,
       `${base}/${name}_meta.json`,
       `${base}/meta/${name}.json`,
       `${base}/${name}/meta.json`
-    );
-  }
-  if(repoRoot){
-    // docs/ や リポ直下
-    originCandidates.push(
-      `${repoRoot}/docs/meta.json`,
-      `${repoRoot}/docs/${name}_meta.json`,
-      `${repoRoot}/docs/meta/${name}.json`,
-      `${repoRoot}/docs/charts/${enc(folder||name)}/meta.json`,
-      `${repoRoot}/meta.json`,
-      `${repoRoot}/${name}_meta.json`
     );
   }
 
@@ -466,13 +469,11 @@ async function renderMOI(){
       ? ('主因: ' + f.slice(0,3).map(x=>`<span class="moi-chip">${x}</span>`).join(''))
       : '主因: 特筆すべき経済イベントなし';
 
-    // MOI詳細：/data/moi_meta.json があれば使う（無ければプレースホルダ）
     const meta = await fetchJson(new URL('data/moi_meta.json', location.href));
     const $body = byId('moi-details-body');
     $body.innerHTML = meta ? renderMetaHtml(meta) : `
       <div class="kv">
         <div>指数名</div><div>MOI（Market Overheat Index）</div>
-        <div>カテゴリ</div><div>市場温度</div>
         <div>概要</div><div>市場の「熱さ（過熱/冷静）」を 0–100 のスケールで可視化する独自指標。</div>
         <div>算出方式</div><div>複数の市場データを正規化し合成。詳細は後日公開予定。</div>
       </div>`;
@@ -484,15 +485,33 @@ async function renderMOI(){
 }
 
 /* ====== 詳細UI ====== */
+function asArray(x){ return Array.isArray(x)?x:(x? [x] : []); }
+
 function renderMetaHtml(meta){
   const method = meta.method||{};
-  const comps = Array.isArray(meta.components)?meta.components:[];
+  // components の別名も吸収
+  const candidates = [
+    meta.components, meta.constituents, meta.members, meta.stocks, meta.symbols
+  ].flatMap(asArray).filter(Boolean);
+
+  const comps = candidates.map(c=>{
+    // オブジェクト or 文字列の両対応
+    if(typeof c === 'string'){
+      return { ticker:c, exchange:'', name_ja:'', weight:undefined };
+    }
+    return c||{};
+  });
+
   const compHtml = comps.map(c=>{
     const nm = c.name_ja || c.name || '';
     const tkr = [c.ticker, c.exchange].filter(Boolean).join(' ');
-    const wt = (typeof c.weight==='number') ? ` · ${(c.weight*100).toFixed(2)}%` : '';
-    return `<span class="pill">${tkr}${nm?` / ${nm}`:''}${wt}</span>`;
+    const wt = (typeof c.weight==='number')
+      ? ` · ${(c.weight*100).toFixed(2)}%`
+      : (typeof c.weight==='string' ? ` · ${c.weight}` : '');
+    const text = [tkr, nm ? ` / ${nm}` : '', wt].join('');
+    return `<span class="pill">${text}</span>`;
   }).join('');
+
   return `
     <div class="kv">
       <div>指数名</div><div>${meta.label || meta.index_key || ''}</div>
