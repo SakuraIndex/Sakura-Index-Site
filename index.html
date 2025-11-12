@@ -143,7 +143,8 @@ const SITE_CHARTS_BASE='https://raw.githubusercontent.com/SakuraIndex/Sakura-Ind
 /* 各リポ outputs ルート（intraday等の画像・ポスト文置き場） */
 const ORIG={
   'ASTRA4'   :'https://raw.githubusercontent.com/SakuraIndex/3_Sakura_Space/main/docs/outputs',
-  'R-BANK9'  :'https://raw.githubusercontent.com/SakuraIndex/R-BANK9/main/docs/outputs',
+  // 'R-BANK9'  : (廃止)
+  'M-BANK3'  :'https://raw.githubusercontent.com/SakuraIndex/M-BANK3/main/docs/outputs',
   'AIN-10'   :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'AIN10'    :'https://raw.githubusercontent.com/SakuraIndex/AIN-10/main/docs/outputs',
   'S-COIN+'  :'https://raw.githubusercontent.com/SakuraIndex/S-COIN-/main/docs/outputs',
@@ -157,18 +158,20 @@ const REPO_ROOT = Object.fromEntries(
   Object.entries(ORIG).map(([k,v]) => [k, v.replace(/\/docs\/outputs\/?$/,'')])
 );
 
-/* サイト内 charts フォルダ名 */
+/* サイト内 charts フォルダ名（存在するもののみ） */
 const FOLDER={
-  'ASTRA4':'ASTRA4','R-BANK9':'R_BANK9','AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+',
+  'ASTRA4':'ASTRA4',
+  // 'R-BANK9':'R_BANK9', // 廃止
+  'AIN-10':'AIN10','AIN10':'AIN10','S-COIN+':'S-COIN+',
   'QBIT-5':'QBIT5','SKYTECH-3':'SKYTECH3','RETAIL-7':'RETAIL7','HINOSEMI':'HINOSEMI'
 };
 
-/* カード順 */
+/* カード順（R-BANK9 → M-BANK3 に差替え、位置は据え置き＝2番目） */
 const IDX=[
   {key:'ASTRA4',   label:'ASTRA4',    flag:'🇯🇵', badge:'宇宙ベンチャー', market:'JP',
    description:'宇宙関連4銘柄の等ウェイト指数。日中は騰落率％、長期はレベル推移を表示。'},
-  {key:'R-BANK9',  label:'R-BANK9',   flag:'🇯🇵', badge:'地方銀行',       market:'JP',
-   description:'地方銀行9銘柄の等ウェイト指数。日中は騰落率％、長期はレベル推移を表示。'},
+  {key:'M-BANK3',  label:'M-BANK3',   flag:'🇯🇵', badge:'メガバンク',     market:'JP',
+   description:'日本の三大メガバンク（8306/8316/8411）の等ウェイト指数。日中は騰落率％、長期はレベル推移を表示。'},
   {key:'AIN-10',   label:'AIN-10',    flag:'🇺🇸', badge:'AI関連10',       market:'US',
    description:'米AI関連10銘柄の等ウェイト指数。短期モメンタム観測に便利。'},
   {key:'S-COIN+',  label:'S-COIN+',   flag:'🇯🇵', badge:'仮想資産関連',    market:'JP',
@@ -238,6 +241,7 @@ function baseNameFor(key){
     case 'SKYTECH-3': return 'skytech_3';
     case 'RETAIL-7':  return 'retail_7';
     case 'HINOSEMI':  return 'hinosemi';
+    case 'M-BANK3':   return 'mbank3';      // ★ 追加（ファイル名接頭辞）
     default:          return String(key).toLowerCase().replace(/\+/g,'_plus').replace(/[^a-z0-9_]+/g,'');
   }
 }
@@ -261,8 +265,8 @@ function originPostTxtCandidates(key){
   return [`${base}/${b}_post_intraday.txt`, `${base}/${b}_intraday_post.txt`];
 }
 
-/* 画像候補：Intraday は ASTRA4/R-BANK9/AIN-10 を“リポ優先”、他はサイト→リポ */
-const ORIGIN_FIRST = new Set(['ASTRA4','R-BANK9','AIN-10','AIN10']);
+/* 画像候補：Intraday は一部キーを“リポ優先” */
+const ORIGIN_FIRST = new Set(['ASTRA4','AIN-10','AIN10','M-BANK3']); // ★ R-BANK9→M-BANK3
 async function buildCandidates(tf, key){
   const folder = siteFolder(key);
   const siteBase = folder ? `${SITE_CHARTS_BASE}/${enc(folder)}` : null;
@@ -369,7 +373,7 @@ async function resolvePercent(key,market){
   return { v: clamp(pick.v,-cap,cap), ts: pick.ts || null };
 }
 
-/* ====== meta.json の探索を強化（リポ直下も見る） ====== */
+/* ====== meta.json の探索を強化（リポ直下も見る＋mbank3_meta.json対応） ====== */
 async function fetchMetaFor(key){
   const folder=siteFolder(key);
   const base=originBase(key);
@@ -400,8 +404,9 @@ async function fetchMetaFor(key){
   const rootCandidates = [];
   if(root){
     rootCandidates.push(
-      `${root}/meta.json`,                // ★ リポ直下
-      `${root}/docs/meta.json`,          // 念のため
+      `${root}/meta.json`,
+      `${root}/${name}_meta.json`,   // ★ 例: mbank3_meta.json
+      `${root}/docs/meta.json`,
       `${root}/data/meta.json`
     );
   }
@@ -461,7 +466,7 @@ function renderMetaHtml(meta){
   const method = meta.method || meta.methodology || {};
   const compsArr = Array.isArray(meta.components) ? meta.components
                   : Array.isArray(meta.constituents) ? meta.constituents
-                  : [];
+                  : (Array.isArray(meta.composition)?meta.composition:[]);
   const compHtml = compsArr.map(c=>{
     const nm = c.name_ja || c.name || '';
     const tkr = [c.ticker, c.exchange].filter(Boolean).join(' ');
@@ -473,7 +478,7 @@ function renderMetaHtml(meta){
     <div class="kv">
       <div>指数名</div><div>${meta.label || meta.index_key || ''}</div>
       <div>カテゴリ</div><div>${meta.category || '-'}</div>
-      <div>概要</div><div>${meta.description || '-'}</div>
+      <div>概要</div><div>${meta.description || meta.description_ja || '-'}</div>
       <div>算出方式</div><div>
         重み付け: <b>${(method.weighting||'equal')}</b> ／
         リバランス: <b>${(method.rebalancing||'-')}</b><br>
